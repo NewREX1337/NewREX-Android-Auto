@@ -6,10 +6,13 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.ColorStateList
-import android.graphics.Outline
+import android.graphics.Canvas
+import android.graphics.ColorFilter
+import android.graphics.Paint
+import android.graphics.PixelFormat
+import android.graphics.RectF
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.LayerDrawable
-import android.os.Build
-import android.view.ViewOutlineProvider
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
@@ -69,7 +72,7 @@ fun gradient(
 
 /** Dokununca tema renginde parlayan arka plan. */
 fun pressable(content: Drawable, radius: Float): Drawable =
-    RippleDrawable(ColorStateList.valueOf(Palette.withAlpha(Palette.accent, 0x70)), content, rounded(Color.WHITE, radius))
+    RippleDrawable(ColorStateList.valueOf(Palette.withAlpha(Palette.accent, 0x38)), content, rounded(Color.WHITE, radius))
 
 fun lp(w: Int, h: Int, weight: Float = 0f) = LinearLayout.LayoutParams(w, h, weight)
 fun flp(w: Int, h: Int, gravity: Int = Gravity.NO_GRAVITY) = FrameLayout.LayoutParams(w, h, gravity)
@@ -91,12 +94,45 @@ fun View.onTap(immediate: Boolean, action: () -> Unit) = setOnClickListener { v 
     v.postDelayed({ v.setTag(com.newrex.auto.R.id.neon_pending, null); action() }, 110)
 }
 
-// Gölge, arka planın şeklini tam opak alsın; yarı saydam kartlarda da parlama güçlü görünsün
-private val NeonOutline = object : ViewOutlineProvider() {
-    override fun getOutline(view: View, outline: Outline) {
-        outline.setRoundRect(0, 0, view.width, view.height, view.cornerRadius())
-        outline.alpha = 1f
+/**
+ * Kenarlardan içeri doğru yumuşakça sönen tema renginde ışık. Arka planın bir katmanı olarak çizilir,
+ * yani yazı ve resimler her zaman önünde kalır.
+ */
+class NeonDrawable(private val radius: Float, private val depth: Float) : Drawable() {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val rect = RectF()
+    private var level = 0
+
+    override fun draw(canvas: Canvas) {
+        if (level == 0) return
+        val accent = Palette.accent
+        fill.color = Palette.withAlpha(accent, 0x22 * level / 255)
+        rect.set(bounds)
+        canvas.drawRoundRect(rect, radius, radius, fill)
+        val steps = 7
+        val w = depth / steps
+        paint.strokeWidth = w + 0.5f
+        for (i in 0 until steps) {
+            val inset = w * i + w / 2
+            rect.set(bounds)
+            rect.inset(inset, inset)
+            val a = (0xD0 * (1f - i / steps.toFloat()).let { it * it } * level / 255).toInt()
+            paint.color = Palette.withAlpha(accent, a)
+            val r = (radius - inset).coerceAtLeast(0f)
+            canvas.drawRoundRect(rect, r, r, paint)
+        }
     }
+
+    override fun setAlpha(alpha: Int) {
+        level = alpha.coerceIn(0, 255)
+        invalidateSelf()
+    }
+
+    override fun getAlpha() = level
+    override fun setColorFilter(colorFilter: ColorFilter?) {}
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity() = PixelFormat.TRANSLUCENT
 }
 
 private fun View.cornerRadius(): Float {
@@ -105,45 +141,43 @@ private fun View.cornerRadius(): Float {
     return (g as? GradientDrawable)?.cornerRadius?.takeIf { it > 0 } ?: context.dpf(12)
 }
 
-private fun View.prepareNeon() {
-    if (outlineProvider !== NeonOutline) outlineProvider = NeonOutline
-    if (Build.VERSION.SDK_INT >= 28) {
-        outlineAmbientShadowColor = Palette.accent
-        outlineSpotShadowColor = Palette.accent
-    }
+/** Görünümün arka planına (bir kez) neon katmanı ekler; arka plan değiştiyse yeniden ekler. */
+private fun View.neonLayer(): NeonDrawable {
+    val wrapper = getTag(com.newrex.auto.R.id.neon_layer) as? LayerDrawable
+    if (wrapper != null && wrapper === background) return wrapper.getDrawable(1) as NeonDrawable
+    val neon = NeonDrawable(cornerRadius(), context.dpf(10))
+    val layered = LayerDrawable(arrayOf(background ?: ColorDrawable(0), neon))
+    background = layered
+    setTag(com.newrex.auto.R.id.neon_layer, layered)
+    return neon
 }
 
 /** Seçili sekme, çalan kanal gibi öğelerde sürekli hafif neon ışıma. */
-fun View.neonGlow(on: Boolean, strengthDp: Int = 8) {
-    prepareNeon()
-    elevation = if (on) context.dpf(strengthDp) else 0f
+fun View.neonGlow(on: Boolean, @Suppress("UNUSED_PARAMETER") strengthDp: Int = 8) {
+    if (!on && getTag(com.newrex.auto.R.id.neon_layer) == null) return
+    val neon = neonLayer()
+    setTag(com.newrex.auto.R.id.neon_base, if (on) 150 else 0)
+    if ((getTag(com.newrex.auto.R.id.neon_anim) as? Animator)?.isRunning != true) neon.alpha = if (on) 150 else 0
 }
 
+/** Dokununca kartın içinde, kenarlardan yayılan kısa bir neon parlaması. */
 fun View.neonFlash() {
-    prepareNeon()
+    val neon = neonLayer()
     (getTag(com.newrex.auto.R.id.neon_anim) as? Animator)?.cancel()
-    val r = cornerRadius()
-    val ring = LayerDrawable(arrayOf(
-        rounded(Palette.withAlpha(Palette.accent, 0x30), r),
-        rounded(0, r, context.dp(2), Palette.accent),
-    ))
-    foreground = ring
-    val lift = context.dpf(16)
+    val base = getTag(com.newrex.auto.R.id.neon_base) as? Int ?: 0
     val anim = ValueAnimator.ofFloat(0f, 1f).apply {
-        duration = 560
+        duration = 700
         addUpdateListener { va ->
             val t = va.animatedValue as Float
             // Hızlı yanıp yavaşça sönen parlama
-            val f = if (t < 0.18f) t / 0.18f else (1f - (t - 0.18f) / 0.82f).let { it * it }
-            ring.alpha = (f * 255).toInt()
-            translationZ = lift * f
-            val s = 1f - 0.03f * f
+            val f = if (t < 0.15f) t / 0.15f else (1f - (t - 0.15f) / 0.85f).let { it * it }
+            neon.alpha = (base + (255 - base) * f).toInt()
+            val s = 1f - 0.025f * f
             scaleX = s; scaleY = s
         }
         addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
-                foreground = null
-                translationZ = 0f
+                neon.alpha = base
                 scaleX = 1f; scaleY = 1f
             }
         })

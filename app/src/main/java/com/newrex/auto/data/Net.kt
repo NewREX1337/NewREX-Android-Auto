@@ -115,17 +115,32 @@ object Playlists {
 
 /** Ücretsiz ve açık Radio Browser servisi (radio-browser.info). */
 object RadioApi {
-    private const val BASE = "https://de1.api.radio-browser.info/json/stations"
+    // Sunuculardan biri arada boş yanıt verebiliyor; sırayla denenir
+    private val SERVERS = listOf("de1", "de2")
 
     suspend fun popular(countryCode: String = "TR", limit: Int = 300) =
-        query("$BASE/search?countrycode=$countryCode&hidebroken=true&order=clickcount&reverse=true&limit=$limit")
+        query("/search?countrycode=$countryCode&hidebroken=true&order=clickcount&reverse=true&limit=$limit")
 
     suspend fun search(name: String, limit: Int = 150) =
-        query("$BASE/search?name=${URLEncoder.encode(name, "UTF-8")}&hidebroken=true&order=clickcount&reverse=true&limit=$limit")
+        query("/search?name=${URLEncoder.encode(name, "UTF-8")}&hidebroken=true&order=clickcount&reverse=true&limit=$limit")
 
-    private suspend fun query(url: String): List<MediaEntry> = withContext(Dispatchers.IO) {
-        val arr = JSONArray(Net.get(url))
-        (0 until arr.length()).mapNotNull {
+    private suspend fun query(path: String): List<MediaEntry> = withContext(Dispatchers.IO) {
+        var last: Exception? = null
+        for (server in SERVERS) {
+            try {
+                val list = parse(Net.get("https://$server.api.radio-browser.info/json/stations$path"))
+                if (list.isNotEmpty()) return@withContext list
+            } catch (e: Exception) {
+                last = e
+            }
+        }
+        last?.let { throw it }
+        emptyList()
+    }
+
+    private fun parse(json: String): List<MediaEntry> {
+        val arr = JSONArray(json)
+        return (0 until arr.length()).mapNotNull {
             val o = arr.getJSONObject(it)
             val stream = o.optString("url_resolved").ifBlank { o.optString("url") }
             if (stream.isBlank()) return@mapNotNull null

@@ -254,7 +254,7 @@ class PodcastShowPage(ui: CarUi, private val show: PodcastShow) : Page(ui) {
             val playing = PlayerHub.now.value?.url == e.url
             val r = ctx.dpf(14)
             h.root.background = pressable(
-                if (playing) rounded(Palette.withAlpha(Palette.accent, 0x40), r, ctx.dp(2), Palette.accent) else rounded(Palette.SURFACE, r), r)
+                rounded(if (playing) Palette.withAlpha(Palette.accent, 0x26) else Palette.SURFACE, r), r)
             h.root.neonGlow(playing, 8)
             h.title.text = e.title
             val pos = Prefs.position(e.url)

@@ -267,8 +267,8 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
         val t = ctx.label(message, 15f, lines = 3).apply {
             gravity = Gravity.CENTER
             setPadding(ctx.dp(20), ctx.dp(12), ctx.dp(20), ctx.dp(12))
-            background = rounded(0xEE222639.toInt(), ctx.dpf(14), ctx.dp(1), Palette.withAlpha(Palette.accent, 0x99))
-            neonGlow(true, 10)
+            background = rounded(0xEE222639.toInt(), ctx.dpf(14))
+            neonGlow(true)
         }
         toastView = t
         root.addView(t, flp(WRAP, WRAP, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).margins(b = ctx.dp(90)))

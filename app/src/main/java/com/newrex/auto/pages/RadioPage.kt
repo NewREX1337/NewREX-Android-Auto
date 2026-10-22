@@ -139,7 +139,7 @@ class RadioPage(ui: CarUi) : Page(ui) {
             Tab.FAVORITES -> "Henüz favori radyo yok.\nÇalarken alttaki ☆ simgesine dokun."
             Tab.RECENT -> "Henüz radyo dinlemedin."
             Tab.SEARCH -> "\"$searchQuery\" için sonuç bulunamadı."
-            Tab.POPULAR -> "Radyo bulunamadı."
+            Tab.POPULAR -> "Radyo listesi şu an alınamadı.\nTekrar denemek için Popüler'e dokun."
         }
     }
 }

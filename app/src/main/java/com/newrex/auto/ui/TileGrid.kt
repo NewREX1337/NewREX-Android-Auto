@@ -71,8 +71,7 @@ class TileAdapter(private val ctx: Context) : RecyclerView.Adapter<TileAdapter.V
         val r = ctx.dpf(16)
         val active = t.key == highlightKey
         h.root.background = pressable(
-            if (active) rounded(Palette.withAlpha(Palette.accent, 0x40), r, ctx.dp(2), Palette.accent)
-            else rounded(Palette.SURFACE, r),
+            rounded(if (active) Palette.withAlpha(Palette.accent, 0x26) else Palette.SURFACE, r),
             r,
         )
         h.title.text = t.title

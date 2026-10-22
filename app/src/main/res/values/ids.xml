@@ -2,4 +2,6 @@
 <resources>
     <item name="neon_anim" type="id" />
     <item name="neon_pending" type="id" />
+    <item name="neon_layer" type="id" />
+    <item name="neon_base" type="id" />
 </resources>
