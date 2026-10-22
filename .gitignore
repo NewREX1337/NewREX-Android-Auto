@@ -1,0 +1,15 @@
+# Derleme çıktıları
+build/
+.gradle/
+*.apk
+*.aab
+
+# Bilgisayara özel ayarlar
+local.properties
+.idea/
+*.iml
+
+# İMZA ANAHTARI — asla paylaşma! Başkası bununla senin adına sahte güncelleme yayınlayabilir.
+*.jks
+*.keystore
+keystore.properties

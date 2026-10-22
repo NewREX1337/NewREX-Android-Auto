@@ -1,0 +1,363 @@
+// NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
+package com.newrex.auto.ui
+
+import android.content.Context
+import android.graphics.drawable.GradientDrawable
+import android.os.Handler
+import android.os.Looper
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.view.Gravity
+import android.view.View
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import coil.load
+import coil.transform.RoundedCornersTransformation
+import com.newrex.auto.DriveState
+import com.newrex.auto.PlayerHub
+import com.newrex.auto.R
+import com.newrex.auto.data.Kind
+import com.newrex.auto.data.Prefs
+import com.newrex.auto.pages.HomePage
+import com.newrex.auto.pages.PlayerPage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+/** Araç ekranındaki her sayfanın temeli. */
+abstract class Page(val ui: CarUi) {
+    val ctx: Context get() = ui.ctx
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    var view: View? = null
+
+    open val title: String = ""
+    /** Üst bar ve mini oynatıcı gizlenir (video oynatıcı gibi). */
+    open val fullscreen: Boolean = false
+
+    abstract fun build(): View
+    /** Üst barın sağında gösterilecek sayfaya özel butonlar. */
+    open fun actions(): List<View> = emptyList()
+    /** true dönerse geri tuşu sayfa içinde kullanıldı demektir. */
+    open fun onBack(): Boolean = false
+    open fun onShow() {}
+    open fun onDestroy() {}
+
+    fun destroy() {
+        onDestroy()
+        scope.cancel()
+    }
+}
+
+class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
+    val root = FrameLayout(ctx)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val handler = Handler(Looper.getMainLooper())
+    private val stack = ArrayList<Page>()
+
+    private val content = FrameLayout(ctx)
+    private lateinit var topBar: LinearLayout
+    private lateinit var backButton: View
+    private lateinit var titleView: TextView
+    private lateinit var actionsBox: LinearLayout
+    private lateinit var driveChip: LinearLayout
+    private lateinit var driveIcon: ImageView
+    private lateinit var driveText: TextView
+    private lateinit var clock: TextView
+    private lateinit var mini: LinearLayout
+    private lateinit var miniImage: ImageView
+    private lateinit var miniTitle: TextView
+    private lateinit var miniSub: TextView
+    private lateinit var miniPlay: FrameLayout
+    private lateinit var miniFav: FrameLayout
+    private var keyboard: View? = null
+    private var toastView: TextView? = null
+
+    val pageCount get() = stack.size
+
+    /** Android Auto bölünmüş ekrandayken (sağda müzik/harita kartı) arayüz sadeleşir. */
+    val compact = MutableStateFlow(false)
+
+    private val tick = object : Runnable {
+        override fun run() {
+            clock.text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+            handler.postDelayed(this, 15_000)
+        }
+    }
+
+    init {
+        Palette.accent = Palette.accents[Prefs.accentIndex.coerceIn(0, Palette.accents.lastIndex)]
+        root.background = gradient(Palette.BG_TOP, Palette.BG_BOTTOM, orientation = GradientDrawable.Orientation.TOP_BOTTOM)
+
+        val column = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+        column.addView(buildTopBar(), lp(MATCH, ctx.dp(60)))
+        column.addView(content, lp(MATCH, 0, 1f))
+        column.addView(buildMiniPlayer(), lp(MATCH, ctx.dp(66)).margins(ctx.dp(12), ctx.dp(4), ctx.dp(12), ctx.dp(10)))
+        root.addView(column, flp(MATCH, MATCH))
+
+        scope.launch { DriveState.driving.collect { updateDriveChip(it) } }
+        scope.launch {
+            compact.collect { c ->
+                titleView.visibility = if (c) View.INVISIBLE else View.VISIBLE
+                driveText.visibility = if (c) View.GONE else View.VISIBLE
+            }
+        }
+        scope.launch {
+            combine(PlayerHub.now, PlayerHub.playing, Prefs.changes) { e, p, _ -> e to p }
+                .collect { refreshMini() }
+        }
+        handler.post(tick)
+        push(HomePage(this))
+    }
+
+    // ---- Sayfa yönetimi ----
+
+    fun push(page: Page) {
+        stack.lastOrNull()?.view?.visibility = View.GONE
+        val v = page.build()
+        page.view = v
+        content.addView(v, flp(MATCH, MATCH))
+        stack.add(page)
+        refreshChrome()
+        page.onShow()
+    }
+
+    fun pop() {
+        if (stack.size <= 1) return
+        val page = stack.removeAt(stack.lastIndex)
+        page.destroy()
+        content.removeView(page.view)
+        stack.last().view?.visibility = View.VISIBLE
+        refreshChrome()
+        stack.last().onShow()
+    }
+
+    fun home() {
+        hideKeyboard()
+        while (stack.size > 1) pop()
+    }
+
+    fun back() {
+        if (keyboard != null) { hideKeyboard(); return }
+        if (!stack.last().onBack()) pop()
+    }
+
+    /** Sayfanın üst bar butonları değiştiğinde çağrılır. */
+    fun refreshChrome() {
+        val top = stack.last()
+        topBar.visibility = if (top.fullscreen) View.GONE else View.VISIBLE
+        backButton.visibility = if (stack.size > 1) View.VISIBLE else View.GONE
+        titleView.text = top.title
+        actionsBox.removeAllViews()
+        top.actions().forEach { actionsBox.addView(it, lp(ctx.dp(44), ctx.dp(44)).margins(l = ctx.dp(8))) }
+        refreshMini()
+    }
+
+    /** Renk teması değişince bütün arayüz yeniden kurulur. */
+    fun rebuild() = onRebuild()
+
+    fun destroy() {
+        handler.removeCallbacksAndMessages(null)
+        stack.forEach { it.destroy() }
+        stack.clear()
+        scope.cancel()
+    }
+
+    /** Android Auto'nun sağ üst köşedeki kendi butonu için boş bırakılması gereken genişlik. */
+    var topRightReserve = 0
+        private set
+
+    fun setInsets(left: Int, top: Int, right: Int, bottom: Int, topRightReserve: Int = 0) {
+        this.topRightReserve = topRightReserve
+        root.setPadding(left, top, right, bottom)
+        topBar.setPadding(ctx.dp(14), ctx.dp(8), maxOf(ctx.dp(14), topRightReserve), 0)
+        val visibleWidth = ctx.resources.displayMetrics.widthPixels - left - right
+        compact.value = visibleWidth < ctx.dp(600)
+    }
+
+    // ---- Klavye ve bildirim ----
+
+    fun showKeyboard(
+        hint: String,
+        initial: String = "",
+        secret: Boolean = false,
+        doneLabel: String = "Ara",
+        allowEmpty: Boolean = false,
+        onDone: (String) -> Unit,
+    ) {
+        if (DriveState.driving.value) {
+            toast("Sürüş sırasında yazı yazılamaz. Lütfen park halindeyken deneyin.")
+            return
+        }
+        hideKeyboard()
+        val kb = KeyboardView(ctx, hint, initial, secret, doneLabel,
+            onDone = { text ->
+                hideKeyboard()
+                val value = if (secret) text else text.trim()
+                if (value.isNotEmpty() || allowEmpty) onDone(value)
+            },
+            onClose = { hideKeyboard() })
+        keyboard = kb
+        root.addView(kb, flp(MATCH, MATCH))
+    }
+
+    fun hideKeyboard() {
+        keyboard?.let { root.removeView(it) }
+        keyboard = null
+    }
+
+    fun toast(message: String) {
+        toastView?.let { root.removeView(it) }
+        val t = ctx.label(message, 15f, lines = 3).apply {
+            gravity = Gravity.CENTER
+            setPadding(ctx.dp(20), ctx.dp(12), ctx.dp(20), ctx.dp(12))
+            background = rounded(0xEE222639.toInt(), ctx.dpf(14))
+        }
+        toastView = t
+        root.addView(t, flp(WRAP, WRAP, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).margins(b = ctx.dp(90)))
+        handler.postDelayed({ if (toastView === t) { root.removeView(t); toastView = null } }, 3000)
+    }
+
+    // ---- Üst bar ----
+
+    private fun buildTopBar(): View = with(ctx) {
+        topBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(8), dp(14), 0)
+        }
+        backButton = circleButton(R.drawable.ic_back, 44) { back() }
+        topBar.addView(backButton, lp(dp(44), dp(44)).margins(r = dp(10)))
+
+        val logo = SpannableStringBuilder("NewREX").apply {
+            setSpan(ForegroundColorSpan(Palette.accent), 3, 6, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        topBar.addView(label(logo, 22f, bold = true))
+        titleView = label("", 17f, Palette.TEXT_DIM)
+        topBar.addView(titleView, lp(0, WRAP, 1f).margins(l = dp(14)))
+
+        actionsBox = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        topBar.addView(actionsBox)
+
+        driveIcon = icon(R.drawable.ic_parking, 18)
+        driveText = label("Park", 13f, bold = true)
+        driveChip = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(10), 0, dp(12), 0)
+            addView(driveIcon, lp(dp(18), dp(18)).margins(r = dp(6)))
+            addView(driveText)
+        }
+        topBar.addView(driveChip, lp(WRAP, dp(32)).margins(l = dp(12)))
+
+        clock = label("", 20f, bold = true)
+        topBar.addView(clock, lp(WRAP, WRAP).margins(l = dp(12)))
+        topBar
+    }
+
+    private fun updateDriveChip(driving: Boolean) {
+        val color = if (driving) Palette.ORANGE else Palette.GREEN
+        driveChip.background = rounded(Palette.withAlpha(color, 0x40), ctx.dpf(16))
+        driveIcon.setImageResource(if (driving) R.drawable.ic_car else R.drawable.ic_parking)
+        driveText.text = if (driving) "Sürüşte" else "Park"
+    }
+
+    // ---- Mini oynatıcı ----
+
+    private fun buildMiniPlayer(): View = with(ctx) {
+        miniImage = ImageView(this).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
+        miniTitle = label("", 16f, bold = true)
+        miniSub = label("", 12f, Palette.TEXT_DIM)
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(miniTitle)
+            addView(miniSub, lp(WRAP, WRAP).margins(t = dp(4)))
+        }
+        miniFav = circleButton(R.drawable.ic_star_border, 44, bg = 0) {
+            PlayerHub.now.value?.let { Prefs.toggleFavorite(it) }
+        }
+        miniPlay = circleButton(R.drawable.ic_play, 48, bg = Palette.accent) { PlayerHub.toggle() }
+
+        mini = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(10), 0, dp(10), 0)
+            background = pressable(rounded(0xFF1D2033.toInt(), dpf(18)), dpf(18))
+            addView(miniImage, lp(dp(46), dp(46)).margins(r = dp(12)))
+            addView(texts, lp(0, WRAP, 1f))
+            addView(miniFav, lp(dp(44), dp(44)).margins(l = dp(6)))
+            addView(circleButton(R.drawable.ic_prev, 44, bg = 0) { PlayerHub.prev() }, lp(dp(44), dp(44)).margins(l = dp(6)))
+            addView(miniPlay, lp(dp(48), dp(48)).margins(l = dp(6)))
+            addView(circleButton(R.drawable.ic_next, 44, bg = 0) { PlayerHub.next() }, lp(dp(44), dp(44)).margins(l = dp(6)))
+            addView(circleButton(R.drawable.ic_close, 44, bg = 0, tint = Palette.TEXT_DIM) { PlayerHub.stop() },
+                lp(dp(44), dp(44)).margins(l = dp(6)))
+            // TV sesi çalarken çubuğa dokununca görüntüye geri dön
+            onTap {
+                if (PlayerHub.now.value?.kind == Kind.TV && stack.last() !is PlayerPage) push(PlayerPage(this@CarUi))
+            }
+        }
+        mini
+    }
+
+    private fun refreshMini() {
+        if (!::mini.isInitialized || stack.isEmpty()) return
+        val e = PlayerHub.now.value
+        val top = stack.last()
+        mini.visibility = if (e == null || top.fullscreen || top is PlayerPage) View.GONE else View.VISIBLE
+        if (e == null) return
+        miniTitle.text = e.title
+        miniSub.text = when (e.kind) {
+            Kind.TV -> "Canlı TV • görüntü için dokun"
+            Kind.RADIO -> "Radyo" + if (e.group.isNotBlank()) " • ${e.group}" else ""
+        }
+        val fallback = if (e.kind == Kind.TV) R.drawable.ic_live_tv else R.drawable.ic_radio
+        miniImage.load(e.image) {
+            placeholder(fallback); error(fallback); fallback(fallback)
+            transformations(RoundedCornersTransformation(ctx.dpf(8)))
+        }
+        (miniPlay.getChildAt(0) as ImageView).setImageResource(
+            if (PlayerHub.playing.value) R.drawable.ic_pause else R.drawable.ic_play
+        )
+        val fav = Prefs.isFavorite(e)
+        (miniFav.getChildAt(0) as ImageView).apply {
+            setImageResource(if (fav) R.drawable.ic_star else R.drawable.ic_star_border)
+            imageTintList = android.content.res.ColorStateList.valueOf(if (fav) Palette.ORANGE else Palette.TEXT)
+        }
+    }
+}
+
+/** Sürüş sırasında video/web görüntüsünü kapatan katman. Ses devam eder. */
+fun Page.parkGuard(): View = with(ctx) {
+    val box = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        gravity = Gravity.CENTER
+        setBackgroundColor(0xFA080A12.toInt())
+        isClickable = true
+        addView(icon(R.drawable.ic_car, 64, Palette.ORANGE), lp(dp(64), dp(64)))
+        addView(label("Sürüş halindesin", 24f, bold = true).apply { gravity = Gravity.CENTER },
+            lp(WRAP, WRAP).margins(t = dp(14)))
+        addView(label("Güvenliğin için görüntü gizlendi, ses devam ediyor.\nAraç durunca görüntü otomatik geri gelir.",
+            15f, Palette.TEXT_DIM, lines = 3).apply { gravity = Gravity.CENTER },
+            lp(WRAP, WRAP).margins(t = dp(8)))
+        visibility = View.GONE
+    }
+    scope.launch {
+        combine(DriveState.driving, Prefs.changes) { driving, _ -> driving && Prefs.parkModeVideo }
+            .distinctUntilChanged()
+            .collect { block -> box.visibility = if (block) View.VISIBLE else View.GONE }
+    }
+    box
+}

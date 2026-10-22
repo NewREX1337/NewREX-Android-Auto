@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NewREX Android Auto</string>
+
+    <color name="icon_bg_start">#7C5CFF</color>
+    <color name="icon_bg_end">#2F80ED</color>
+
+    <style name="Theme.NewREX.Phone" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorAccent">#7C5CFF</item>
+        <item name="android:colorPrimary">#7C5CFF</item>
+        <item name="android:windowBackground">#0B0E1A</item>
+        <item name="android:statusBarColor">#0B0E1A</item>
+        <item name="android:navigationBarColor">#0B0E1A</item>
+    </style>
+
+    <style name="Theme.NewREX.Car" parent="android:Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:colorAccent">#7C5CFF</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+</resources>
