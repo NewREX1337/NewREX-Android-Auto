@@ -5,7 +5,7 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
+import android.widget.ScrollView
 import android.widget.LinearLayout
 import com.newrex.auto.WeatherHub
 import com.newrex.auto.data.WeatherApi
@@ -41,31 +41,47 @@ class HomePage(ui: CarUi) : Page(ui) {
     )
 
     private lateinit var container: LinearLayout
+    private var lastWidth = 0
 
     override fun build(): View = with(ctx) {
         container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(8), dp(12), dp(4))
+            setPadding(dp(12), dp(8), dp(12), dp(12))
+        }
+        val scroll = ScrollView(this).apply {
+            isVerticalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            addView(container, FrameLayout.LayoutParams(MATCH, WRAP))
+            // Sütun sayısı ekran genişliğine göre; genişlik değişince yeniden diz
+            addOnLayoutChangeListener { v, l, _, rr, _, _, _, _, _ ->
+                val w = rr - l
+                if (w > 0 && w != lastWidth) { lastWidth = w; v.post { populate(ui.compact.value) } }
+            }
         }
         scope.launch {
             combine(ui.compact, Prefs.changes, WeatherHub.report) { c, _, _ -> c }.collect { populate(it) }
         }
-        container
+        scroll
     }
 
-    private fun populate(compact: Boolean) = with(ctx) {
+    private fun populate(compact: Boolean): Unit = with(ctx) {
+        if (lastWidth == 0) return
         container.removeAllViews()
-        val gap = dp(if (compact) 8 else 10)
+        val gap = dp(if (compact) 8 else 12)
 
-        val big = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        big.addView(bigCard("TV", "Canlı TV ve IPTV", R.drawable.ic_live_tv, 0xFF1D3A8A.toInt(), 0xFF2F80ED.toInt(),
-            compact, live = true) { ui.push(TvPage(ui)) }, lp(0, MATCH, 1.15f).margins(r = gap))
-        big.addView(bigCard("YouTube", "Video izle", R.drawable.ic_smart_display, 0xFF6B1420.toInt(), 0xFFE0263C.toInt(),
-            compact) { ui.push(WebPage(ui, WebPage.Mode.YOUTUBE)) }, lp(0, MATCH, 1f).margins(r = gap))
-        big.addView(bigCard("Radyo", "Türk radyoları", R.drawable.ic_radio, 0xFF3B1C7A.toInt(), 0xFF7C5CFF.toInt(),
-            compact) { ui.push(RadioPage(ui)) }, lp(0, MATCH, 1f).margins(r = gap))
-        big.addView(bigCard("Yansıt", "Telefon ekranı", R.drawable.ic_cast, 0xFF0E4A47.toInt(), 0xFF16B98A.toInt(),
-            compact) { ui.push(MirrorPage(ui)) }, lp(0, MATCH, 1f))
+        val bigCards = listOf(
+            bigCard("TV", "Canlı TV ve IPTV", R.drawable.ic_live_tv, 0xFF1D3A8A.toInt(), 0xFF2F80ED.toInt(),
+                compact, live = true) { ui.push(TvPage(ui)) },
+            bigCard("YouTube", "Video izle", R.drawable.ic_smart_display, 0xFF6B1420.toInt(), 0xFFE0263C.toInt(),
+                compact) { ui.push(WebPage(ui, WebPage.Mode.YOUTUBE)) },
+            bigCard("Radyo", "Türk radyoları", R.drawable.ic_radio, 0xFF3B1C7A.toInt(), 0xFF7C5CFF.toInt(),
+                compact) { ui.push(RadioPage(ui)) },
+            bigCard("Yansıt", "Telefon ekranı", R.drawable.ic_cast, 0xFF0E4A47.toInt(), 0xFF16B98A.toInt(),
+                compact) { ui.push(MirrorPage(ui)) },
+        )
+        // Dar ekranda 2x2, geniş ekranda tek sıra
+        val bigPerRow = if (compact) 2 else 4
+        addGrid(bigCards, bigPerRow, dp(if (compact) 110 else 190), gap)
 
         val shortcuts = ArrayList<Shortcut>()
         shortcuts += Shortcut("Favoriler", "Kanal ve radyolar", R.drawable.ic_star, Palette.ORANGE) { ui.push(FavoritesPage(ui)) }
@@ -87,25 +103,24 @@ class HomePage(ui: CarUi) : Page(ui) {
         }
         shortcuts += Shortcut("Web", "Tarayıcı", R.drawable.ic_language, 0xFF2F80ED.toInt()) { ui.push(WebPage(ui, WebPage.Mode.WEB)) }
         shortcuts += Shortcut("Ayarlar", "Tema ve listeler", R.drawable.ic_settings, 0xFF8B93A7.toInt()) { ui.push(SettingsPage(ui)) }
-        // Dar ekranda yer yok; Hakkında sayfasına Ayarlar'dan da ulaşılabiliyor
-        if (!compact) shortcuts += Shortcut("NewREX", "Hakkında", R.drawable.ic_info, Palette.accent) { ui.push(AboutPage(ui)) }
+        shortcuts += Shortcut("NewREX", "Hakkında", R.drawable.ic_info, Palette.accent) { ui.push(AboutPage(ui)) }
 
-        // Kısayollar ekrana sığmazsa yana kaydırılır; sığarsa ekranı eşit paylaşır
-        val small = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        shortcuts.forEachIndexed { i, s ->
-            small.addView(smallCard(s, compact).apply { minimumWidth = dp(if (compact) 92 else 118) },
-                lp(0, MATCH, 1f).margins(r = if (i < shortcuts.lastIndex) gap else 0))
-        }
-        val smallScroll = HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            isFillViewport = true
-            overScrollMode = View.OVER_SCROLL_NEVER
-            clipToPadding = false
-            addView(small, FrameLayout.LayoutParams(WRAP, MATCH))
-        }
+        val usable = lastWidth - container.paddingLeft - container.paddingRight
+        val cols = (usable / dp(if (compact) 120 else 170)).coerceIn(2, 6)
+        container.addView(View(this), lp(MATCH, gap))
+        addGrid(shortcuts.map { smallCard(it, compact) }, cols, dp(if (compact) 92 else 108), gap)
+    }
 
-        container.addView(big, lp(MATCH, 0, 1.6f))
-        container.addView(smallScroll, lp(MATCH, 0, if (compact) 0.8f else 1f).margins(t = gap))
+    /** Görünümleri [perRow] sütunlu satırlara dizer; son satır eksikse boşlukla doldurulur. */
+    private fun addGrid(views: List<View>, perRow: Int, rowHeight: Int, gap: Int) = with(ctx) {
+        views.chunked(perRow).forEachIndexed { rowIndex, rowViews ->
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            for (i in 0 until perRow) {
+                val v = rowViews.getOrNull(i) ?: View(this)
+                row.addView(v, lp(0, MATCH, 1f).margins(r = if (i < perRow - 1) gap else 0))
+            }
+            container.addView(row, lp(MATCH, rowHeight).margins(t = if (rowIndex > 0) gap else 0))
+        }
     }
 
     private fun bigCard(

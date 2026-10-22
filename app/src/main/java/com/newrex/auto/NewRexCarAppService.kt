@@ -188,7 +188,8 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
         if (dragStart != 0L) finishDrag()
         val t = SystemClock.uptimeMillis()
         inject(MotionEvent.ACTION_DOWN, x, y, t, t)
-        inject(MotionEvent.ACTION_UP, x, y, t, t + 60)
+        // Web sayfaları (YouTube) aynı anda gelen bas-bırak'ı dokunma saymayabiliyor; gerçek parmak gibi kısa bekle
+        handler.postDelayed({ inject(MotionEvent.ACTION_UP, x, y, t, SystemClock.uptimeMillis()) }, 70)
     }
 
     override fun onScroll(distanceX: Float, distanceY: Float) {
