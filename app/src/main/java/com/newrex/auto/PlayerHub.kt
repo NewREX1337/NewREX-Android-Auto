@@ -2,6 +2,8 @@
 package com.newrex.auto
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.ForwardingPlayer
@@ -20,7 +22,7 @@ import com.newrex.auto.data.MediaEntry
 import com.newrex.auto.data.Prefs
 import kotlinx.coroutines.flow.MutableStateFlow
 
-/** Tek bir oynatıcı: TV ve radyo aynı oynatıcıyı paylaşır, sayfadan çıkınca ses devam eder. */
+/** Tek bir oynatıcı: TV, radyo ve podcast aynı oynatıcıyı paylaşır, sayfadan çıkınca ses devam eder. */
 object PlayerHub {
     // Bazı IPTV sunucuları tarayıcı dışı istemcileri reddediyor
     private const val STREAM_USER_AGENT =
@@ -35,6 +37,24 @@ object PlayerHub {
     val playing = MutableStateFlow(false)
     val buffering = MutableStateFlow(false)
     val error = MutableStateFlow<String?>(null)
+
+    /** Podcast'lerde ilerleme (ms). */
+    val position = MutableStateFlow(0L)
+    val duration = MutableStateFlow(0L)
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val ticker = object : Runnable {
+        override fun run() {
+            val p = exo ?: return
+            val e = now.value
+            if (e?.kind == Kind.PODCAST) {
+                position.value = p.currentPosition
+                duration.value = p.duration.coerceAtLeast(0)
+                if (p.isPlaying) Prefs.savePosition(e.url, p.currentPosition)
+            }
+            handler.postDelayed(this, 1000)
+        }
+    }
 
     val player: ExoPlayer get() = exo ?: error("PlayerHub.init çağrılmadı")
 
@@ -65,6 +85,8 @@ object PlayerHub {
             override fun onPlaybackStateChanged(state: Int) {
                 buffering.value = state == Player.STATE_BUFFERING
                 if (state == Player.STATE_READY) error.value = null
+                // Biten bölüm bir dahaki sefere baştan başlasın
+                if (state == Player.STATE_ENDED) now.value?.takeIf { it.kind == Kind.PODCAST }?.let { Prefs.savePosition(it.url, 0) }
             }
 
             override fun onPlayerError(e: PlaybackException) {
@@ -98,6 +120,7 @@ object PlayerHub {
         }
         exo = p
         session = MediaSession.Builder(context, sessionPlayer).setId("newrex").build()
+        handler.post(ticker)
     }
 
     fun play(list: List<MediaEntry>, startIndex: Int) {
@@ -107,13 +130,31 @@ object PlayerHub {
         start()
     }
 
+    val isPodcast get() = now.value?.kind == Kind.PODCAST
+
+    fun seekBy(ms: Long) {
+        val p = exo ?: return
+        val d = p.duration
+        val target = (p.currentPosition + ms).coerceAtLeast(0)
+        p.seekTo(if (d > 0) target.coerceAtMost(d - 1000) else target)
+        position.value = p.currentPosition
+    }
+
+    fun seekTo(ms: Long) {
+        exo?.seekTo(ms.coerceAtLeast(0))
+        position.value = ms
+    }
+
+    /** Podcast'te direksiyon ve mini oynatıcı tuşları 30 sn ileri / 15 sn geri sarar. */
     fun next() {
+        if (isPodcast) { seekBy(30_000); return }
         if (queue.isEmpty()) return
         index = (index + 1) % queue.size
         start()
     }
 
     fun prev() {
+        if (isPodcast) { seekBy(-15_000); return }
         if (queue.isEmpty()) return
         index = (index - 1 + queue.size) % queue.size
         start()
@@ -132,6 +173,7 @@ object PlayerHub {
     }
 
     fun stop() {
+        now.value?.takeIf { it.kind == Kind.PODCAST }?.let { e -> exo?.let { Prefs.savePosition(e.url, it.currentPosition) } }
         exo?.stop()
         exo?.clearMediaItems()
         now.value = null
@@ -139,6 +181,8 @@ object PlayerHub {
     }
 
     fun release() {
+        now.value?.takeIf { it.kind == Kind.PODCAST }?.let { e -> exo?.let { Prefs.savePosition(e.url, it.currentPosition) } }
+        handler.removeCallbacks(ticker)
         session?.release()
         exo?.release()
         session = null
@@ -148,6 +192,7 @@ object PlayerHub {
     }
 
     private fun start() {
+        now.value?.takeIf { it.kind == Kind.PODCAST }?.let { e -> exo?.let { Prefs.savePosition(e.url, it.currentPosition) } }
         val e = queue[index]
         now.value = e
         error.value = null
@@ -157,12 +202,18 @@ object PlayerHub {
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(e.title)
-                    .setArtist(if (e.kind == Kind.TV) "NewREX TV" else "NewREX Radyo")
+                    .setArtist(when (e.kind) {
+                        Kind.TV -> "NewREX TV"
+                        Kind.RADIO -> "NewREX Radyo"
+                        Kind.PODCAST -> e.group.ifBlank { "NewREX Podcast" }
+                    })
                     .build()
             )
             .apply { if (e.url.contains(".m3u8", ignoreCase = true)) setMimeType(MimeTypes.APPLICATION_M3U8) }
             .build()
-        player.setMediaItem(item)
+        if (e.kind == Kind.PODCAST) player.setMediaItem(item, Prefs.position(e.url)) else player.setMediaItem(item)
+        position.value = 0
+        duration.value = 0
         player.prepare()
         player.play()
     }

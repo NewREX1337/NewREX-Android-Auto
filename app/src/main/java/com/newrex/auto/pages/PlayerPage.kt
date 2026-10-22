@@ -30,7 +30,6 @@ import com.newrex.auto.ui.gradient
 import com.newrex.auto.ui.label
 import com.newrex.auto.ui.lp
 import com.newrex.auto.ui.margins
-import com.newrex.auto.ui.onTap
 import com.newrex.auto.ui.parkGuard
 import com.newrex.auto.ui.rounded
 import kotlinx.coroutines.flow.combine
@@ -109,8 +108,8 @@ class PlayerPage(ui: CarUi) : Page(ui) {
             addView(parkGuard(), flp(MATCH, MATCH))
             addView(controls, flp(MATCH, MATCH))
             // Boş bir yere dokunmak kontrolleri açıp kapatır
-            onTap { setControls(controls.visibility != View.VISIBLE) }
-            controls.onTap { setControls(false) }
+            setOnClickListener { setControls(controls.visibility != View.VISIBLE) }
+            controls.setOnClickListener { setControls(false) }
         }.also { observe() }
     }
 

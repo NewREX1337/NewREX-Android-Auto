@@ -13,3 +13,7 @@ local.properties
 *.jks
 *.keystore
 keystore.properties
+
+# Telefon hata raporları (kişisel veri içerir)
+dumpstate-*.zip
+bugreport-*.zip

@@ -12,7 +12,7 @@ Resmi APK'lar yalnızca bu depodaki **Releases** sayfasından yayınlanır ve Ne
 Başka bir yerden indirdiysen imzayı kontrol et (bilgisayarda Android SDK ile):
 
 ```
-apksigner verify --print-certs NewREX-Android-Auto-1.0.0.apk
+apksigner verify --print-certs NewREX-Android-Auto-x.y.z.apk
 ```
 
 Çıkan `SHA-256` değeri **tam olarak** şu olmalı:
@@ -30,14 +30,22 @@ NewREX'in üzerine güncelleme olarak yüklenmesine izin vermez.
   Varsayılan olarak açık kaynak [iptv-org](https://github.com/iptv-org/iptv) Türkiye listesi gelir.
 - ▶️ **YouTube**: hızlı kategoriler (Popüler, Müzik, Haber, Spor, Canlı…) ve arama, hesap gerekmez.
 - 📻 **İnternet radyosu**: [Radio Browser](https://www.radio-browser.info) üzerinden binlerce Türk radyosu, arama, favoriler.
+- 🎙️ **Podcast**: popüler Türkçe podcast'ler, arama, abonelik, kaldığın yerden devam (30 sn ileri / 15 sn geri)
+- 📱 **Ekran yansıtma**: telefon ekranı araç ekranında; araçtan dokunma, kaydırma, geri/ana ekran tuşları.
+  Her başlatmada telefonda onay istenir. Dokunma için Erişilebilirlik izni gerekir (ekran içeriğini okumaz).
+  Netflix gibi korumalı uygulamalar siyah görünür.
+- 🚗 **Araç paneli**: hız, yakıt, menzil, kilometre (araç paylaşıyorsa), yolculuk mesafesi ve süresi
+- 🔧 **Bakım hatırlatıcı**: muayene, sigorta, kasko, bakım, lastik, MTV; yaklaşınca araç ekranında uyarı
+- 🅿️ **Arabam nerede?**: araç kapanınca park yeri kaydedilir, telefondan haritada / yürüyerek yol tarifiyle açılır
+- 🌤️ **Hava durumu**: anlık, saatlik ve 5 günlük; yağmur yaklaşınca uyarı
 - 🌐 **Web tarayıcı**
-- 🅿️ **Park modu**: araç hareket edince video ve web görüntüsü gizlenir, ses devam eder.
-  Hız araçtan, alınamazsa telefonun GPS'inden okunur.
+- 🅿️ **Park modu**: araç hareket edince video, web ve yansıtma görüntüsü gizlenir, ses devam eder.
+  Hız araçtan, alınamazsa telefonun GPS'inden okunur. Ayarlardan kapatılabilir (varsayılan: açık).
 - ⭐ Favoriler, son çalınanlar ve "Devam et"
 - ⌨️ Araç ekranında Türkçe klavye (büyük harf, semboller, şifre gizleme; sadece park halindeyken).
   Web sayfalarındaki giriş kutularına da yazar, böylece sitelere giriş yapılabilir.
   Not: Google, uygulama içi tarayıcılarda Google/YouTube hesabıyla girişi engeller; YouTube hesapsız kullanılır.
-- 🎨 6 tema rengi; dar ekran (bölünmüş görünüm) için sade yerleşim
+- 🎨 6 tema rengi, dokununca tema renginde neon parlama; dar ekran (bölünmüş görünüm) için sade yerleşim
 - Direksiyondaki ileri/geri tuşlarıyla kanal/istasyon değiştirme
 
 ## Kurulum (kullanıcı)
@@ -65,9 +73,11 @@ Android Auto'da "Bilinmeyen kaynaklar" ayarı gerekir.
 | `NewRexCarAppService.kt` | Android Auto bağlantısı, sanal ekran, dokunma aktarımı |
 | `ui/CarUi.kt` | Üst bar, mini oynatıcı, sayfa geçişleri, park katmanı |
 | `pages/` | Ana ekran, TV, oynatıcı, radyo, YouTube/Web, favoriler, ayarlar |
-| `PlayerHub.kt` | Ortak ExoPlayer (TV + radyo) ve direksiyon tuşları |
+| `PlayerHub.kt` | Ortak ExoPlayer (TV, radyo, podcast) ve direksiyon tuşları |
+| `Mirror.kt` | Ekran yansıtma: onay ekranı, servis, dokunma aktarımı |
+| `Vehicle.kt` | Araç bilgileri, park yeri kaydı, hava durumu |
 | `DriveState.kt` | Park / sürüş algılama |
-| `data/` | Ayarlar, M3U okuyucu, Radio Browser istemcisi |
+| `data/` | Ayarlar, M3U okuyucu, Radio Browser, podcast ve hava durumu istemcileri |
 | `MainActivity.kt` | Telefondaki ayar ekranı (IPTV listeleri, izinler) |
 
 ## Derleme (geliştirici)
@@ -100,7 +110,8 @@ adb shell am broadcast -a com.newrex.auto.DEBUG_DRIVE                     # ger�
 
 ## Güvenlik
 
-- Sürüş sırasında video izlemek tehlikelidir ve trafik kurallarına aykırıdır. Park modu bu yüzden kapatılamaz.
+- Sürüş sırasında video izlemek tehlikelidir ve trafik kurallarına aykırıdır. Park modu varsayılan olarak açıktır;
+  kapatmak kullanıcının sorumluluğundadır.
 - Araç tarafı yalnızca Google'ın imzaladığı gerçek Android Auto tarafından açılabilir (test sürümü hariç).
 - Uygulama içi tarayıcı telefondaki dosyalara erişemez; Google Güvenli Tarama açıktır.
 - Klavyeyle yazılanlar (şifreler dahil) hiçbir yere kaydedilmez; yalnızca o anki web sayfasına aktarılır.

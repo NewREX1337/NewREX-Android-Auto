@@ -27,6 +27,19 @@ object DriveState {
 
     val driving = MutableStateFlow(false)
 
+    /** Anlık hız (km/s); araçtan ya da GPS'ten. */
+    val speedKmh = MutableStateFlow<Float?>(null)
+    val speedFromCar = MutableStateFlow(false)
+
+    /** Bu yolculukta gidilen mesafe (GPS ile ölçülür) ve başlangıç zamanı. */
+    val tripMeters = MutableStateFlow(0f)
+    var tripStart = 0L
+        private set
+
+    /** Son GPS konumu; park yeri ve hava durumu için. */
+    var lastLocation: Location? = null
+        private set
+
     /** Sadece test (debug) sürümünde adb ile sürüşü taklit etmek için. */
     var forced: Boolean? = null
         set(v) { field = v; update() }
@@ -37,6 +50,8 @@ object DriveState {
 
     fun start(carContext: CarContext) {
         stop()
+        tripMeters.value = 0f
+        tripStart = System.currentTimeMillis()
         val cleanups = ArrayList<() -> Unit>()
 
         try {
@@ -73,6 +88,13 @@ object DriveState {
         val listener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
                 gpsSpeed = if (location.hasSpeed()) location.speed else null
+                val prev = lastLocation
+                // Duruyorken GPS sapmaları mesafeye eklenmesin
+                if (prev != null && location.accuracy < 30f && (gpsSpeed ?: 0f) > PARKED_BELOW_MS) {
+                    val d = prev.distanceTo(location)
+                    if (d in 3f..500f) tripMeters.value += d
+                }
+                if (prev == null || location.accuracy < 50f || location.accuracy <= prev.accuracy) lastLocation = location
                 update()
             }
             @Deprecated("Deprecated in Java")
@@ -89,9 +111,25 @@ object DriveState {
         }
     }
 
+    /** GPS dinlenmiyorsa telefonun bildiği son konum. */
+    @SuppressLint("MissingPermission")
+    fun bestLocation(context: Context): Location? {
+        lastLocation?.let { if (System.currentTimeMillis() - it.time < 10 * 60_000) return it }
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!granted) return lastLocation
+        val lm = context.getSystemService(LocationManager::class.java) ?: return lastLocation
+        val known = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER)
+            .mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }
+        return (known + listOfNotNull(lastLocation)).maxByOrNull { it.time }
+    }
+
     private fun update() {
+        val speed0 = carSpeed ?: gpsSpeed
+        speedKmh.value = speed0?.let { it * 3.6f }
+        speedFromCar.value = carSpeed != null
         forced?.let { driving.value = it; return }
-        val speed = carSpeed ?: gpsSpeed ?: return
+        val speed = speed0 ?: return
         // Eşik arası boşluk, trafikte dur-kalk sırasında görüntünün sürekli yanıp sönmesini önler
         if (speed > DRIVING_ABOVE_MS) driving.value = true
         else if (speed < PARKED_BELOW_MS) driving.value = false

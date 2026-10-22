@@ -4,6 +4,10 @@ package com.newrex.auto
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.DatePickerDialog
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -17,6 +21,8 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.newrex.auto.data.Maintenance
+import com.newrex.auto.data.ParkedSpot
 import com.newrex.auto.data.Playlist
 import com.newrex.auto.data.Prefs
 import com.newrex.auto.ui.MATCH
@@ -35,6 +41,14 @@ class MainActivity : Activity() {
     private lateinit var playlistBox: LinearLayout
     private lateinit var locationStatus: TextView
     private lateinit var locationButton: Button
+    private lateinit var mirrorStatus: TextView
+    private lateinit var mirrorButton: Button
+    private lateinit var touchStatus: TextView
+    private lateinit var touchButton: Button
+    private lateinit var parkStatus: TextView
+    private lateinit var parkButtons: LinearLayout
+    private lateinit var maintenanceBox: LinearLayout
+    private val tr = java.util.Locale("tr", "TR")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +68,31 @@ class MainActivity : Activity() {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 1)
         }
         col.addView(card("Park modu", locationStatus, locationButton))
+
+        // Ekran yansıtma
+        mirrorStatus = label("", 14f, Palette.TEXT_DIM, lines = 4)
+        mirrorButton = button("Ekranı arabaya yansıt") {
+            if (Mirror.active.value) { Mirror.stop(this); mirrorStatus.postDelayed({ refreshMirror() }, 600); return@button }
+            if (Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2)
+            Mirror.requestStart(this)
+        }
+        touchStatus = label("", 14f, Palette.TEXT_DIM, lines = 8)
+        touchButton = button("Dokunma iznini aç") { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+        col.addView(card("Ekran yansıtma", mirrorStatus, mirrorButton, touchStatus, touchButton,
+            button("İzin gri görünüyorsa: uygulama bilgisi") {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+            }))
+
+        // Arabam nerede?
+        parkStatus = label("", 14f, Palette.TEXT_DIM, lines = 4)
+        parkButtons = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(card("Arabam nerede?", parkStatus, parkButtons))
+
+        // Bakım hatırlatıcı
+        maintenanceBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(card("Bakım hatırlatıcı",
+            label("Tarihe dokunup seç. Zamanı yaklaşınca (15 gün kala) araç ekranında uyarı çıkar.", 14f, Palette.TEXT_DIM, lines = 3),
+            maintenanceBox))
 
         // IPTV listeleri
         playlistBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -99,6 +138,96 @@ class MainActivity : Activity() {
         super.onResume()
         refreshLocation()
         refreshPlaylists()
+        refreshMirror()
+        refreshPark()
+        refreshMaintenance()
+        // Yansıtma servisi onaydan hemen sonra başlıyor; durumu biraz sonra tekrar oku
+        mirrorStatus.postDelayed({ refreshMirror() }, 900)
+    }
+
+    private fun refreshMirror() {
+        val on = Mirror.active.value
+        mirrorStatus.text = if (on) "✅ Ekran araca yansıtılıyor. Araçta NewREX → Yansıt'a gir."
+        else "Telefonundaki her şeyi (oyun, sosyal medya, uygulamalar) araç ekranında göster. Her başlatmada telefonda bir kez \"Başlat\" onayı istenir. " +
+            "Netflix gibi korumalı uygulamalar siyah görünür. Yansıtma sırasında telefon ekranı açık kalır."
+        mirrorButton.text = if (on) "Yansıtmayı durdur" else "Ekranı arabaya yansıt"
+        val touch = Mirror.touchEnabled(this)
+        touchStatus.text = if (touch) "✅ Dokunma açık: araç ekranından telefona dokunabilirsin."
+        else "Araç ekranından telefona dokunabilmek için Erişilebilirlik izni gerekir: \"Dokunma iznini aç\" → " +
+            "\"Yüklü uygulamalar\" → \"NewREX ekran yansıtma dokunması\" → Aç.\n" +
+            "Bu izin ekranındaki yazıları OKUMAZ, hiçbir şeyi kaydetmez; sadece dokunma ve geri/ana ekran tuşu gönderir.\n" +
+            "Ayar gri ve açılmıyorsa: uygulama bilgisi → sağ üst ⋮ → \"Kısıtlanmış ayarlara izin ver\"."
+        touchButton.visibility = if (touch) View.GONE else View.VISIBLE
+    }
+
+    private fun refreshPark() {
+        parkButtons.removeAllViews()
+        val spot = Prefs.parkedSpot
+        if (spot == null) {
+            parkStatus.text = "Araç kapanınca (Android Auto bağlantısı kesilince) bulunduğun yer otomatik kaydedilir. " +
+                "Henüz kayıtlı park yeri yok."
+        } else {
+            val time = java.text.SimpleDateFormat("d MMMM yyyy, HH:mm", tr).format(java.util.Date(spot.time))
+            parkStatus.text = "🅿️ Son park: $time\nKonum hassasiyeti: ~${spot.accuracy.toInt()} m"
+            parkButtons.addView(button("Haritada göster") { openMap(spot, walk = false) }, lp(MATCH, WRAP).margins(t = dp(8)))
+            parkButtons.addView(button("Yürüyerek yol tarifi") { openMap(spot, walk = true) }, lp(MATCH, WRAP).margins(t = dp(8)))
+            parkButtons.addView(button("Park yerini sil") { Prefs.parkedSpot = null; refreshPark() }, lp(MATCH, WRAP).margins(t = dp(8)))
+        }
+        parkButtons.addView(button("Şu anki yerimi park yeri olarak kaydet") {
+            val loc = DriveState.bestLocation(this)
+            if (loc == null) {
+                AlertDialog.Builder(this).setMessage("Konum alınamadı. Konum iznini ver ve konumu aç.").setPositiveButton("Tamam", null).show()
+            } else {
+                Prefs.parkedSpot = ParkedSpot(loc.latitude, loc.longitude, System.currentTimeMillis(), loc.accuracy)
+                refreshPark()
+            }
+        }, lp(MATCH, WRAP).margins(t = dp(8)))
+    }
+
+    private fun openMap(spot: ParkedSpot, walk: Boolean) {
+        val ll = "${spot.lat},${spot.lon}"
+        val nav = Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=$ll&mode=w"))
+        val geo = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$ll?q=$ll(Arabam)"))
+        runCatching { startActivity(if (walk) nav else geo) }.onFailure { runCatching { startActivity(geo) } }
+    }
+
+    private fun refreshMaintenance() {
+        maintenanceBox.removeAllViews()
+        val today = java.time.LocalDate.now()
+        val fmt = java.time.format.DateTimeFormatter.ofPattern("d MMMM yyyy", tr)
+        Maintenance.values().forEach { m ->
+            val day = Prefs.maintenanceDay(m)?.let { java.time.LocalDate.ofEpochDay(it) }
+            val left = day?.let { it.toEpochDay() - today.toEpochDay() }
+            val (status, color) = when {
+                left == null -> "Tarih girilmedi" to Palette.TEXT_FAINT
+                left < 0 -> "${fmt.format(day)} • ${-left} gün gecikti" to Palette.RED
+                left <= 15 -> "${fmt.format(day)} • $left gün kaldı" to Palette.ORANGE
+                else -> "${fmt.format(day)} • $left gün kaldı" to Palette.GREEN
+            }
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(12), dp(10), dp(6), dp(10))
+                background = rounded(0x14FFFFFF, dpf(12))
+                addView(LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    addView(label("${m.emoji}  ${m.title}", 15f, bold = true))
+                    addView(label(status, 12f, color), lp(MATCH, WRAP).margins(t = dp(3)))
+                }, lp(0, WRAP, 1f))
+                if (day != null) addView(Button(this@MainActivity).apply {
+                    text = "Sil"
+                    setOnClickListener { Prefs.setMaintenanceDay(m, null); refreshMaintenance() }
+                })
+                setOnClickListener {
+                    val start = day ?: today.plusMonths(m.months.toLong())
+                    DatePickerDialog(this@MainActivity, { _, y, mo, d ->
+                        Prefs.setMaintenanceDay(m, java.time.LocalDate.of(y, mo + 1, d).toEpochDay())
+                        refreshMaintenance()
+                    }, start.year, start.monthValue - 1, start.dayOfMonth).show()
+                }
+            }
+            maintenanceBox.addView(row, lp(MATCH, WRAP).margins(t = dp(8)))
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

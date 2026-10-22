@@ -79,7 +79,8 @@ class TileAdapter(private val ctx: Context) : RecyclerView.Adapter<TileAdapter.V
         h.subtitle.text = t.subtitle.orEmpty()
         h.subtitle.visibility = if (t.subtitle.isNullOrBlank()) android.view.View.GONE else android.view.View.VISIBLE
         h.star.visibility = if (t.favorite) android.view.View.VISIBLE else android.view.View.GONE
-        h.root.setOnClickListener { t.onClick() }
+        h.root.neonGlow(active, 10)
+        h.root.onTap(action = t.onClick)
 
         val fallback = tinted(t.fallbackIcon)
         if (t.image.isNullOrBlank()) {
@@ -143,7 +144,8 @@ class ListAdapter(private val ctx: Context, private val onPick: (String) -> Unit
         h.text.background = pressable(
             rounded(if (sel) Palette.withAlpha(Palette.accent, 0x66) else 0, r), r,
         )
-        h.text.setOnClickListener { onPick(key) }
+        h.text.neonGlow(sel, 5)
+        h.text.onTap { onPick(key) }
     }
 }
 

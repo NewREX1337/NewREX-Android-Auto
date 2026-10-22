@@ -83,8 +83,8 @@ class FavoritesPage(ui: CarUi) : Page(ui) {
         }
         val favKeys = Prefs.favorites().map { it.key }.toSet()
         tiles.items = list.mapIndexed { i, e ->
-            Tile(e.key, e.title, if (e.kind == Kind.TV) "TV" else "Radyo", e.image,
-                if (e.kind == Kind.TV) R.drawable.ic_live_tv else R.drawable.ic_radio,
+            Tile(e.key, e.title, when (e.kind) { Kind.TV -> "TV"; Kind.RADIO -> "Radyo"; Kind.PODCAST -> "Podcast" }, e.image,
+                com.newrex.auto.ui.kindIcon(e.kind),
                 favorite = e.key in favKeys) {
                 // Aynı türden öğeler arasında ileri/geri geçilebilsin
                 val sameKind = list.filter { it.kind == e.kind }

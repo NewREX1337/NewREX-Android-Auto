@@ -54,10 +54,16 @@ class NewRexSession : Session() {
         Prefs.init(carContext)
         PlayerHub.init(carContext.applicationContext)
         DriveState.start(carContext)
+        VehicleData.start(carContext)
+        com.newrex.auto.ui.SessionAlerts.reset()
         if (BuildConfig.DEBUG) registerDebugReceiver()
 
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onDestroy(owner: LifecycleOwner) {
+                // Araç kapandı: son konumu park yeri olarak kaydet, yansıtmayı bitir
+                ParkSaver.save(carContext)
+                Mirror.stop(carContext)
+                VehicleData.stop()
                 DriveState.stop()
                 PlayerHub.release()
                 debugReceiver?.let { carContext.unregisterReceiver(it) }

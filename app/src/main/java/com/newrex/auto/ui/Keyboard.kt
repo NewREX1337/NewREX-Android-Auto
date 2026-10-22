@@ -123,13 +123,13 @@ class KeyboardView(
             gravity = Gravity.CENTER
             val r = context.dpf(10)
             background = pressable(rounded(bg, r), r)
-            onTap(action)
+            onTap(immediate = true, action = action)
         }
 
     private fun iconKey(res: Int, action: () -> Unit) = FrameLayout(context).apply {
         val r = context.dpf(10)
         background = pressable(rounded(Palette.SURFACE_STRONG, r), r)
         addView(context.icon(res, 22), flp(context.dp(22), context.dp(22), Gravity.CENTER))
-        onTap(action)
+        onTap(immediate = true, action = action)
     }
 }

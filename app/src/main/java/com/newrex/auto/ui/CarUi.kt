@@ -21,8 +21,13 @@ import com.newrex.auto.PlayerHub
 import com.newrex.auto.R
 import com.newrex.auto.data.Kind
 import com.newrex.auto.data.Prefs
+import com.newrex.auto.WeatherHub
+import com.newrex.auto.data.WeatherApi
 import com.newrex.auto.pages.HomePage
 import com.newrex.auto.pages.PlayerPage
+import com.newrex.auto.pages.WeatherPage
+import android.widget.ProgressBar
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -80,6 +85,10 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
     private lateinit var miniSub: TextView
     private lateinit var miniPlay: FrameLayout
     private lateinit var miniFav: FrameLayout
+    private lateinit var miniPrev: FrameLayout
+    private lateinit var miniNext: FrameLayout
+    private lateinit var miniProgress: ProgressBar
+    private lateinit var weatherChip: TextView
     private var keyboard: View? = null
     private var toastView: TextView? = null
 
@@ -97,7 +106,7 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
 
     init {
         Palette.accent = Palette.accents[Prefs.accentIndex.coerceIn(0, Palette.accents.lastIndex)]
-        root.background = gradient(Palette.BG_TOP, Palette.BG_BOTTOM, orientation = GradientDrawable.Orientation.TOP_BOTTOM)
+        root.background = ambientBackground(ctx)
 
         val column = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
         column.addView(buildTopBar(), lp(MATCH, ctx.dp(60)))
@@ -107,11 +116,26 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
 
         scope.launch { DriveState.driving.collect { updateDriveChip(it) } }
         scope.launch {
-            compact.collect { c ->
+            combine(compact, WeatherHub.report) { c, w -> c to w }.collect { (c, w) ->
                 titleView.visibility = if (c) View.INVISIBLE else View.VISIBLE
                 driveText.visibility = if (c) View.GONE else View.VISIBLE
+                weatherChip.visibility = if (c || w == null) View.GONE else View.VISIBLE
+                if (w != null) weatherChip.text = "${WeatherApi.emoji(w.code, w.isDay)} ${w.temp}°"
             }
         }
+        scope.launch {
+            while (true) {
+                WeatherHub.refresh(ctx)
+                delay(30 * 60_000L)
+            }
+        }
+        scope.launch {
+            combine(PlayerHub.position, PlayerHub.duration) { p, d -> p to d }.collect { (p, d) ->
+                miniProgress.max = 1000
+                miniProgress.progress = if (d > 0) (p * 1000 / d).toInt() else 0
+            }
+        }
+        handler.postDelayed({ showStartupAlerts() }, 2500)
         scope.launch {
             combine(PlayerHub.now, PlayerHub.playing, Prefs.changes) { e, p, _ -> e to p }
                 .collect { refreshMini() }
@@ -185,6 +209,28 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
         compact.value = visibleWidth < ctx.dp(600)
     }
 
+    /** Oturum başında bir kez: yaklaşan bakım ve yağmur uyarısı. */
+    private fun showStartupAlerts() {
+        if (!SessionAlerts.maintenanceShown) {
+            SessionAlerts.maintenanceShown = true
+            Prefs.maintenanceDue().firstOrNull { it.second <= 15 }?.let { (m, days) ->
+                toast(when {
+                    days < 0 -> "${m.emoji} ${m.title} ${-days} gün gecikti!"
+                    days == 0L -> "${m.emoji} ${m.title} bugün!"
+                    else -> "${m.emoji} ${m.title} için $days gün kaldı"
+                }, long = true)
+            }
+        }
+        scope.launch {
+            delay(7000)
+            val w = WeatherHub.report.value ?: return@launch
+            if (!SessionAlerts.rainShown && w.rainSoon >= 60) {
+                SessionAlerts.rainShown = true
+                toast("🌧️ Önümüzdeki saatlerde yağmur bekleniyor (%${w.rainSoon}). Dikkatli sür!", long = true)
+            }
+        }
+    }
+
     // ---- Klavye ve bildirim ----
 
     fun showKeyboard(
@@ -216,16 +262,17 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
         keyboard = null
     }
 
-    fun toast(message: String) {
+    fun toast(message: String, long: Boolean = false) {
         toastView?.let { root.removeView(it) }
         val t = ctx.label(message, 15f, lines = 3).apply {
             gravity = Gravity.CENTER
             setPadding(ctx.dp(20), ctx.dp(12), ctx.dp(20), ctx.dp(12))
-            background = rounded(0xEE222639.toInt(), ctx.dpf(14))
+            background = rounded(0xEE222639.toInt(), ctx.dpf(14), ctx.dp(1), Palette.withAlpha(Palette.accent, 0x99))
+            neonGlow(true, 10)
         }
         toastView = t
         root.addView(t, flp(WRAP, WRAP, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).margins(b = ctx.dp(90)))
-        handler.postDelayed({ if (toastView === t) { root.removeView(t); toastView = null } }, 3000)
+        handler.postDelayed({ if (toastView === t) { root.removeView(t); toastView = null } }, if (long) 6000 else 3000)
     }
 
     // ---- Üst bar ----
@@ -242,7 +289,7 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
         val logo = SpannableStringBuilder("NewREX").apply {
             setSpan(ForegroundColorSpan(Palette.accent), 3, 6, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
-        topBar.addView(label(logo, 22f, bold = true))
+        topBar.addView(label(logo, 22f, bold = true).apply { neonText(8) })
         titleView = label("", 17f, Palette.TEXT_DIM)
         topBar.addView(titleView, lp(0, WRAP, 1f).margins(l = dp(14)))
 
@@ -251,6 +298,16 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
             gravity = Gravity.CENTER_VERTICAL
         }
         topBar.addView(actionsBox)
+
+        weatherChip = label("", 15f, bold = true).apply {
+            gravity = Gravity.CENTER
+            setPadding(dp(10), 0, dp(10), 0)
+            val r = dpf(16)
+            background = pressable(rounded(Palette.SURFACE_STRONG, r), r)
+            visibility = View.GONE
+            onTap { if (stack.last() !is WeatherPage) push(WeatherPage(this@CarUi)) }
+        }
+        topBar.addView(weatherChip, lp(WRAP, dp(32)).margins(l = dp(10)))
 
         driveIcon = icon(R.drawable.ic_parking, 18)
         driveText = label("Park", 13f, bold = true)
@@ -299,9 +356,11 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
             addView(miniImage, lp(dp(46), dp(46)).margins(r = dp(12)))
             addView(texts, lp(0, WRAP, 1f))
             addView(miniFav, lp(dp(44), dp(44)).margins(l = dp(6)))
-            addView(circleButton(R.drawable.ic_prev, 44, bg = 0) { PlayerHub.prev() }, lp(dp(44), dp(44)).margins(l = dp(6)))
+            miniPrev = circleButton(R.drawable.ic_prev, 44, bg = 0) { PlayerHub.prev() }
+            miniNext = circleButton(R.drawable.ic_next, 44, bg = 0) { PlayerHub.next() }
+            addView(miniPrev, lp(dp(44), dp(44)).margins(l = dp(6)))
             addView(miniPlay, lp(dp(48), dp(48)).margins(l = dp(6)))
-            addView(circleButton(R.drawable.ic_next, 44, bg = 0) { PlayerHub.next() }, lp(dp(44), dp(44)).margins(l = dp(6)))
+            addView(miniNext, lp(dp(44), dp(44)).margins(l = dp(6)))
             addView(circleButton(R.drawable.ic_close, 44, bg = 0, tint = Palette.TEXT_DIM) { PlayerHub.stop() },
                 lp(dp(44), dp(44)).margins(l = dp(6)))
             // TV sesi çalarken çubuğa dokununca görüntüye geri dön
@@ -309,21 +368,34 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
                 if (PlayerHub.now.value?.kind == Kind.TV && stack.last() !is PlayerPage) push(PlayerPage(this@CarUi))
             }
         }
-        mini
+        miniProgress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            progressTintList = android.content.res.ColorStateList.valueOf(Palette.accent)
+            progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0x22FFFFFF)
+        }
+        FrameLayout(this).apply {
+            addView(mini, flp(MATCH, MATCH))
+            addView(miniProgress, flp(MATCH, dp(3), Gravity.BOTTOM).margins(dp(18), 0, dp(18), dp(1)))
+        }
     }
 
     private fun refreshMini() {
         if (!::mini.isInitialized || stack.isEmpty()) return
         val e = PlayerHub.now.value
         val top = stack.last()
-        mini.visibility = if (e == null || top.fullscreen || top is PlayerPage) View.GONE else View.VISIBLE
+        val hide = e == null || top.fullscreen || top is PlayerPage
+        (mini.parent as View).visibility = if (hide) View.GONE else View.VISIBLE
+        miniProgress.visibility = if (e?.kind == Kind.PODCAST) View.VISIBLE else View.GONE
         if (e == null) return
         miniTitle.text = e.title
         miniSub.text = when (e.kind) {
             Kind.TV -> "Canlı TV • görüntü için dokun"
             Kind.RADIO -> "Radyo" + if (e.group.isNotBlank()) " • ${e.group}" else ""
+            Kind.PODCAST -> "Podcast" + if (e.group.isNotBlank()) " • ${e.group}" else ""
         }
-        val fallback = if (e.kind == Kind.TV) R.drawable.ic_live_tv else R.drawable.ic_radio
+        val pod = e.kind == Kind.PODCAST
+        (miniPrev.getChildAt(0) as ImageView).setImageResource(if (pod) R.drawable.ic_replay else R.drawable.ic_prev)
+        (miniNext.getChildAt(0) as ImageView).setImageResource(if (pod) R.drawable.ic_forward else R.drawable.ic_next)
+        val fallback = kindIcon(e.kind)
         miniImage.load(e.image) {
             placeholder(fallback); error(fallback); fallback(fallback)
             transformations(RoundedCornersTransformation(ctx.dpf(8)))
@@ -337,6 +409,19 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
             imageTintList = android.content.res.ColorStateList.valueOf(if (fav) Palette.ORANGE else Palette.TEXT)
         }
     }
+}
+
+/** Oturum (araç bağlantısı) başına bir kez gösterilen uyarılar. */
+object SessionAlerts {
+    var maintenanceShown = false
+    var rainShown = false
+    fun reset() { maintenanceShown = false; rainShown = false }
+}
+
+fun kindIcon(kind: Kind) = when (kind) {
+    Kind.TV -> R.drawable.ic_live_tv
+    Kind.RADIO -> R.drawable.ic_radio
+    Kind.PODCAST -> R.drawable.ic_podcast
 }
 
 /** Sürüş sırasında video/web görüntüsünü kapatan katman. Ses devam eder. */

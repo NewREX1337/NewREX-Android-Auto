@@ -1,8 +1,15 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.ui
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.ColorStateList
+import android.graphics.Outline
+import android.graphics.drawable.LayerDrawable
+import android.os.Build
+import android.view.ViewOutlineProvider
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
@@ -60,9 +67,9 @@ fun gradient(
     orientation: GradientDrawable.Orientation = GradientDrawable.Orientation.TL_BR,
 ) = GradientDrawable(orientation, intArrayOf(c1, c2)).apply { cornerRadius = radius }
 
-/** Dokununca parlayan arka plan. */
+/** Dokununca tema renginde parlayan arka plan. */
 fun pressable(content: Drawable, radius: Float): Drawable =
-    RippleDrawable(ColorStateList.valueOf(0x40FFFFFF), content, rounded(Color.WHITE, radius))
+    RippleDrawable(ColorStateList.valueOf(Palette.withAlpha(Palette.accent, 0x70)), content, rounded(Color.WHITE, radius))
 
 fun lp(w: Int, h: Int, weight: Float = 0f) = LinearLayout.LayoutParams(w, h, weight)
 fun flp(w: Int, h: Int, gravity: Int = Gravity.NO_GRAVITY) = FrameLayout.LayoutParams(w, h, gravity)
@@ -70,7 +77,97 @@ fun flp(w: Int, h: Int, gravity: Int = Gravity.NO_GRAVITY) = FrameLayout.LayoutP
 fun <T : ViewGroup.MarginLayoutParams> T.margins(l: Int = 0, t: Int = 0, r: Int = 0, b: Int = 0): T =
     apply { setMargins(l, t, r, b) }
 
-fun View.onTap(action: () -> Unit) = setOnClickListener { action() }
+/**
+ * Dokunulunca tema renginde kısa bir neon parlaması gösterir. Sayfa değiştiren dokunmalarda işlem
+ * parlamanın görülebilmesi için çok kısa gecikir; klavye gibi hızlı kullanılanlarda [immediate] = true.
+ */
+fun View.onTap(action: () -> Unit) = onTap(false, action)
+
+fun View.onTap(immediate: Boolean, action: () -> Unit) = setOnClickListener { v ->
+    v.neonFlash()
+    if (immediate) { action(); return@setOnClickListener }
+    if (v.getTag(com.newrex.auto.R.id.neon_pending) == true) return@setOnClickListener
+    v.setTag(com.newrex.auto.R.id.neon_pending, true)
+    v.postDelayed({ v.setTag(com.newrex.auto.R.id.neon_pending, null); action() }, 110)
+}
+
+// Gölge, arka planın şeklini tam opak alsın; yarı saydam kartlarda da parlama güçlü görünsün
+private val NeonOutline = object : ViewOutlineProvider() {
+    override fun getOutline(view: View, outline: Outline) {
+        outline.setRoundRect(0, 0, view.width, view.height, view.cornerRadius())
+        outline.alpha = 1f
+    }
+}
+
+private fun View.cornerRadius(): Float {
+    val bg = background
+    val g = (bg as? RippleDrawable)?.getDrawable(0) ?: bg
+    return (g as? GradientDrawable)?.cornerRadius?.takeIf { it > 0 } ?: context.dpf(12)
+}
+
+private fun View.prepareNeon() {
+    if (outlineProvider !== NeonOutline) outlineProvider = NeonOutline
+    if (Build.VERSION.SDK_INT >= 28) {
+        outlineAmbientShadowColor = Palette.accent
+        outlineSpotShadowColor = Palette.accent
+    }
+}
+
+/** Seçili sekme, çalan kanal gibi öğelerde sürekli hafif neon ışıma. */
+fun View.neonGlow(on: Boolean, strengthDp: Int = 8) {
+    prepareNeon()
+    elevation = if (on) context.dpf(strengthDp) else 0f
+}
+
+fun View.neonFlash() {
+    prepareNeon()
+    (getTag(com.newrex.auto.R.id.neon_anim) as? Animator)?.cancel()
+    val r = cornerRadius()
+    val ring = LayerDrawable(arrayOf(
+        rounded(Palette.withAlpha(Palette.accent, 0x30), r),
+        rounded(0, r, context.dp(2), Palette.accent),
+    ))
+    foreground = ring
+    val lift = context.dpf(16)
+    val anim = ValueAnimator.ofFloat(0f, 1f).apply {
+        duration = 560
+        addUpdateListener { va ->
+            val t = va.animatedValue as Float
+            // Hızlı yanıp yavaşça sönen parlama
+            val f = if (t < 0.18f) t / 0.18f else (1f - (t - 0.18f) / 0.82f).let { it * it }
+            ring.alpha = (f * 255).toInt()
+            translationZ = lift * f
+            val s = 1f - 0.03f * f
+            scaleX = s; scaleY = s
+        }
+        addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                foreground = null
+                translationZ = 0f
+                scaleX = 1f; scaleY = 1f
+            }
+        })
+    }
+    setTag(com.newrex.auto.R.id.neon_anim, anim)
+    anim.start()
+}
+
+/** Arka plana tema renginde yumuşak ışık lekeleri ekler. */
+fun ambientBackground(context: Context): Drawable {
+    val base = gradient(Palette.BG_TOP, Palette.BG_BOTTOM, orientation = GradientDrawable.Orientation.TOP_BOTTOM)
+    fun blob(cx: Float, cy: Float, radiusDp: Int, alpha: Int) = GradientDrawable().apply {
+        gradientType = GradientDrawable.RADIAL_GRADIENT
+        gradientRadius = context.dpf(radiusDp)
+        setGradientCenter(cx, cy)
+        colors = intArrayOf(Palette.withAlpha(Palette.accent, alpha), 0)
+    }
+    return LayerDrawable(arrayOf(base, blob(0.08f, 0.0f, 340, 0x48), blob(1.0f, 1.0f, 300, 0x30)))
+}
+
+/** Yazıya tema renginde neon ışıltı. */
+fun TextView.neonText(radiusDp: Int = 10) {
+    setShadowLayer(context.dpf(radiusDp), 0f, 0f, Palette.withAlpha(Palette.accent, 0xCC))
+}
 
 fun Context.label(
     text: CharSequence,
@@ -125,6 +222,7 @@ fun Context.pill(
     val r = dpf(heightDp / 2f)
     val bg = if (selected) Palette.accent else Palette.SURFACE_STRONG
     background = pressable(rounded(bg, r), r)
+    neonGlow(selected, 6)
     setPadding(dp(16), 0, dp(16), 0)
     layoutParams = LinearLayout.LayoutParams(WRAP, dp(heightDp))
     if (res != null) addView(icon(res, 20), lp(dp(20), dp(20)).margins(r = dp(8)))
