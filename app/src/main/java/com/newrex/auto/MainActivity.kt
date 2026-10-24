@@ -122,6 +122,8 @@ class MainActivity : Activity() {
                 "${Brand.COPYRIGHT}\n${Brand.LICENSE_NOTICE}",
             14f, Palette.TEXT_DIM, lines = 12)))
 
+        col.addView(card("Sorun giderme", label(diagnostics(), 13f, Palette.TEXT_DIM, lines = 20)))
+
         setContentView(ScrollView(this).apply {
             setBackgroundColor(Palette.BG_TOP)
             // Android 15 içeriği durum çubuğunun altına kadar uzatıyor; başlık saatin altına girmesin
@@ -143,6 +145,31 @@ class MainActivity : Activity() {
         refreshMaintenance()
         // Yansıtma servisi onaydan hemen sonra başlıyor; durumu biraz sonra tekrar oku
         mirrorStatus.postDelayed({ refreshMirror() }, 900)
+    }
+
+    /** Uygulama arabada görünmüyorsa ekran görüntüsü alınıp geliştiriciye gönderilecek bilgiler. */
+    private fun diagnostics(): String {
+        val fmt = java.text.SimpleDateFormat("d MMM HH:mm", tr)
+        fun time(t: Long) = if (t == 0L) "hiç olmadı" else fmt.format(java.util.Date(t))
+        val install = runCatching {
+            if (Build.VERSION.SDK_INT >= 30) {
+                val i = packageManager.getInstallSourceInfo(packageName)
+                val source = if (Build.VERSION.SDK_INT >= 33) " • kaynak=${i.packageSource}" else ""
+                "yükleyen=${i.installingPackageName} • başlatan=${i.initiatingPackageName}$source"
+            } else {
+                @Suppress("DEPRECATION")
+                "yükleyen=${packageManager.getInstallerPackageName(packageName)}"
+            }
+        }.getOrElse { "okunamadı" }
+        val aa = runCatching {
+            packageManager.getPackageInfo("com.google.android.projection.gearhead", 0).versionName
+        }.getOrElse { "bulunamadı" }
+        return "Telefon: ${Build.MANUFACTURER} ${Build.MODEL} • Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})\n" +
+            "NewREX ${BuildConfig.VERSION_NAME} • $install\n" +
+            "Android Auto: $aa\n" +
+            "Araç bağlanmayı denedi: ${time(Prefs.lastCarBind)}\n" +
+            "Araç ekranı açıldı: ${time(Prefs.lastCarSession)}\n\n" +
+            "Uygulama arabada görünmüyorsa bu kartın ekran görüntüsünü geliştiriciye gönder."
     }
 
     private fun refreshMirror() {

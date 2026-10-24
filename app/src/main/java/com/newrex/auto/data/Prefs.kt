@@ -52,6 +52,14 @@ object Prefs {
             bump()
         }
 
+    var lastCarBind: Long
+        get() = sp.getLong("diag_bind", 0)
+        set(v) = sp.edit().putLong("diag_bind", v).apply()
+
+    var lastCarSession: Long
+        get() = sp.getLong("diag_session", 0)
+        set(v) = sp.edit().putLong("diag_session", v).apply()
+
     // ---- Podcast ----
 
     var podcastSubs: List<PodcastShow>

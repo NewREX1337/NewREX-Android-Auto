@@ -44,6 +44,13 @@ class NewRexCarAppService : CarAppService() {
             .addAllowedHosts(androidx.car.app.R.array.hosts_allowlist_sample)
             .build()
 
+    // Sorun giderme: Android Auto bu servise hiç bağlanmaya çalıştı mı?
+    override fun onCreate() {
+        super.onCreate()
+        Prefs.init(this)
+        Prefs.lastCarBind = System.currentTimeMillis()
+    }
+
     override fun onCreateSession(): Session = NewRexSession()
 }
 
@@ -52,6 +59,7 @@ class NewRexSession : Session() {
 
     override fun onCreateScreen(intent: Intent): Screen {
         Prefs.init(carContext)
+        Prefs.lastCarSession = System.currentTimeMillis()
         PlayerHub.init(carContext.applicationContext)
         DriveState.start(carContext)
         VehicleData.start(carContext)
