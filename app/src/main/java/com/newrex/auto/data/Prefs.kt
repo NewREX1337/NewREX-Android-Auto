@@ -56,10 +56,6 @@ object Prefs {
         get() = sp.getLong("diag_bind", 0)
         set(v) = sp.edit().putLong("diag_bind", v).apply()
 
-    var lastSelfInstall: Long
-        get() = sp.getLong("self_install", 0)
-        set(v) = sp.edit().putLong("self_install", v).commit().let { }
-
     var lastCarSession: Long
         get() = sp.getLong("diag_session", 0)
         set(v) = sp.edit().putLong("diag_session", v).apply()

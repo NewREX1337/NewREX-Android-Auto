@@ -1,19 +1,15 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto
 
-import android.accessibilityservice.AccessibilityService
-import android.accessibilityservice.GestureDescription
 import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.graphics.Path
 import android.graphics.Point
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
@@ -26,10 +22,8 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
-import android.provider.Settings
 import android.view.Display
 import android.view.Surface
-import android.view.accessibility.AccessibilityEvent
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
@@ -86,12 +80,6 @@ object Mirror {
         projection = null
         contentSize = null
         active.value = false
-    }
-
-    fun touchEnabled(context: Context): Boolean {
-        val name = ComponentName(context, MirrorTouchService::class.java).flattenToString()
-        val enabled = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
-        return enabled.split(':').any { it.equals(name, ignoreCase = true) }
     }
 }
 
@@ -201,37 +189,5 @@ class MirrorService : Service() {
         const val EXTRA_DATA = "data"
         private const val CHANNEL = "mirror"
         private const val NOTIFICATION_ID = 7
-    }
-}
-
-/**
- * Araç ekranındaki dokunmaları telefondaki uygulamalara iletir. Ekran içeriğini okumaz
- * (canRetrieveWindowContent=false), yalnızca dokunma ve geri/ana ekran tuşu gönderebilir.
- */
-class MirrorTouchService : AccessibilityService() {
-    override fun onServiceConnected() {
-        instance = this
-    }
-
-    override fun onDestroy() {
-        if (instance === this) instance = null
-        super.onDestroy()
-    }
-
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
-    override fun onInterrupt() {}
-
-    fun tap(x: Float, y: Float) = stroke(x, y, x, y, 50)
-
-    fun stroke(x1: Float, y1: Float, x2: Float, y2: Float, durationMs: Long) {
-        val path = Path().apply { moveTo(x1, y1); lineTo(x2, y2) }
-        dispatchGesture(GestureDescription.Builder()
-            .addStroke(GestureDescription.StrokeDescription(path, 0, durationMs.coerceIn(1, 3000)))
-            .build(), null, null)
-    }
-
-    companion object {
-        var instance: MirrorTouchService? = null
-            private set
     }
 }

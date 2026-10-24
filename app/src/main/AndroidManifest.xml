@@ -21,7 +21,6 @@
     <!-- Sorun giderme kartında Android Auto sürümünü gösterebilmek için -->
     <queries>
         <package android:name="com.google.android.projection.gearhead" />
-        <package android:name="moe.shizuku.privileged.api" />
     </queries>
 
     <application
@@ -47,15 +46,6 @@
             </intent-filter>
         </service>
 
-        <!-- Shizuku'nun NewREX'e yetki verebilmesi için (yalnızca kullanıcı izin verirse) -->
-        <provider
-            android:name="rikka.shizuku.ShizukuProvider"
-            android:authorities="${applicationId}.shizuku"
-            android:enabled="true"
-            android:exported="true"
-            android:multiprocess="false"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
-
         <activity
             android:name=".MirrorPermissionActivity"
             android:exported="false"
@@ -67,18 +57,6 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
 
-        <service
-            android:name=".MirrorTouchService"
-            android:exported="true"
-            android:label="@string/mirror_touch_label"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/mirror_touch" />
-        </service>
 
         <activity
             android:name=".MainActivity"

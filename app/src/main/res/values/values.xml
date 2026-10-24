@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">NewREX Android Auto</string>
-    <string name="mirror_touch_label">NewREX ekran yansıtma dokunması</string>
-    <string name="mirror_touch_desc">Telefon ekranı araca yansıtılırken, araç ekranındaki dokunmaları telefona iletir. Ekrandaki içeriği okumaz, hiçbir şeyi kaydetmez veya göndermez. Yalnızca dokunma, kaydırma ve geri/ana ekran tuşlarını kullanır.</string>
 
     <color name="icon_bg_start">#7C5CFF</color>
     <color name="icon_bg_end">#2F80ED</color>

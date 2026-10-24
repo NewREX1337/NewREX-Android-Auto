@@ -27,7 +27,6 @@ olduğu için bunu herkes doğrulayabilir (`app/build.gradle.kts` içindeki bağ
 | Araç hızı, yakıt, kilometre | Park modu ve araç paneli. Her araç bu bilgileri paylaşmaz. Telefondan dışarı çıkmaz. |
 | Bildirim | Ekran yansıtma sürerken Android'in zorunlu tuttuğu "yansıtılıyor" bildirimi |
 | Ekran paylaşımı | **Sadece sen başlatırsan**: telefon ekranını araç ekranında göstermek. Her seferinde telefonda onay istenir. Görüntü yalnızca araç ekranına çizilir; kaydedilmez, hiçbir yere gönderilmez. |
-| Erişilebilirlik (isteğe bağlı) | **Sadece ekran yansıtmada**, araç ekranındaki dokunmaları telefona iletmek. Ekrandaki içeriği okuyamaz (`canRetrieveWindowContent=false`), yazdıklarını görmez; yalnızca dokunma, kaydırma ve geri/ana ekran tuşu gönderir. |
 
 ## Hangi servislere bağlanılır?
 
