@@ -25,8 +25,11 @@ Android Auto için canlı TV, YouTube, radyo, podcast ve ekran yansıtma uygulam
    - Samsung'da engellenirse **Ayarlar → Güvenlik ve gizlilik → Otomatik Engelleyici**'yi kapat.
 2. **Ayarlar → Bağlı cihazlar → Android Auto** → en alttaki **Sürüm**'e 10 kez dokun.
    Sonra **⋮ → Geliştirici ayarları → Bilinmeyen kaynaklar**'ı aç.
-3. Telefonda NewREX'i bir kez aç ve konum iznini ver.
-4. Arabada Android Auto menüsünden **NewREX Android Auto**'yu aç.
+3. Telefonda NewREX'i aç ve konum iznini ver.
+4. **Android 14 ve üzeri:** NewREX'teki **"Arabada görünürlük"** kartını takip et.
+   Bir kez [Shizuku](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api) kurup başlatman ve izin vermen yeter;
+   NewREX kendini arabada görünür olacak şekilde yeniden kurar (veriler silinmez).
+5. Arabada Android Auto menüsünden **NewREX Android Auto**'yu aç.
 
 ## 🔒 Güvenlik
 

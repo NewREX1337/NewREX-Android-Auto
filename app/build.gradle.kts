@@ -19,8 +19,8 @@ android {
         applicationId = "com.newrex.auto"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.2.1"
+        versionCode = 5
+        versionName = "1.3.0"
     }
 
     signingConfigs {
@@ -62,4 +62,6 @@ dependencies {
     implementation("io.coil-kt:coil:2.7.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("dev.rikka.shizuku:api:13.1.5")
+    implementation("dev.rikka.shizuku:provider:13.1.5")
 }

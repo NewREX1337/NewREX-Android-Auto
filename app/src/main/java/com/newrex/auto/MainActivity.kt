@@ -21,6 +21,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import rikka.shizuku.Shizuku
 import com.newrex.auto.data.Maintenance
 import com.newrex.auto.data.ParkedSpot
 import com.newrex.auto.data.Playlist
@@ -41,6 +42,11 @@ class MainActivity : Activity() {
     private lateinit var playlistBox: LinearLayout
     private lateinit var locationStatus: TextView
     private lateinit var locationButton: Button
+    private lateinit var carStatus: TextView
+    private lateinit var carButton: Button
+    private var permissionAsked = false
+    private val binderListener = Shizuku.OnBinderReceivedListener { runOnUiThread { refreshCar(auto = true) } }
+    private val permissionListener = Shizuku.OnRequestPermissionResultListener { _, _ -> runOnUiThread { refreshCar(auto = true) } }
     private lateinit var mirrorStatus: TextView
     private lateinit var mirrorButton: Button
     private lateinit var touchStatus: TextView
@@ -67,6 +73,13 @@ class MainActivity : Activity() {
         locationButton = button("Konum iznini ver") {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 1)
         }
+        // Arabada görünürlük (Android Auto yalnızca Play Store'dan yüklenmiş görünen uygulamaları listeler)
+        carStatus = label("", 14f, Palette.TEXT_DIM, lines = 12)
+        carButton = button("") { carAction() }
+        col.addView(card("Arabada görünürlük", carStatus, carButton))
+        Shizuku.addBinderReceivedListenerSticky(binderListener)
+        Shizuku.addRequestPermissionResultListener(permissionListener)
+
         col.addView(card("Park modu", locationStatus, locationButton))
 
         // Ekran yansıtma
@@ -140,11 +153,78 @@ class MainActivity : Activity() {
         super.onResume()
         refreshLocation()
         refreshPlaylists()
+        refreshCar(auto = true)
         refreshMirror()
         refreshPark()
         refreshMaintenance()
         // Yansıtma servisi onaydan hemen sonra başlıyor; durumu biraz sonra tekrar oku
         mirrorStatus.postDelayed({ refreshMirror() }, 900)
+    }
+
+    override fun onDestroy() {
+        Shizuku.removeBinderReceivedListener(binderListener)
+        Shizuku.removeRequestPermissionResultListener(permissionListener)
+        super.onDestroy()
+    }
+
+    private fun refreshCar(auto: Boolean) {
+        val state = SelfInstall.state(this)
+        val log = SelfInstall.lastLog()?.let { "\n\nSon deneme: $it" }.orEmpty()
+        carButton.visibility = View.VISIBLE
+        when (state) {
+            SelfInstall.State.DONE -> {
+                carStatus.text = "✅ Arabada görünür. Android Auto bu uygulamayı listeleyebilir.\n" +
+                    "Görünmüyorsa: Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" işaretli olmalı."
+                carButton.visibility = View.GONE
+            }
+            SelfInstall.State.NEED_SHIZUKU_APP -> {
+                carStatus.text = "Android 14 ve üzerinde Android Auto, uygulamayı arabada göstermek için bir kez " +
+                    "\"Shizuku\" yardımıyla yeniden kurulmasını istiyor.\n\n" +
+                    "1. Aşağıdaki butonla Shizuku'yu Play Store'dan kur.\n" +
+                    "2. Shizuku'yu kablosuz hata ayıklama ile başlat.\n" +
+                    "3. NewREX'e geri dön, gerisini NewREX kendisi yapar." + log
+                carButton.text = "Shizuku'yu indir"
+            }
+            SelfInstall.State.SHIZUKU_NOT_RUNNING -> {
+                carStatus.text = "Shizuku kurulu ama çalışmıyor.\n" +
+                    "Shizuku'yu aç → \"Kablosuz hata ayıklama ile başlat\" → Başlat. Sonra NewREX'e geri dön." + log
+                carButton.text = "Shizuku'yu aç"
+            }
+            SelfInstall.State.NEED_PERMISSION -> {
+                carStatus.text = "Shizuku çalışıyor. Çıkan pencerede NewREX'e izin ver." + log
+                carButton.text = "İzin ver"
+                if (auto && !permissionAsked) { permissionAsked = true; Shizuku.requestPermission(SHIZUKU_REQUEST) }
+            }
+            SelfInstall.State.READY -> {
+                carStatus.text = "NewREX arabada görünür yapılıyor. Uygulama bir an kapanıp kendiliğinden yeniden açılacak; " +
+                    "ayarların ve favorilerin silinmez." + log
+                carButton.text = "Tekrar dene"
+                // Kısa sürede tekrar tekrar denemesin
+                if (auto && System.currentTimeMillis() - Prefs.lastSelfInstall > 90_000) startSelfInstall()
+            }
+        }
+    }
+
+    private fun carAction() {
+        when (SelfInstall.state(this)) {
+            SelfInstall.State.NEED_SHIZUKU_APP -> runCatching {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${SelfInstall.SHIZUKU_PACKAGE}")))
+            }.onFailure {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${SelfInstall.SHIZUKU_PACKAGE}")))
+            }
+            SelfInstall.State.SHIZUKU_NOT_RUNNING ->
+                packageManager.getLaunchIntentForPackage(SelfInstall.SHIZUKU_PACKAGE)?.let { startActivity(it) }
+            SelfInstall.State.NEED_PERMISSION -> Shizuku.requestPermission(SHIZUKU_REQUEST)
+            SelfInstall.State.READY -> startSelfInstall()
+            SelfInstall.State.DONE -> Unit
+        }
+    }
+
+    private fun startSelfInstall() {
+        Prefs.lastSelfInstall = System.currentTimeMillis()
+        runCatching { SelfInstall.run(this) }.onFailure {
+            carStatus.text = "Yeniden kurulum başlatılamadı: ${it.cause?.message ?: it.message}"
+        }
     }
 
     /** Uygulama arabada görünmüyorsa ekran görüntüsü alınıp geliştiriciye gönderilecek bilgiler. */
@@ -358,5 +438,6 @@ class MainActivity : Activity() {
 
     private companion object {
         const val PICK_FILE = 7
+        const val SHIZUKU_REQUEST = 8
     }
 }
