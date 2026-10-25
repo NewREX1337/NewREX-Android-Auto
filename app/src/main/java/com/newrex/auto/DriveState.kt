@@ -36,6 +36,14 @@ object DriveState {
     var tripStart = 0L
         private set
 
+    /** GPS rakımı (m) ve hareket yönü (derece); bilinmiyorsa null. */
+    val altitude = MutableStateFlow<Double?>(null)
+    val bearing = MutableStateFlow<Float?>(null)
+
+    /** Aracın en son durduğu an (park süresi için); hareket ederken 0. */
+    var stoppedSince = 0L
+        private set
+
     /** Son GPS konumu; park yeri ve hava durumu için. */
     var lastLocation: Location? = null
         private set
@@ -47,11 +55,28 @@ object DriveState {
     private var carSpeed: Float? = null
     private var gpsSpeed: Float? = null
     private var stopListening: (() -> Unit)? = null
+    private var gpsCleanup: (() -> Unit)? = null
+    private var appContext: Context? = null
+
+    fun hasLocationPermission(context: Context) =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    /**
+     * GPS dinlenmiyorsa (ör. konum izni araç bağlandıktan sonra verildiyse) dinlemeye başlar.
+     * İzin verildiği an hız ve yolculuk ölçümü yeniden başlamadan çalışır.
+     */
+    fun ensureGps() {
+        if (gpsCleanup != null) return
+        val c = appContext ?: return
+        gpsCleanup = startGps(c)
+    }
 
     fun start(carContext: CarContext) {
         stop()
         tripMeters.value = 0f
         tripStart = System.currentTimeMillis()
+        stoppedSince = tripStart
+        com.newrex.auto.data.TripStats.reset()
         val cleanups = ArrayList<() -> Unit>()
 
         try {
@@ -68,13 +93,16 @@ object DriveState {
             // Araç hız bilgisi vermiyor; GPS'e güveniyoruz
         }
 
-        startGps(carContext)?.let { cleanups += it }
+        appContext = carContext.applicationContext
+        ensureGps()
         stopListening = { cleanups.forEach { runCatching { it() } } }
     }
 
     fun stop() {
         stopListening?.invoke()
         stopListening = null
+        gpsCleanup?.let { runCatching { it() } }
+        gpsCleanup = null
         carSpeed = null
         gpsSpeed = null
     }
@@ -88,6 +116,9 @@ object DriveState {
         val listener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
                 gpsSpeed = if (location.hasSpeed()) location.speed else null
+                if (location.hasAltitude()) altitude.value = location.altitude
+                // Yön sadece hareket halindeyken anlamlı
+                if (location.hasBearing() && (gpsSpeed ?: 0f) > 1.5f) bearing.value = location.bearing
                 val prev = lastLocation
                 // Duruyorken GPS sapmaları mesafeye eklenmesin
                 if (prev != null && location.accuracy < 30f && (gpsSpeed ?: 0f) > PARKED_BELOW_MS) {
@@ -130,8 +161,12 @@ object DriveState {
         speedFromCar.value = carSpeed != null
         forced?.let { driving.value = it; return }
         val speed = speed0 ?: return
+        com.newrex.auto.data.TripStats.onSpeed(speed, android.os.SystemClock.elapsedRealtime())
         // Eşik arası boşluk, trafikte dur-kalk sırasında görüntünün sürekli yanıp sönmesini önler
-        if (speed > DRIVING_ABOVE_MS) driving.value = true
-        else if (speed < PARKED_BELOW_MS) driving.value = false
+        if (speed > DRIVING_ABOVE_MS) { driving.value = true; stoppedSince = 0L }
+        else if (speed < PARKED_BELOW_MS) {
+            if (driving.value || stoppedSince == 0L) stoppedSince = System.currentTimeMillis()
+            driving.value = false
+        }
     }
 }

@@ -10,7 +10,9 @@ import android.widget.TextView
 import com.newrex.auto.DriveState
 import com.newrex.auto.R
 import com.newrex.auto.VehicleData
+import com.newrex.auto.data.CarLog
 import com.newrex.auto.data.Prefs
+import com.newrex.auto.data.TripStats
 import com.newrex.auto.ui.CarUi
 import com.newrex.auto.ui.MATCH
 import com.newrex.auto.ui.Page
@@ -24,6 +26,7 @@ import com.newrex.auto.ui.lp
 import com.newrex.auto.ui.margins
 import com.newrex.auto.ui.neonText
 import com.newrex.auto.ui.panel
+import com.newrex.auto.ui.pill
 import com.newrex.auto.ui.rounded
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -32,57 +35,95 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Araç paneli: hız, yakıt, menzil, kilometre, yolculuk, park yeri ve bakım hatırlatıcıları. */
+/**
+ * Araç paneli: hız, yakıt/menzil, kilometre, yolculuk, rakım ve yön; sürüş puanı, hız uyarısı,
+ * yakıt defteri, bakım, yolculuk geçmişi ve park bilgisi. Araç paylaşmayan bilgiler GPS ve
+ * telefonda girilen kayıtlardan tahmin edilir ("~" ile gösterilir).
+ */
 class VehiclePage(ui: CarUi) : Page(ui) {
     override val title = "Araç"
 
     private val tr = Locale("tr", "TR")
+    private lateinit var lower: LinearLayout
+    private var drivingBox: LinearLayout? = null
 
     override fun build(): View = with(ctx) {
         val gauges = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
 
         val speed = gauge(gauges, R.drawable.ic_speed, "Hız", big = true)
-        val fuel = gauge(gauges, R.drawable.ic_gas, "Yakıt")
-        val range = gauge(gauges, R.drawable.ic_car, "Menzil")
+        val fuel = gauge(gauges, R.drawable.ic_gas, "Yakıt / menzil")
         val odo = gauge(gauges, R.drawable.ic_history, "Kilometre")
         val trip = gauge(gauges, R.drawable.ic_place, "Bu yolculuk")
+        val alt = gauge(gauges, R.drawable.ic_up, "Rakım / yön")
 
+        val noPermission = "📍 Telefonda konum izni ver"
         observe(DriveState.speedKmh) { v ->
             speed.first.text = v?.let { "%.0f".format(it) } ?: "—"
-            speed.second.text = if (v == null) "km/s • bekleniyor" else if (DriveState.speedFromCar.value) "km/s • araçtan" else "km/s • GPS"
-        }
-        observe(VehicleData.fuelPercent) { v ->
-            val battery = VehicleData.batteryPercent.value
-            fuel.first.text = (v ?: battery)?.let { "%%%.0f".format(it) } ?: "—"
-            fuel.second.text = when {
-                v == null && battery == null -> "Araç paylaşmıyor"
-                VehicleData.lowFuel.value -> "⚠ Yakıt az!"
-                v == null -> "Batarya"
-                else -> "Depo"
+            speed.second.text = when {
+                v != null -> if (DriveState.speedFromCar.value) "km/s • araçtan" else "km/s • GPS"
+                !DriveState.hasLocationPermission(ctx) -> noPermission
+                else -> "km/s • GPS bekleniyor"
             }
-            fuel.first.setTextColor(if (VehicleData.lowFuel.value) Palette.ORANGE else Palette.TEXT)
+            val limit = CarLog.speedLimit
+            speed.first.setTextColor(if (limit > 0 && v != null && v > limit) Palette.RED else Palette.TEXT)
         }
-        observe(VehicleData.rangeKm) { v ->
-            range.first.text = v?.let { "%.0f".format(it) } ?: "—"
-            range.second.text = if (v == null) "Araç paylaşmıyor" else "km gidebilirsin"
+        // İzin yoksa hız/yolculuk kartına dokununca telefonda izin sorulur
+        listOf(speed, trip).forEach { (v, _) ->
+            (v.parent as View).setOnClickListener {
+                if (!DriveState.hasLocationPermission(ctx)) {
+                    com.newrex.auto.MainActivity.askLocation(ctx.applicationContext)
+                    ui.toast("Telefonunda konum iznini ver.", long = true)
+                }
+            }
         }
-        observe(VehicleData.odometerKm) { v ->
-            odo.first.text = v?.let { String.format(tr, "%,.0f", it) } ?: "—"
-            odo.second.text = if (v == null) "Araç paylaşmıyor" else "km toplam"
-        }
+
+        // Saniyede bir değişmesi gerekmeyen değerler birkaç saniyede bir yenilenir
         scope.launch {
             while (true) {
-                val km = DriveState.tripMeters.value / 1000f
+                DriveState.ensureGps()
+                val tripKm = DriveState.tripMeters.value / 1000f
                 val mins = ((System.currentTimeMillis() - DriveState.tripStart) / 60_000).coerceAtLeast(0)
-                trip.first.text = "%.1f".format(km)
-                trip.second.text = "km • ${if (mins >= 60) "${mins / 60} sa ${mins % 60} dk" else "$mins dk"}"
-                delay(5000)
+                trip.first.text = "%.1f".format(tripKm)
+                trip.second.text = if (!DriveState.hasLocationPermission(ctx)) noPermission else "km • ${duration(mins)}"
+
+                val carOdo = VehicleData.odometerKm.value
+                val currentKm = carOdo ?: CarLog.estimatedOdometer(tripKm)
+                odo.first.text = currentKm?.let { (if (carOdo == null) "~" else "") + String.format(tr, "%,.0f", it) } ?: "—"
+                odo.second.text = when {
+                    carOdo != null -> "km • araçtan"
+                    currentKm != null -> "km • tahmini"
+                    else -> "Telefonda km gir"
+                }
+
+                val pct = VehicleData.fuelPercent.value ?: VehicleData.batteryPercent.value
+                val carRange = VehicleData.rangeKm.value
+                val estRange = CarLog.fuelStats(currentKm).rangeKm
+                fuel.first.text = when {
+                    pct != null -> "%%%.0f".format(pct)
+                    carRange != null -> "%.0f km".format(carRange)
+                    estRange != null -> "~%.0f km".format(estRange)
+                    else -> "—"
+                }
+                fuel.second.text = when {
+                    VehicleData.lowFuel.value -> "⚠ Yakıt az!"
+                    pct != null && carRange != null -> "%.0f km gidebilirsin".format(carRange)
+                    pct != null -> "depo • araçtan"
+                    carRange != null -> "menzil • araçtan"
+                    estRange != null -> "menzil • tahmini"
+                    else -> "Yakıt defterini doldur"
+                }
+                fuel.first.setTextColor(if (VehicleData.lowFuel.value) Palette.ORANGE else Palette.TEXT)
+
+                alt.first.text = DriveState.altitude.value?.let { "${it.toInt()} m" } ?: "—"
+                alt.second.text = DriveState.bearing.value?.let { "Yön: ${compass(it)}" } ?: "Yön: hareket edince"
+                delay(3000)
             }
         }
 
         val model = label("", 14f, Palette.TEXT_DIM)
-        observe(VehicleData.model) { model.text = it?.let { m -> "🚗 $m" } ?: "" ; model.visibility = if (it == null) View.GONE else View.VISIBLE }
+        observe(VehicleData.model) { model.text = it?.let { m -> "🚗 $m" } ?: ""; model.visibility = if (it == null) View.GONE else View.VISIBLE }
 
+        lower = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(6), dp(12), dp(12))
@@ -92,14 +133,195 @@ class VehiclePage(ui: CarUi) : Page(ui) {
                 isFillViewport = true
                 addView(gauges, lp(WRAP, WRAP))
             }, lp(MATCH, WRAP))
-            addView(maintenancePanel(), lp(MATCH, WRAP).margins(t = dp(10)))
-            addView(parkPanel(), lp(MATCH, WRAP).margins(t = dp(10)))
+            addView(lower, lp(MATCH, WRAP))
         }
+        scope.launch { CarLog.changes.collect { buildLower() } }
+        // Sürüş puanı canlı güncellensin
+        scope.launch { while (true) { delay(10_000); refreshDriving() } }
         ScrollView(this).apply { addView(content) }
     }
 
     private fun <T> observe(flow: Flow<T>, block: (T) -> Unit) {
         scope.launch { flow.collect { block(it) } }
+    }
+
+    private fun duration(mins: Long) = if (mins >= 60) "${mins / 60} sa ${mins % 60} dk" else "$mins dk"
+
+    private fun compass(deg: Float): String {
+        val names = arrayOf("Kuzey", "Kuzeydoğu", "Doğu", "Güneydoğu", "Güney", "Güneybatı", "Batı", "Kuzeybatı")
+        return names[(((deg % 360) + 360) % 360 / 45f + 0.5f).toInt() % 8]
+    }
+
+    private fun currentKm(): Float? =
+        VehicleData.odometerKm.value ?: CarLog.estimatedOdometer(DriveState.tripMeters.value / 1000f)
+
+    // ---- Alt bölümler ----
+
+    private fun buildLower() = with(ctx) {
+        lower.removeAllViews()
+        listOf(drivingPanel(), speedAlertPanel(), fuelPanel(), maintenancePanel(), tripsPanel(), parkPanel()).forEach {
+            lower.addView(it, lp(MATCH, WRAP).margins(t = dp(10)))
+        }
+    }
+
+    private fun box(iconRes: Int, title: String): LinearLayout = with(ctx) {
+        panel().apply {
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            addView(LinearLayout(this@with).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                addView(icon(iconRes, 18, Palette.accent), lp(dp(18), dp(18)).margins(r = dp(8)))
+                addView(label(title, 16f, bold = true))
+            }, lp(MATCH, WRAP).margins(b = dp(8)))
+        }
+    }
+
+    /** Değer + açıklama şeklinde küçük istatistik kutuları yan yana. İlk değerin rengi [firstColor]. */
+    private fun stats(vararg items: Pair<String, String>, firstColor: Int = Palette.TEXT): View = with(ctx) {
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            items.forEachIndexed { i, (value, caption) ->
+                addView(LinearLayout(this@with).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(12), dp(8), dp(12), dp(8))
+                    background = rounded(0x14FFFFFF, dpf(12))
+                    addView(label(value, 20f, if (i == 0) firstColor else Palette.TEXT, bold = true))
+                    addView(label(caption, 12f, Palette.TEXT_DIM, lines = 2), lp(WRAP, WRAP).margins(t = dp(2)))
+                }, lp(0, WRAP, 1f).margins(r = dp(8)))
+            }
+        }
+    }
+
+    private fun drivingPanel(): View {
+        val b = box(R.drawable.ic_car, "Sürüş puanı (bu yolculuk)")
+        drivingBox = b
+        refreshDriving()
+        return b
+    }
+
+    private fun refreshDriving() = with(ctx) {
+        val b = drivingBox ?: return@with
+        while (b.childCount > 1) b.removeViewAt(1)
+        val km = DriveState.tripMeters.value / 1000f
+        val score = TripStats.score(km)
+        val movingMin = TripStats.movingMs / 60_000f
+        val avg = if (movingMin > 1f) km / movingMin * 60f else null
+        val color = when { score >= 85 -> Palette.GREEN; score >= 60 -> Palette.ORANGE; else -> Palette.RED }
+        b.addView(stats(
+            "$score / 100" to "Ekonomik sürüş",
+            "${TripStats.harshAccel.value}" to "Ani hızlanma",
+            "${TripStats.harshBrake.value}" to "Sert fren",
+            "%.0f".format(TripStats.maxKmh.value) to "En yüksek km/s",
+            (avg?.let { "%.0f".format(it) } ?: "—") to "Ortalama km/s",
+            firstColor = color,
+        ))
+        b.addView(label("Ani hızlanma ve sert frenler puanı düşürür; yumuşak sürüş yakıt tasarrufu sağlar.",
+            12f, Palette.TEXT_FAINT, lines = 2), lp(MATCH, WRAP).margins(t = dp(8)))
+    }
+
+    private fun speedAlertPanel(): View = with(ctx) {
+        val b = box(R.drawable.ic_speed, "Hız uyarısı")
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val current = CarLog.speedLimit
+        listOf(0, 50, 70, 90, 110, 120, 130, 140).forEach { v ->
+            row.addView(pill(if (v == 0) "Kapalı" else "$v", selected = v == current, heightDp = 40) {
+                CarLog.speedLimit = v
+            }, lp(WRAP, dp(40)).margins(r = dp(8)))
+        }
+        b.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(row) })
+        b.addView(label(if (current == 0) "Seçtiğin hızı geçince ekranda uyarı ve kısa bir sinyal sesi çıkar."
+            else "$current km/s geçilince uyarır. Hız GPS ile ölçüldüğünde birkaç km/s sapabilir.",
+            12f, Palette.TEXT_FAINT, lines = 2), lp(MATCH, WRAP).margins(t = dp(8)))
+        b
+    }
+
+    private fun fuelPanel(): View = with(ctx) {
+        val b = box(R.drawable.ic_gas, "Yakıt defteri")
+        val s = CarLog.fuelStats(currentKm())
+        if (CarLog.fuel().isEmpty()) {
+            b.addView(label("Depoyu fullediğinde telefondaki NewREX uygulamasında \"Yakıt ve kilometre\" bölümüne " +
+                "litre, tutar ve kilometreyi gir. Ortalama tüketim, km başı maliyet ve tahmini menzil burada çıkar.",
+                13f, Palette.TEXT_DIM, lines = 4))
+        } else {
+            b.addView(stats(
+                (s.consumption?.let { "%.1f".format(it) } ?: "—") to "L / 100 km",
+                (s.costPerKm?.let { "%.2f ₺".format(it) } ?: "—") to "km başı",
+                String.format(tr, "%,.0f ₺", s.thisMonth) to "Bu ay",
+                (s.rangeKm?.let { "~%.0f km".format(it) } ?: "—") to "Tahmini menzil",
+            ))
+            if (s.consumption == null) b.addView(label("Ortalama için en az iki dolum ve 50 km yol gerekiyor.",
+                12f, Palette.TEXT_FAINT, lines = 2), lp(MATCH, WRAP).margins(t = dp(8)))
+        }
+        b
+    }
+
+    private fun maintenancePanel(): View = with(ctx) {
+        val b = box(R.drawable.ic_build, "Bakım hatırlatıcı")
+        CarLog.oilKmLeft(currentKm())?.let { left ->
+            val color = when { left < 0 -> Palette.RED; left <= 1000 -> Palette.ORANGE; else -> Palette.GREEN }
+            val text = if (left < 0) String.format(tr, "%,.0f km geçti", -left) else String.format(tr, "%,.0f km kaldı", left)
+            b.addView(row("🛢️  Yağ değişimi", text, color), lp(MATCH, WRAP).margins(b = dp(6)))
+        }
+        val due = Prefs.maintenanceDue()
+        if (due.isEmpty() && CarLog.oilChangeKm <= 0f) {
+            b.addView(label("Muayene, sigorta, bakım ve lastik tarihlerini, son yağ değişimi kilometresini telefondaki " +
+                "NewREX uygulamasından gir. Zamanı yaklaşınca burada ve araç açılınca uyarı çıkar.", 13f, Palette.TEXT_DIM, lines = 3))
+        }
+        due.forEach { (m, days) ->
+            val color = when { days < 0 -> Palette.RED; days <= 15 -> Palette.ORANGE; else -> Palette.GREEN }
+            val text = when { days < 0 -> "${-days} gün gecikti"; days == 0L -> "Bugün!"; else -> "$days gün kaldı" }
+            b.addView(row("${m.emoji}  ${m.title}", text, color), lp(MATCH, WRAP).margins(b = dp(6)))
+        }
+        b
+    }
+
+    private fun row(title: String, value: String, color: Int): View = with(ctx) {
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            background = rounded(Palette.withAlpha(color, 0x22), dpf(12))
+            addView(label(title, 15f), lp(0, WRAP, 1f))
+            addView(label(value, 14f, color, bold = true))
+        }
+    }
+
+    private fun tripsPanel(): View = with(ctx) {
+        val b = box(R.drawable.ic_history, "Yolculuk geçmişi")
+        val trips = CarLog.trips().take(6)
+        if (trips.isEmpty()) {
+            b.addView(label("Araç kapanınca (Android Auto bağlantısı kesilince) yolculuk buraya kaydedilir.",
+                13f, Palette.TEXT_DIM, lines = 2))
+        }
+        val fmt = SimpleDateFormat("d MMM HH:mm", tr)
+        trips.forEach { t ->
+            b.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(12), dp(8), dp(12), dp(8))
+                background = rounded(0x14FFFFFF, dpf(12))
+                addView(label(fmt.format(Date(t.start)), 14f, bold = true), lp(dp(120), WRAP))
+                addView(label("%.1f km • %s".format(t.km, duration(((t.end - t.start) / 60_000).coerceAtLeast(0))), 14f), lp(0, WRAP, 1f))
+                addView(label("ort ${t.avgKmh} • en çok ${t.maxKmh} km/s", 13f, Palette.TEXT_DIM), lp(WRAP, WRAP).margins(r = dp(12)))
+                val c = when { t.score >= 85 -> Palette.GREEN; t.score >= 60 -> Palette.ORANGE; else -> Palette.RED }
+                addView(label("${t.score}", 15f, c, bold = true))
+            }, lp(MATCH, WRAP).margins(b = dp(6)))
+        }
+        b
+    }
+
+    private fun parkPanel(): View = with(ctx) {
+        val b = box(R.drawable.ic_place, "Park")
+        val lines = ArrayList<String>()
+        if (!DriveState.driving.value && DriveState.stoppedSince > 0) {
+            lines += "Şu an duruyorsun: ${duration((System.currentTimeMillis() - DriveState.stoppedSince) / 60_000)}"
+        }
+        val spot = Prefs.parkedSpot
+        lines += if (spot == null) "Araç kapanınca bulunduğun yer kaydedilir; telefondaki \"Arabam nerede?\" bölümünden haritada açarsın."
+        else "Son park yeri: " + SimpleDateFormat("d MMMM HH:mm", tr).format(Date(spot.time)) +
+            " — telefondan haritada açabilir, otopark süresi için hatırlatıcı kurabilirsin."
+        b.addView(label(lines.joinToString("\n"), 13f, Palette.TEXT_DIM, lines = 4))
+        b
     }
 
     /** Büyük değer + alt yazı. Dönen çift: (değer, alt yazı). */
@@ -121,48 +343,5 @@ class VehiclePage(ui: CarUi) : Page(ui) {
         }
         row.addView(card, lp(0, WRAP, if (big) 1.3f else 1f).margins(r = dp(8)))
         value to sub
-    }
-
-    private fun maintenancePanel(): View = with(ctx) {
-        val box = panel().apply { setPadding(dp(16), dp(12), dp(16), dp(12)) }
-        box.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(icon(R.drawable.ic_build, 18, Palette.accent), lp(dp(18), dp(18)).margins(r = dp(8)))
-            addView(label("Bakım hatırlatıcı", 16f, bold = true))
-        }, lp(MATCH, WRAP).margins(b = dp(8)))
-        val due = Prefs.maintenanceDue()
-        if (due.isEmpty()) {
-            box.addView(label("Muayene, sigorta, bakım ve lastik tarihlerini telefondaki NewREX uygulamasından gir. " +
-                "Zamanı yaklaşınca burada ve araç açılınca uyarı çıkar.", 13f, Palette.TEXT_DIM, lines = 3))
-        }
-        due.forEach { (m, days) ->
-            val color = when { days < 0 -> Palette.RED; days <= 15 -> Palette.ORANGE; else -> Palette.GREEN }
-            val text = when { days < 0 -> "${-days} gün gecikti"; days == 0L -> "Bugün!"; else -> "$days gün kaldı" }
-            box.addView(LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(12), dp(8), dp(12), dp(8))
-                background = rounded(Palette.withAlpha(color, 0x22), dpf(12))
-                addView(label("${m.emoji}  ${m.title}", 15f), lp(0, WRAP, 1f))
-                addView(label(text, 14f, color, bold = true))
-            }, lp(MATCH, WRAP).margins(b = dp(6)))
-        }
-        box
-    }
-
-    private fun parkPanel(): View = with(ctx) {
-        val spot = Prefs.parkedSpot
-        val text = if (spot == null) "Araç kapanınca (Android Auto bağlantısı kesilince) bulunduğun yer kaydedilir. " +
-            "Telefondaki NewREX uygulamasında \"Arabam nerede?\" kısmından haritada açabilirsin."
-        else "Son park: " + SimpleDateFormat("d MMMM HH:mm", tr).format(Date(spot.time)) +
-            " — telefondaki NewREX uygulamasından haritada açabilirsin."
-        panel().apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(12), dp(16), dp(12))
-            addView(icon(R.drawable.ic_place, 22, Palette.accent), lp(dp(22), dp(22)).margins(r = dp(10)))
-            addView(label(text, 13f, Palette.TEXT_DIM, lines = 3), lp(0, WRAP, 1f))
-        }
     }
 }

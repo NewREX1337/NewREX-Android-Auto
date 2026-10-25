@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.pages
 
+import android.graphics.drawable.LayerDrawable
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -70,14 +71,14 @@ class HomePage(ui: CarUi) : Page(ui) {
         val gap = dp(if (compact) 8 else 12)
 
         val bigCards = listOf(
-            bigCard("TV", "Canlı TV ve IPTV", R.drawable.ic_live_tv, 0xFF1D3A8A.toInt(), 0xFF2F80ED.toInt(),
-                compact, live = true) { ui.push(TvPage(ui)) },
-            bigCard("YouTube", "Video izle", R.drawable.ic_smart_display, 0xFF6B1420.toInt(), 0xFFE0263C.toInt(),
-                compact) { ui.push(WebPage(ui, WebPage.Mode.YOUTUBE)) },
-            bigCard("Radyo", "Türk radyoları", R.drawable.ic_radio, 0xFF3B1C7A.toInt(), 0xFF7C5CFF.toInt(),
-                compact) { ui.push(RadioPage(ui)) },
-            bigCard("Yansıt", "Telefon ekranı", R.drawable.ic_cast, 0xFF0E4A47.toInt(), 0xFF16B98A.toInt(),
-                compact) { ui.push(MirrorPage(ui)) },
+            bigCard("TV", "Canlı TV ve IPTV", R.drawable.ic_live_tv, 0xFF06B6D4.toInt(), compact, live = true) { ui.push(TvPage(ui)) },
+            bigCard("YouTube", "Video izle", R.drawable.ic_smart_display, 0xFFEF4444.toInt(), compact) {
+                ui.push(WebPage(ui, WebPage.Mode.YOUTUBE))
+            },
+            bigCard("Radyo", "Türk radyoları", R.drawable.ic_radio, 0xFF8B5CF6.toInt(), compact) { ui.push(RadioPage(ui)) },
+            bigCard("Web", "İnternet tarayıcı", R.drawable.ic_language, 0xFF3B82F6.toInt(), compact) {
+                ui.push(WebPage(ui, WebPage.Mode.WEB))
+            },
         )
         // Dar ekranda 2x2, geniş ekranda tek sıra
         val bigPerRow = if (compact) 2 else 4
@@ -101,14 +102,22 @@ class HomePage(ui: CarUi) : Page(ui) {
             w?.let { it.place ?: WeatherApi.describe(it.code) } ?: "Hava durumu", R.drawable.ic_cloud, 0xFF7DB8FF.toInt()) {
             ui.push(WeatherPage(ui))
         }
-        shortcuts += Shortcut("Web", "Tarayıcı", R.drawable.ic_language, 0xFF2F80ED.toInt()) { ui.push(WebPage(ui, WebPage.Mode.WEB)) }
+        shortcuts += Shortcut("Yansıt", "Telefon ekranı", R.drawable.ic_cast, 0xFF16B98A.toInt()) { ui.push(MirrorPage(ui)) }
         shortcuts += Shortcut("Ayarlar", "Tema ve listeler", R.drawable.ic_settings, 0xFF8B93A7.toInt()) { ui.push(SettingsPage(ui)) }
-        shortcuts += Shortcut("NewREX", "Hakkında", R.drawable.ic_info, Palette.accent) { ui.push(AboutPage(ui)) }
 
         val usable = lastWidth - container.paddingLeft - container.paddingRight
         val cols = (usable / dp(if (compact) 120 else 170)).coerceIn(2, 6)
         container.addView(View(this), lp(MATCH, gap))
         addGrid(shortcuts.map { smallCard(it, compact) }, cols, dp(if (compact) 92 else 108), gap)
+
+        // Hakkında: en altta, aşağı kaydırınca görünen küçük bir bağlantı
+        container.addView(label("NewREX hakkında  ›", 14f, Palette.TEXT_DIM).apply {
+            gravity = Gravity.CENTER
+            setPadding(dp(18), dp(10), dp(18), dp(10))
+            val r = dpf(18)
+            background = pressable(rounded(0, r), r)
+            onTap { ui.push(AboutPage(ui)) }
+        }, lp(WRAP, WRAP).margins(t = dp(18)).apply { gravity = Gravity.CENTER_HORIZONTAL })
     }
 
     /** Görünümleri [perRow] sütunlu satırlara dizer; son satır eksikse boşlukla doldurulur. */
@@ -123,38 +132,40 @@ class HomePage(ui: CarUi) : Page(ui) {
         }
     }
 
+    /** Büyük kart: koyu cam üzerinde rengin hafif tonu, renkli simge rozeti ve ince renkli kenar. */
     private fun bigCard(
-        title: String, subtitle: String, iconRes: Int, c1: Int, c2: Int,
+        title: String, subtitle: String, iconRes: Int, color: Int,
         compact: Boolean, live: Boolean = false, onClick: () -> Unit,
     ): View = with(ctx) {
         val r = dpf(if (compact) 18 else 22)
         val pad = dp(if (compact) 12 else 16)
+        val look = LayerDrawable(arrayOf(
+            rounded(0xCC10131F.toInt(), r),
+            gradient(Palette.withAlpha(color, 0x55), Palette.withAlpha(color, 0x10), r),
+            rounded(0, r, dp(1), Palette.withAlpha(color, 0x70)),
+        ))
         FrameLayout(this).apply {
-            background = pressable(gradient(c1, c2, r), r)
+            background = pressable(look, r)
             clipToOutline = true
-            // Arkada büyük, soluk simge
-            val bgIcon = if (compact) 90 else 130
-            addView(icon(iconRes, bgIcon).apply { alpha = 0.13f },
-                flp(dp(bgIcon), dp(bgIcon), Gravity.END or Gravity.TOP).margins(t = dp(-10), r = dp(-18)))
 
             val badgeSize = if (compact) 40 else 52
+            val iconSize = if (compact) 22 else 28
             val badge = FrameLayout(this@with).apply {
-                background = rounded(0x33FFFFFF, dpf(14))
-                addView(icon(iconRes, if (compact) 22 else 28), flp(dp(if (compact) 22 else 28), dp(if (compact) 22 else 28), Gravity.CENTER))
+                background = rounded(color, dpf(14))
+                addView(icon(iconRes, iconSize), flp(dp(iconSize), dp(iconSize), Gravity.CENTER))
             }
             addView(badge, flp(dp(badgeSize), dp(badgeSize)).margins(pad, pad))
             if (live && !compact) {
                 addView(label("CANLI", 11f, bold = true).apply {
                     setPadding(dp(8), dp(3), dp(8), dp(3))
                     background = rounded(Palette.RED, dpf(6))
-                }, flp(WRAP, WRAP).margins(l = dp(78), t = dp(32)))
+                }, flp(WRAP, WRAP, Gravity.TOP or Gravity.END).margins(t = pad + dp(4), r = pad))
             }
 
             val texts = LinearLayout(this@with).apply {
                 orientation = LinearLayout.VERTICAL
                 // Dar kartlarda başlık kesilmesin, sığacak kadar küçülsün
                 addView(label(title, 28f, bold = true).apply {
-                    setShadowLayer(dpf(10), 0f, 0f, Palette.withAlpha(c2, 0xDD))
                     setAutoSizeTextTypeUniformWithConfiguration(12, if (compact) 22 else 28, 1, TypedValue.COMPLEX_UNIT_DIP)
                 }, lp(MATCH, dp(if (compact) 28 else 34)))
                 if (!compact) addView(label(subtitle, 14f, Palette.TEXT_DIM), lp(MATCH, WRAP).margins(t = dp(4)))
@@ -164,7 +175,7 @@ class HomePage(ui: CarUi) : Page(ui) {
 
             if (!compact) {
                 val arrow = FrameLayout(this@with).apply {
-                    background = rounded(0x33000000, dpf(19))
+                    background = rounded(Palette.withAlpha(color, 0x40), dpf(19))
                     addView(icon(R.drawable.ic_chevron_right, 24), flp(dp(24), dp(24), Gravity.CENTER))
                 }
                 addView(arrow, flp(dp(38), dp(38), Gravity.BOTTOM or Gravity.END).margins(r = dp(16), b = dp(16)))
@@ -181,7 +192,7 @@ class HomePage(ui: CarUi) : Page(ui) {
             setPadding(dp(if (compact) 6 else 14), dp(8), dp(if (compact) 6 else 10), dp(8))
             background = pressable(
                 if (s.warn) rounded(Palette.withAlpha(Palette.ORANGE, 0x26), r, dp(1), Palette.withAlpha(Palette.ORANGE, 0xAA))
-                else rounded(Palette.SURFACE, r), r)
+                else rounded(Palette.SURFACE, r, dp(1), 0x1AFFFFFF), r)
             val badgeSize = if (compact) 34 else 40
             val badge = FrameLayout(this@with).apply {
                 background = rounded(Palette.withAlpha(s.color, 0x40), dpf(12))

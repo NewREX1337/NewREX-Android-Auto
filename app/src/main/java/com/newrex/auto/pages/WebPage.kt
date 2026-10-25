@@ -10,19 +10,19 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import com.newrex.auto.PlayerHub
 import com.newrex.auto.R
+import com.newrex.auto.data.Prefs
 import com.newrex.auto.ui.CarUi
+import com.newrex.auto.ui.dpf
 import com.newrex.auto.ui.MATCH
 import com.newrex.auto.ui.Page
 import com.newrex.auto.ui.Palette
 import com.newrex.auto.ui.WRAP
 import com.newrex.auto.ui.lp
 import com.newrex.auto.ui.margins
-import com.newrex.auto.ui.pill
 import com.newrex.auto.ui.circleButton
 import com.newrex.auto.ui.dp
 import com.newrex.auto.ui.flp
@@ -39,19 +39,10 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
     }
 
     override val title = mode.title
+    // Video tam ekrana geçince üst bar ve mini oynatıcı da gizlenir
+    override val fullscreen: Boolean get() = customView != null
 
     private companion object {
-        val YOUTUBE_CATEGORIES = listOf(
-            "Popüler" to "türkiye gündem",
-            "Müzik" to "türkçe pop yeni şarkılar",
-            "Haber" to "son dakika haber",
-            "Spor" to "maç özeti",
-            "Canlı" to "canlı yayın türkiye",
-            "Komedi" to "komedi skeç",
-            "Çocuk" to "çocuk şarkıları",
-            "Podcast" to "türkçe podcast",
-        )
-        var selectedCategory = 0
 
         private const val FOCUSED_FIELD_JS = """(function(){
             var e = document.activeElement; if (!e) return null;
@@ -76,10 +67,12 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
         }"""
     }
 
-    private lateinit var categories: LinearLayout
     private lateinit var web: WebView
     private lateinit var progressBar: ProgressBar
     private lateinit var fullscreenBox: FrameLayout
+    private lateinit var fitButton: View
+    private lateinit var pageRoot: FrameLayout
+    private val hideFit = Runnable { fitButton.animate().alpha(0f).setDuration(300).withEndAction { fitButton.visibility = View.GONE }.start() }
     private var customView: View? = null
     private var customCallback: WebChromeClient.CustomViewCallback? = null
 
@@ -92,10 +85,17 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
             max = 100
             progressTintList = android.content.res.ColorStateList.valueOf(Palette.accent)
         }
-        fullscreenBox = FrameLayout(this).apply {
+        // Tam ekranda dokununca birkaç saniye "ekrana sığdır" düğmesi görünür
+        fullscreenBox = object : FrameLayout(this) {
+            override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+                if (ev.actionMasked == MotionEvent.ACTION_DOWN) showFitButton()
+                return super.dispatchTouchEvent(ev)
+            }
+        }.apply {
             setBackgroundColor(0xFF000000.toInt())
             visibility = View.GONE
         }
+        fitButton = fitPill()
         web = WebView(this).apply {
             setBackgroundColor(0xFF0B0E1A.toInt())
             settings.javaScriptEnabled = true
@@ -132,8 +132,12 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
                 override fun onShowCustomView(view: View, callback: CustomViewCallback) {
                     customView = view
                     customCallback = callback
-                    fullscreenBox.addView(view, flp(MATCH, MATCH))
+                    fullscreenBox.addView(view, 0, flp(MATCH, MATCH))
                     fullscreenBox.visibility = View.VISIBLE
+                    pageRoot.setPadding(0, 0, 0, 0)
+                    applyFit()
+                    ui.refreshChrome()
+                    showFitButton()
                 }
 
                 override fun onHideCustomView() = exitFullscreen()
@@ -152,38 +156,57 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
         }
         val column = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            if (mode == Mode.YOUTUBE) {
-                categories = LinearLayout(this@with).apply { orientation = LinearLayout.HORIZONTAL }
-                addView(HorizontalScrollView(this@with).apply {
-                    isHorizontalScrollBarEnabled = false
-                    addView(categories)
-                }, lp(MATCH, WRAP).margins(b = dp(6)))
-                refreshCategories()
-            }
             addView(webBox, lp(MATCH, 0, 1f))
         }
-        FrameLayout(this).apply {
+        fullscreenBox.addView(fitButton, flp(WRAP, dp(44), android.view.Gravity.BOTTOM or android.view.Gravity.START)
+            .margins(l = dp(16), b = dp(16)))
+        pageRoot = FrameLayout(this).apply {
             setPadding(dp(8), dp(4), dp(8), dp(4))
             addView(column, flp(MATCH, MATCH))
             addView(fullscreenBox, flp(MATCH, MATCH))
             addView(parkGuard(), flp(MATCH, MATCH))
         }
+        pageRoot
     }
 
-    /** Hesap girişi olmadan YouTube'u kullanılabilir kılan hızlı kategoriler. */
-    private fun refreshCategories(): Unit = with(ctx) {
-        categories.removeAllViews()
-        YOUTUBE_CATEGORIES.forEachIndexed { i, (name, _) ->
-            categories.addView(pill(name, selected = i == selectedCategory, heightDp = 36) {
-                selectedCategory = i
-                refreshCategories()
-                web.loadUrl(categoryUrl(i))
-            }, lp(WRAP, dp(36)).margins(r = dp(8)))
+    /** Videonun ekrana yerleşimini değiştiren düğme: Sığdır → Doldur → Uzat. */
+    private fun fitPill(): View = with(ctx) {
+        val names = arrayOf("Ekrana sığdır", "Ekranı doldur", "Uzat")
+        android.widget.TextView(this).apply {
+            text = "⛶  " + names[Prefs.videoFit]
+            setTextColor(Palette.TEXT)
+            textSize = 15f
+            gravity = android.view.Gravity.CENTER
+            setPadding(dp(16), 0, dp(16), 0)
+            background = com.newrex.auto.ui.rounded(0xAA000000.toInt(), dpf(22), dp(1), 0x55FFFFFF)
+            setOnClickListener {
+                Prefs.videoFit = (Prefs.videoFit + 1) % 3
+                text = "⛶  " + names[Prefs.videoFit]
+                applyFit()
+                showFitButton()
+            }
         }
     }
 
-    private fun categoryUrl(i: Int) =
-        "https://m.youtube.com/results?search_query=" + URLEncoder.encode(YOUTUBE_CATEGORIES[i].second, "UTF-8")
+    private fun showFitButton() {
+        if (!::fitButton.isInitialized || customView == null) return
+        fitButton.removeCallbacks(hideFit)
+        fitButton.animate().cancel()
+        fitButton.visibility = View.VISIBLE
+        fitButton.alpha = 1f
+        fitButton.postDelayed(hideFit, 3500)
+    }
+
+    /** Sayfadaki videolara seçili yerleşimi uygular (kenardaki siyah bantlar için). */
+    private fun applyFit() {
+        val fit = arrayOf("contain", "cover", "fill")[Prefs.videoFit]
+        web.evaluateJavascript("""(function(){
+            var s = document.getElementById('newrex-fit');
+            if (!s) { s = document.createElement('style'); s.id = 'newrex-fit'; document.head.appendChild(s); }
+            s.textContent = 'video { object-fit: $fit !important; }';
+        })()""", null)
+    }
+
 
     override fun actions(): List<View> = listOf(
         ctx.circleButton(R.drawable.ic_search) {
@@ -194,7 +217,8 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
         ctx.circleButton(R.drawable.ic_refresh) { web.reload() },
     )
 
-    private fun startUrl() = if (mode == Mode.YOUTUBE) categoryUrl(selectedCategory) else mode.home
+    // YouTube her açılışta kendi ana sayfasıyla gelir (kategoriler YouTube'un kendi satırında)
+    private fun startUrl() = mode.home
 
     private fun open(input: String) {
         val q = URLEncoder.encode(input, "UTF-8")
@@ -228,12 +252,17 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
         }
     }
 
-    private fun exitFullscreen() {
+    private fun exitFullscreen(refresh: Boolean = true) {
+        val wasFull = customView != null
         customView?.let { fullscreenBox.removeView(it) }
         fullscreenBox.visibility = View.GONE
         customCallback?.onCustomViewHidden()
         customView = null
         customCallback = null
+        if (wasFull && refresh && ::pageRoot.isInitialized) {
+            pageRoot.setPadding(ctx.dp(8), ctx.dp(4), ctx.dp(8), ctx.dp(4))
+            ui.refreshChrome()
+        }
     }
 
     override fun onBack(): Boolean {
@@ -243,7 +272,7 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
     }
 
     override fun onDestroy() {
-        exitFullscreen()
+        exitFullscreen(refresh = false)
         web.stopLoading()
         web.loadUrl("about:blank")
         web.destroy()

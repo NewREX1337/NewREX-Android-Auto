@@ -14,6 +14,9 @@ Aşağıdakiler **yalnızca senin telefonunda** saklanır ve uygulamayı silince
 - Seçtiğin tema rengi ve park modu ayarı
 - Son park yeri (araç kapanınca kaydedilen tek bir konum; istediğin an silebilirsin)
 - Bakım hatırlatıcıya girdiğin tarihler
+- Araç ekranı için seçtiğin fotoğrafların küçültülmüş kopyaları (galerinin tamamına erişilmez, sadece seçtiklerin)
+- Yakıt defteri, kilometre, yağ değişimi bilgileri ve son 30 yolculuğun özeti (tarih, km, süre, hız, sürüş puanı)
+- Otopark süresi hatırlatıcısının bitiş saati
 
 Uygulamada **reklam, analiz (analytics), hata raporlama veya takip kütüphanesi yoktur.** Kaynak kod açık
 olduğu için bunu herkes doğrulayabilir (`app/build.gradle.kts` içindeki bağımlılık listesine bakabilirsin).
@@ -25,7 +28,7 @@ olduğu için bunu herkes doğrulayabilir (`app/build.gradle.kts` içindeki bağ
 | İnternet | Yayınları, radyoları, podcast'leri, hava durumunu ve web sayfalarını açmak için |
 | Konum | Park modu (araç hız vermezse GPS hızı), park yerini kaydetme, hava durumu ve yolculuk mesafesi. Konum geçmişi tutulmaz; sadece son park yeri telefonda saklanır. |
 | Araç hızı, yakıt, kilometre | Park modu ve araç paneli. Her araç bu bilgileri paylaşmaz. Telefondan dışarı çıkmaz. |
-| Bildirim | Ekran yansıtma sürerken Android'in zorunlu tuttuğu "yansıtılıyor" bildirimi |
+| Bildirim | Ekran yansıtma sürerken Android'in zorunlu tuttuğu "yansıtılıyor" bildirimi ve otopark süresi hatırlatıcısı |
 | Ekran paylaşımı | **Sadece sen başlatırsan**: telefon ekranını araç ekranında göstermek. Her seferinde telefonda onay istenir. Görüntü yalnızca araç ekranına çizilir; kaydedilmez, hiçbir yere gönderilmez. |
 
 ## Hangi servislere bağlanılır?

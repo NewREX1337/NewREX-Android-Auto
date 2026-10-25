@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.newrex.auto.PlayerHub
 import com.newrex.auto.R
@@ -49,6 +50,7 @@ class PlayerPage(ui: CarUi) : Page(ui) {
     private lateinit var favButton: FrameLayout
     private lateinit var spinner: ProgressBar
     private lateinit var errorView: TextView
+    private lateinit var fitLabel: TextView
 
     override fun build(): View = with(ctx) {
         playerView = LayoutInflater.from(this).inflate(R.layout.player_view, null) as PlayerView
@@ -94,11 +96,23 @@ class PlayerPage(ui: CarUi) : Page(ui) {
             addView(playButton, lp(dp(72), dp(72)).margins(dp(28), 0, dp(28), 0))
             addView(circleButton(R.drawable.ic_next, 60) { PlayerHub.next(); bumpControls() }, lp(dp(60), dp(60)))
         }
+        fitLabel = label("", 15f, bold = true).apply {
+            gravity = Gravity.CENTER
+            setPadding(dp(16), 0, dp(16), 0)
+            background = rounded(0x55FFFFFF, dpf(22))
+            setOnClickListener {
+                Prefs.videoFit = (Prefs.videoFit + 1) % 3
+                applyFit()
+                bumpControls()
+            }
+        }
 
         controls = FrameLayout(this).apply {
             addView(top, flp(MATCH, WRAP, Gravity.TOP))
             addView(bottom, flp(MATCH, WRAP, Gravity.BOTTOM))
+            addView(fitLabel, flp(WRAP, dp(44), Gravity.BOTTOM or Gravity.START).margins(l = dp(18), b = dp(26)))
         }
+        applyFit()
 
         FrameLayout(this).apply {
             setBackgroundColor(0xFF000000.toInt())
@@ -144,10 +158,21 @@ class PlayerPage(ui: CarUi) : Page(ui) {
     private fun setControls(show: Boolean, autoHide: Boolean = true) {
         controls.visibility = if (show) View.VISIBLE else View.GONE
         handler.removeCallbacks(hideControls)
-        if (show && autoHide && PlayerHub.playing.value) handler.postDelayed(hideControls, 4000)
+        if (show && autoHide && PlayerHub.playing.value) handler.postDelayed(hideControls, 3000)
     }
 
     private fun bumpControls() = setControls(true)
+
+    /** Kenardaki siyah bantlar için: sığdır / doldur (kırp) / uzat. */
+    private fun applyFit() {
+        val fit = Prefs.videoFit
+        playerView.resizeMode = when (fit) {
+            1 -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            2 -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+            else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }
+        fitLabel.text = "⛶  " + arrayOf("Ekrana sığdır", "Ekranı doldur", "Uzat")[fit]
+    }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)

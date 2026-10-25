@@ -102,17 +102,40 @@ class SettingsPage(ui: CarUi) : Page(ui) {
     override val title = "Ayarlar"
 
     override fun build(): View = with(ctx) {
+        // Tema rengi: en çok kullanılan 7 renk + istenen her renk için "Özel"
+        val current = Palette.accent
         val colors = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         Palette.accents.forEachIndexed { i, c ->
-            val selected = i == Prefs.accentIndex
-            colors.addView(FrameLayout(this@with).apply {
-                val r = dpf(24)
-                background = pressable(rounded(c, r, if (selected) dp(4) else 0, Palette.TEXT), r)
-                onTap {
-                    Prefs.accentIndex = i
-                    ui.rebuild()
-                }
-            }, lp(dp(48), dp(48)).margins(r = dp(14)))
+            colors.addView(swatch(c, i == Prefs.accentIndex) { Prefs.accentIndex = i }, lp(dp(48), dp(48)).margins(r = dp(12)))
+        }
+        Palette.extraAccents.forEach { c ->
+            colors.addView(swatch(c, Prefs.accentIndex < 0 && c == current) { Prefs.customAccent = c },
+                lp(dp(48), dp(48)).margins(r = dp(12)))
+        }
+        val customAccent = Prefs.accentIndex < 0 && current !in Palette.extraAccents
+        colors.addView(customSwatch(if (customAccent) current else null) {
+            ui.push(ColorPickerPage(ui, "Özel tema rengi", current, 1f) { Prefs.customAccent = it })
+        }, lp(dp(48), dp(48)))
+
+        val bgs = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        Palette.backgrounds.forEach { c ->
+            val shown = if (c == 0) Palette.BG_TOP else c
+            bgs.addView(swatch(shown, Prefs.bgColor == c, text = if (c == 0) "Oto" else null) { Prefs.bgColor = c },
+                lp(dp(48), dp(48)).margins(r = dp(12)))
+        }
+        val customBg = Prefs.bgColor != 0 && Prefs.bgColor !in Palette.backgrounds
+        bgs.addView(customSwatch(if (customBg) Palette.safeBackground(Prefs.bgColor) else null) {
+            val start = Palette.safeBackground(Prefs.bgColor).takeIf { it != 0 } ?: Palette.BG_TOP
+            ui.push(ColorPickerPage(ui, "Özel arka plan", start, Palette.MAX_BG_VALUE) { Prefs.bgColor = it })
+        }, lp(dp(48), dp(48)))
+
+        val themeBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(colors)
+            addView(label("Arka plan", 15f, bold = true), lp(MATCH, WRAP).margins(t = dp(16), b = dp(10)))
+            addView(bgs)
+            addView(label("Gökkuşağı düğmesiyle istediğin her rengi seçebilirsin.", 13f, Palette.TEXT_FAINT, lines = 2),
+                lp(MATCH, WRAP).margins(t = dp(12)))
         }
 
         val playlistInfo = label("", 15f, Palette.TEXT_DIM, lines = 6)
@@ -122,7 +145,7 @@ class SettingsPage(ui: CarUi) : Page(ui) {
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(8), dp(16), dp(16))
-            addView(section("Tema rengi", colors))
+            addView(section("Tema rengi", themeBox))
             addView(section("IPTV listeleri", LinearLayout(this@with).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(playlistInfo)
@@ -167,6 +190,32 @@ class SettingsPage(ui: CarUi) : Page(ui) {
         ScrollView(this).apply { addView(content) }
     }
 
+    /** Yuvarlak renk seçici; seçili olan beyaz çerçeveli. */
+    private fun swatch(color: Int, selected: Boolean, text: String? = null, onPick: () -> Unit): View = with(ctx) {
+        FrameLayout(this).apply {
+            val r = dpf(24)
+            background = pressable(rounded(color, r, if (selected) dp(4) else dp(1), if (selected) Palette.TEXT else 0x40FFFFFF), r)
+            if (text != null) addView(label(text, 12f, bold = true).apply { gravity = Gravity.CENTER }, flp(MATCH, MATCH))
+            onTap(onPick)
+        }
+    }
+
+    /** Gökkuşağı daire: istenen herhangi bir rengi seçmek için. Özel renk seçiliyse o renkle çerçevelenir. */
+    private fun customSwatch(selected: Int?, onPick: () -> Unit): View = with(ctx) {
+        FrameLayout(this).apply {
+            val r = dpf(24)
+            background = pressable(com.newrex.auto.ui.ColorPickerView.rainbowDot(), r)
+            if (selected != null) {
+                addView(View(this@with).apply { background = rounded(selected, dpf(14), dp(3), Palette.TEXT) },
+                    flp(dp(28), dp(28), Gravity.CENTER))
+            } else {
+                addView(label("+", 22f, bold = true).apply { gravity = Gravity.CENTER; setShadowLayer(dpf(4), 0f, 0f, 0xAA000000.toInt()) },
+                    flp(MATCH, MATCH))
+            }
+            onTap(onPick)
+        }
+    }
+
     private fun section(title: String, body: View): View = with(ctx) {
         panel().apply {
             setPadding(dp(18), dp(14), dp(18), dp(16))
@@ -195,6 +244,44 @@ class AboutPage(ui: CarUi) : Page(ui) {
             addView(label(Brand.COPYRIGHT, 13f, Palette.TEXT_FAINT), lp(WRAP, WRAP).margins(t = dp(10)))
             addView(label(Brand.LICENSE_NOTICE, 12f, Palette.TEXT_FAINT, lines = 3).apply { gravity = Gravity.CENTER },
                 lp(MATCH, WRAP).margins(dp(30), dp(4), dp(30), 0))
+        }
+    }
+}
+
+/** Araç ekranında renk seçme sayfası: kareye ve renk çubuğuna dokunarak seçilir, "Uygula" ile kaydedilir. */
+class ColorPickerPage(
+    ui: CarUi,
+    override val title: String,
+    private val initial: Int,
+    private val maxValue: Float,
+    private val onApply: (Int) -> Unit,
+) : Page(ui) {
+    override fun build(): View = with(ctx) {
+        val picker = com.newrex.auto.ui.ColorPickerView(this, initial, maxValue)
+        val preview = View(this)
+        val hexLabel = label("", 18f, bold = true)
+        fun show(c: Int) {
+            preview.background = rounded(c, dpf(40), dp(3), 0x55FFFFFF)
+            hexLabel.text = com.newrex.auto.ui.ColorPickerView.hex(c)
+        }
+        show(picker.color)
+        picker.onChange = { show(it) }
+        val side = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            addView(preview, lp(dp(80), dp(80)))
+            addView(hexLabel, lp(WRAP, WRAP).margins(t = dp(10)))
+            addView(pill("Uygula", R.drawable.ic_check, selected = true) {
+                ui.pop()
+                onApply(picker.color)
+            }, lp(WRAP, dp(48)).margins(t = dp(18)))
+            addView(pill("Vazgeç") { ui.pop() }, lp(WRAP, dp(44)).margins(t = dp(10)))
+        }
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(12), dp(4), dp(16), dp(12))
+            addView(picker, lp(0, MATCH, 1f))
+            addView(side, lp(dp(170), MATCH).margins(l = dp(12)))
         }
     }
 }

@@ -59,6 +59,7 @@ class NewRexSession : Session() {
 
     override fun onCreateScreen(intent: Intent): Screen {
         Prefs.init(carContext)
+        com.newrex.auto.data.CarLog.init(carContext)
         Prefs.lastCarSession = System.currentTimeMillis()
         PlayerHub.init(carContext.applicationContext)
         DriveState.start(carContext)
@@ -68,7 +69,8 @@ class NewRexSession : Session() {
 
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onDestroy(owner: LifecycleOwner) {
-                // Araç kapandı: son konumu park yeri olarak kaydet, yansıtmayı bitir
+                // Araç kapandı: yolculuğu ve son konumu park yeri olarak kaydet, yansıtmayı bitir
+                TripSaver.save()
                 ParkSaver.save(carContext)
                 Mirror.stop(carContext)
                 VehicleData.stop()
@@ -105,6 +107,7 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
     private var ui: CarUi? = null
     private var width = 0
     private var height = 0
+    private var dpi = 0
     private var visibleArea: Rect? = null
 
     // Kaydırma hareketini sahte bir parmak sürüklemesine çeviriyoruz
@@ -131,8 +134,25 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
     }
 
     override fun onSurfaceAvailable(container: SurfaceContainer) {
-        teardown()
         val surface = container.surface ?: return
+        val existing = virtualDisplay
+        if (existing != null && presentation != null) {
+            // Geri görüş kamerası, telefon görüşmesi ya da başka bir uygulamadan dönüldü: arayüz silinmedi,
+            // yeni yüzeye bağlayıp kalınan yerden (açık video, sayfa) devam ediyoruz
+            if (container.width != width || container.height != height || container.dpi != dpi) {
+                width = container.width
+                height = container.height
+                dpi = container.dpi
+                existing.resize(width, height, dpi)
+            }
+            existing.surface = surface
+            ui?.setSurfaceVisible(true)
+            applyInsets()
+            Log.i(TAG, "Yüzey geri geldi ${width}x$height")
+            return
+        }
+        teardown()
+        dpi = container.dpi
         width = container.width
         height = container.height
         val dm = carContext.getSystemService(DisplayManager::class.java)
@@ -152,10 +172,15 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
         Log.i(TAG, "Yüzey ${width}x$height dpi=${container.dpi}")
     }
 
-    private fun buildUi() {
+    private fun buildUi(startOnApps: Boolean = false) {
         val p = presentation ?: return
         ui?.destroy()
-        val newUi = CarUi(p.context) { handler.post { buildUi(); ui?.push(com.newrex.auto.pages.SettingsPage(ui!!)) } }
+        val newUi = CarUi(p.context, startOnApps) { openSettings ->
+            handler.post {
+                buildUi(openSettings || ui?.onApps == true)
+                if (openSettings) ui?.push(com.newrex.auto.pages.SettingsPage(ui!!))
+            }
+        }
         ui = newUi
         p.setContentView(newUi.root)
         applyInsets()
@@ -168,7 +193,12 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
 
     override fun onStableAreaChanged(stableArea: Rect) {}
 
-    override fun onSurfaceDestroyed(container: SurfaceContainer) = teardown()
+    /** Yüzey geçici olarak gitti (kamera, başka uygulama): arayüzü silme, sadece çizimi durdur. */
+    override fun onSurfaceDestroyed(container: SurfaceContainer) {
+        finishDrag()
+        virtualDisplay?.surface = null
+        ui?.setSurfaceVisible(false)
+    }
 
     private fun applyInsets() {
         val a = visibleArea ?: return
@@ -192,12 +222,36 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
 
     // ---- Dokunma aktarımı ----
 
-    override fun onClick(x: Float, y: Float) {
+    /**
+     * Android Auto harita yüzeyinde hızlı iki dokunmayı "yakınlaştır" (çift dokunma) sayıp tıklama yerine
+     * ölçek olayı gönderir. Klavyede hızlı yazarken harfler kaybolmasın diye bunu dokunmaya çeviriyoruz.
+     */
+    override fun onScale(focusX: Float, focusY: Float, scaleFactor: Float) {
+        if (scaleFactor != DOUBLE_TAP_ZOOM) return
+        // Android Auto sadece ilk dokunmanın yerini bildiriyor; ikinci dokunmanın nereye yapıldığını bilemeyiz.
+        // Yanlış harf yazmaktansa sadece ilk dokunmayı uyguluyoruz.
+        tap(focusX, focusY)
+    }
+
+    override fun onClick(x: Float, y: Float) = tap(x, y)
+
+    private var pendingUp: Runnable? = null
+
+    private fun tap(x: Float, y: Float) {
         if (dragStart != 0L) finishDrag()
+        // Önceki dokunmanın bırakılması beklerken yenisi gelirse önce onu bitir; yoksa hızlı yazarken harf kaybolur
+        pendingUp?.let { handler.removeCallbacks(it); it.run() }
         val t = SystemClock.uptimeMillis()
         inject(MotionEvent.ACTION_DOWN, x, y, t, t)
         // Web sayfaları (YouTube) aynı anda gelen bas-bırak'ı dokunma saymayabiliyor; gerçek parmak gibi kısa bekle
-        handler.postDelayed({ inject(MotionEvent.ACTION_UP, x, y, t, SystemClock.uptimeMillis()) }, 70)
+        val up = object : Runnable {
+            override fun run() {
+                if (pendingUp === this) pendingUp = null
+                inject(MotionEvent.ACTION_UP, x, y, t, SystemClock.uptimeMillis())
+            }
+        }
+        pendingUp = up
+        handler.postDelayed(up, 70)
     }
 
     override fun onScroll(distanceX: Float, distanceY: Float) {
@@ -222,7 +276,11 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
     private fun finishDrag() {
         handler.removeCallbacks(endDrag)
         if (dragStart == 0L) return
-        inject(MotionEvent.ACTION_UP, dragX, dragY, dragStart, SystemClock.uptimeMillis())
+        // Titrek bir dokunma da kaydırma olarak gelebiliyor; çok az hareket ettiyse ekranın ortasındaki
+        // öğeye yanlışlıkla basılmasın diye dokunmayı iptal et
+        val moved = kotlin.math.hypot(dragX - width / 2f, dragY - height / 2f)
+        val action = if (moved < carContext.resources.displayMetrics.density * 12) MotionEvent.ACTION_CANCEL else MotionEvent.ACTION_UP
+        inject(action, dragX, dragY, dragStart, SystemClock.uptimeMillis())
         dragStart = 0L
     }
 
@@ -237,5 +295,7 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
 
     private companion object {
         const val TAG = "NewREX"
+        /** Android Auto çift dokunmada bu ölçek değerini gönderir. */
+        const val DOUBLE_TAP_ZOOM = 2f
     }
 }

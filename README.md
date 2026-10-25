@@ -14,10 +14,12 @@ Android Auto için canlı TV, YouTube, radyo, podcast ve ekran yansıtma uygulam
 - ▶️ YouTube
 - 📻 İnternet radyosu
 - 🎙️ Podcast (kaldığın yerden devam)
+- 🖼️ Karşılama ekranı: kendi fotoğrafların ve saat, taşınabilir/büyütülebilir; yukarı kaydırınca uygulamalar
 - 📱 Ekran yansıtma (telefon ekranı araç ekranında)
-- 🚗 Araç paneli, 🌤️ hava durumu, 🔧 bakım hatırlatıcı, 🅿️ "Arabam nerede?"
+- 🚗 Araç paneli: hız, yolculuk, sürüş puanı, hız uyarısı, yakıt defteri, tahmini kilometre ve menzil, yolculuk geçmişi
+- 🌤️ Hava durumu, 🔧 bakım hatırlatıcı (tarih ve kilometreye göre), 🅿️ "Arabam nerede?" ve otopark hatırlatıcısı
 - 🅿️ Park modu: araç hareket edince video gizlenir, ses devam eder
-- 🎨 6 tema rengi, neon dokunma efekti
+- 🎨 İstediğin tema ve arka plan rengi, neon dokunma efekti
 
 ## 🔧 Kurulum
 

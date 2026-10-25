@@ -30,6 +30,8 @@ object PlayerHub {
 
     private var exo: ExoPlayer? = null
     private var session: MediaSession? = null
+    private var sessionPlayer: Player? = null
+    private var appContext: Context? = null
     private var queue: List<MediaEntry> = emptyList()
     private var index = 0
 
@@ -43,6 +45,7 @@ object PlayerHub {
     val duration = MutableStateFlow(0L)
 
     private val handler = Handler(Looper.getMainLooper())
+    private var ticks = 0
     private val ticker = object : Runnable {
         override fun run() {
             val p = exo ?: return
@@ -50,7 +53,8 @@ object PlayerHub {
             if (e?.kind == Kind.PODCAST) {
                 position.value = p.currentPosition
                 duration.value = p.duration.coerceAtLeast(0)
-                if (p.isPlaying) Prefs.savePosition(e.url, p.currentPosition)
+                // Kalınan yer 10 saniyede bir kaydedilir (her saniye diske yazmak gereksiz yük)
+                if (p.isPlaying && ++ticks % 10 == 0) Prefs.savePosition(e.url, p.currentPosition)
             }
             handler.postDelayed(this, 1000)
         }
@@ -119,7 +123,8 @@ object PlayerHub {
             override fun seekToPreviousMediaItem() = prev()
         }
         exo = p
-        session = MediaSession.Builder(context, sessionPlayer).setId("newrex").build()
+        this.sessionPlayer = sessionPlayer
+        appContext = context.applicationContext
         handler.post(ticker)
     }
 
@@ -178,6 +183,9 @@ object PlayerHub {
         exo?.clearMediaItems()
         now.value = null
         error.value = null
+        // Biz çalmıyorken direksiyon tuşları ve bildirim diğer uygulamada (Spotify vb.) kalsın
+        session?.release()
+        session = null
     }
 
     fun release() {
@@ -214,6 +222,12 @@ object PlayerHub {
         if (e.kind == Kind.PODCAST) player.setMediaItem(item, Prefs.position(e.url)) else player.setMediaItem(item)
         position.value = 0
         duration.value = 0
+        // Medya oturumu sadece biz bir şey çalınca açılır; yoksa açılışta Spotify'ın tuşlarını üstleniyorduk
+        if (session == null) {
+            val c = appContext
+            val sp = sessionPlayer
+            if (c != null && sp != null) session = MediaSession.Builder(c, sp).setId("newrex").build()
+        }
         player.prepare()
         player.play()
     }

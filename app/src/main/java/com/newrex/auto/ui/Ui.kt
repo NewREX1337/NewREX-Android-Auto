@@ -42,7 +42,8 @@ object Palette {
     )
     val BG_TOP = 0xFF0B0E1A.toInt()
     val BG_BOTTOM = 0xFF17102B.toInt()
-    const val SURFACE = 0x1AFFFFFF
+    /** Kartların zemini: koyu, yarı saydam cam. Arkada açık renkli bir şey olsa da yazılar okunur. */
+    val SURFACE = 0xA6161A2A.toInt()
     const val SURFACE_STRONG = 0x2EFFFFFF
     val TEXT = Color.WHITE
     const val TEXT_DIM = 0xB3FFFFFF.toInt()
@@ -52,6 +53,40 @@ object Palette {
     val RED = 0xFFE53950.toInt()
 
     var accent = accents[0]
+
+    /** En çok kullanılan renklerin yanında bir ek renk (camgöbeği); geri kalanı "Özel renk" ile seçilir. */
+    val extraAccents = intArrayOf(0xFF00BCD4.toInt())
+
+    /** Hazır koyu arka planlar (0 = otomatik). */
+    val backgrounds = intArrayOf(
+        0, 0xFF000000.toInt(), 0xFF0B0E1A.toInt(), 0xFF0D1A33.toInt(), 0xFF1A1033.toInt(), 0xFF0D2B1E.toInt(),
+        0xFF1C1F24.toInt(),
+    )
+
+    /** Kayıtlı ayarlardan tema rengini yükler. */
+    fun load() {
+        val i = com.newrex.auto.data.Prefs.accentIndex
+        accent = if (i in accents.indices) accents[i] else com.newrex.auto.data.Prefs.customAccent
+    }
+
+    /** Arka plan rengi çok açık seçilirse yazılar okunmaz; parlaklığı sınırlanır. */
+    const val MAX_BG_VALUE = 0.42f
+
+    fun safeBackground(c: Int): Int {
+        if (c == 0) return 0
+        val hsv = FloatArray(3)
+        Color.colorToHSV(c, hsv)
+        hsv[2] = hsv[2].coerceAtMost(MAX_BG_VALUE)
+        return Color.HSVToColor(hsv)
+    }
+
+    /** Tema renginin yanına yakışan ikinci renk (arka plandaki ışık şeritleri için). */
+    fun companion(c: Int): Int {
+        val hsv = FloatArray(3)
+        Color.colorToHSV(c, hsv)
+        hsv[0] = (hsv[0] + 40f) % 360f
+        return Color.HSVToColor(hsv)
+    }
 
     fun withAlpha(color: Int, alpha: Int) = (color and 0x00FFFFFF) or (alpha shl 24)
 }
@@ -218,6 +253,8 @@ fun Context.label(
     maxLines = lines
     ellipsize = TextUtils.TruncateAt.END
     includeFontPadding = false
+    // Açık renkli bir zemine denk gelse de okunabilsin diye hafif gölge
+    setShadowLayer(dpf(3), 0f, dpf(1), 0x99000000.toInt())
 }
 
 fun Context.icon(res: Int, sizeDp: Int, tint: Int = Palette.TEXT) = ImageView(this).apply {
@@ -267,5 +304,5 @@ fun Context.pill(
 /** Yarı saydam yuvarlatılmış panel. */
 fun Context.panel(orientationVertical: Boolean = true, radiusDp: Int = 18) = LinearLayout(this).apply {
     orientation = if (orientationVertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
-    background = rounded(Palette.SURFACE, dpf(radiusDp))
+    background = rounded(Palette.SURFACE, dpf(radiusDp), dp(1), 0x1AFFFFFF)
 }

@@ -6,6 +6,7 @@ import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.newrex.auto.PhoneInput
 import com.newrex.auto.R
 import java.util.Locale
 
@@ -56,11 +57,19 @@ class KeyboardView(
 
         val bottom = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
         bottom.addView(key("Kapat") { onClose() }, keyLp(1.4f))
+        // Hızlı yazmak için telefonun kendi klavyesi (araçta hızlı dokunmalar birleşebiliyor)
+        bottom.addView(key("📱 Telefon") {
+            PhoneInput.request(context.applicationContext, text.toString(), hintText, secret) { typed ->
+                text.setLength(0)
+                text.append(typed.take(200))
+                refresh()
+            }
+        }, keyLp(1.6f))
         bottom.addView(key("?123") {
             layout = if (layout == Layout.LETTERS) Layout.SYMBOLS else Layout.LETTERS
             renderKeys()
         }.also { modeKey = it }, keyLp(1.2f))
-        bottom.addView(key("boşluk") { type(" ") }, keyLp(4f))
+        bottom.addView(key("boşluk") { type(" ") }, keyLp(3.4f))
         bottom.addView(iconKey(R.drawable.ic_backspace) {
             if (text.isNotEmpty()) text.deleteCharAt(text.length - 1)
             refresh()
@@ -74,6 +83,11 @@ class KeyboardView(
     }
 
     private lateinit var modeKey: TextView
+
+    override fun onDetachedFromWindow() {
+        PhoneInput.cancel()
+        super.onDetachedFromWindow()
+    }
 
     private fun renderKeys() {
         keyRows.removeAllViews()

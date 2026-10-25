@@ -52,6 +52,22 @@
             android:excludeFromRecents="true"
             android:theme="@style/Theme.NewREX.Translucent" />
 
+        <receiver
+            android:name=".ParkTimerReceiver"
+            android:exported="false" />
+
+        <activity
+            android:name=".PhoneInputActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:windowSoftInputMode="stateAlwaysVisible|adjustResize" />
+
+        <activity
+            android:name=".PhotoPickActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.NewREX.Translucent" />
+
         <service
             android:name=".MirrorService"
             android:exported="false"

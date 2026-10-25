@@ -19,6 +19,7 @@ import coil.transform.RoundedCornersTransformation
 import com.newrex.auto.DriveState
 import com.newrex.auto.PlayerHub
 import com.newrex.auto.R
+import com.newrex.auto.data.Board
 import com.newrex.auto.data.Kind
 import com.newrex.auto.data.Prefs
 import com.newrex.auto.WeatherHub
@@ -34,6 +35,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -64,7 +66,7 @@ abstract class Page(val ui: CarUi) {
     }
 }
 
-class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
+class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuild: (openSettings: Boolean) -> Unit) {
     val root = FrameLayout(ctx)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val handler = Handler(Looper.getMainLooper())
@@ -92,7 +94,16 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
     private var keyboard: View? = null
     private var toastView: TextView? = null
 
+    // Sayfa 1: fotoğraflı karşılama ekranı, sayfa 2: uygulamalar (aşağıdaki sayfa yığını)
+    private val wave = WaveBackground(ctx)
+    private val pager = VerticalPager(ctx)
+    private lateinit var board: BoardView
+    private var surfaceVisible = true
+
     val pageCount get() = stack.size
+
+    /** Uygulamalar sayfası mı açık (karşılama ekranı değil)? */
+    val onApps get() = pager.page == 1
 
     /** Android Auto bölünmüş ekrandayken (sağda müzik/harita kartı) arayüz sadeleşir. */
     val compact = MutableStateFlow(false)
@@ -105,16 +116,43 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
     }
 
     init {
-        Palette.accent = Palette.accents[Prefs.accentIndex.coerceIn(0, Palette.accents.lastIndex)]
-        root.background = ambientBackground(ctx)
+        Palette.load()
+        Board.init(ctx)
+        com.newrex.auto.data.CarLog.init(ctx)
+        val bg = Palette.safeBackground(Prefs.bgColor)
+        root.setBackgroundColor(if (bg != 0) bg else Palette.BG_TOP)
 
         val column = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
         column.addView(buildTopBar(), lp(MATCH, ctx.dp(60)))
         column.addView(content, lp(MATCH, 0, 1f))
         column.addView(buildMiniPlayer(), lp(MATCH, ctx.dp(66)).margins(ctx.dp(12), ctx.dp(4), ctx.dp(12), ctx.dp(10)))
-        root.addView(column, flp(MATCH, MATCH))
+
+        val accent2 = Palette.companion(Palette.accent)
+        wave.setPalette(0, Palette.accent, accent2, animate = false, base = bg)
+        wave.setPalette(1, Palette.accent, accent2, animate = false, base = bg)
+        board = BoardView(this, scope).apply {
+            onEditing = { refreshPagerLock() }
+            onTheme = { c1, c2 -> wave.setPalette(0, c1, c2, base = bg) }
+            onOpenApps = { pager.goTo(1) }
+        }
+        pager.addView(board, flp(MATCH, MATCH))
+        pager.addView(column, flp(MATCH, MATCH))
+        pager.onPosition = { wave.mix = it }
+        pager.onPage = {
+            if (it == 1) board.exitEdit()
+            // Uygulamalar sayfasında arka plan daha seyrek çizilir (telefonu yormasın)
+            wave.frameMs = if (it == 0) 40L else 66L
+        }
+        root.addView(wave, flp(MATCH, MATCH))
+        root.addView(pager, flp(MATCH, MATCH))
+        if (startOnApps) { pager.goTo(1, animate = false); wave.mix = 1f }
+        // Telefondan ya da ayarlardan tema değişince arayüz yeni renklerle kurulur
+        scope.launch {
+            Prefs.theme.drop(1).collect { onRebuild(stack.any { it is com.newrex.auto.pages.SettingsPage }) }
+        }
 
         scope.launch { DriveState.driving.collect { updateDriveChip(it) } }
+        scope.launch { DriveState.speedKmh.collect { checkSpeedLimit(it) } }
         scope.launch {
             combine(compact, WeatherHub.report) { c, w -> c to w }.collect { (c, w) ->
                 titleView.visibility = if (c) View.INVISIBLE else View.VISIBLE
@@ -154,6 +192,7 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
         stack.add(page)
         refreshChrome()
         page.onShow()
+        if (stack.size > 1 && pager.page != 1) pager.goTo(1, animate = false)
     }
 
     fun pop() {
@@ -166,9 +205,11 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
         stack.last().onShow()
     }
 
+    /** Android Auto'daki ev tuşu: alt sayfalardan uygulamalara, uygulamalardan karşılama ekranına. */
     fun home() {
         hideKeyboard()
-        while (stack.size > 1) pop()
+        if (stack.size > 1) while (stack.size > 1) pop()
+        else pager.goTo(if (pager.page == 1) 0 else 1)
     }
 
     fun back() {
@@ -185,12 +226,24 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
         actionsBox.removeAllViews()
         top.actions().forEach { actionsBox.addView(it, lp(ctx.dp(44), ctx.dp(44)).margins(l = ctx.dp(8))) }
         refreshMini()
+        refreshPagerLock()
+        // Animasyon sadece ana sayfalarda; alt sayfalarda ve videoda durur, telefonu yormaz
+        wave.running = surfaceVisible && stack.size == 1
     }
 
-    /** Renk teması değişince bütün arayüz yeniden kurulur. */
-    fun rebuild() = onRebuild()
+    /** Araç ekranı başka bir şey gösterirken (geri görüş kamerası vb.) animasyon boşuna çizilmesin. */
+    fun setSurfaceVisible(visible: Boolean) {
+        surfaceVisible = visible
+        wave.running = visible && stack.size == 1
+    }
+
+    private fun refreshPagerLock() {
+        pager.locked = stack.size > 1 || keyboard != null || (::board.isInitialized && board.editing)
+    }
+
 
     fun destroy() {
+        wave.running = false
         handler.removeCallbacksAndMessages(null)
         stack.forEach { it.destroy() }
         stack.clear()
@@ -205,12 +258,40 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
         this.topRightReserve = topRightReserve
         root.setPadding(left, top, right, bottom)
         topBar.setPadding(ctx.dp(14), ctx.dp(8), maxOf(ctx.dp(14), topRightReserve), 0)
+        board.setTopRightReserve(topRightReserve)
         val visibleWidth = ctx.resources.displayMetrics.widthPixels - left - right
         compact.value = visibleWidth < ctx.dp(600)
     }
 
+    private var overLimit = false
+    private var lastSpeedAlert = 0L
+
+    /** Hız uyarısı: sınır geçilince bir kez uyarır; hız sınırın 5 km/s altına inince yeniden kurulur. */
+    private fun checkSpeedLimit(kmh: Float?) {
+        val limit = com.newrex.auto.data.CarLog.speedLimit
+        if (limit <= 0 || kmh == null) { overLimit = false; return }
+        val now = System.currentTimeMillis()
+        if (kmh > limit + 0.5f) {
+            if (!overLimit && now - lastSpeedAlert > 20_000) {
+                lastSpeedAlert = now
+                toast("⚠️ Hız sınırını aştın: ${kmh.toInt()} km/s (sınır $limit)", long = true)
+                runCatching {
+                    val tone = android.media.ToneGenerator(android.media.AudioManager.STREAM_NOTIFICATION, 80)
+                    tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 400)
+                    handler.postDelayed({ tone.release() }, 800)
+                }
+            }
+            overLimit = true
+        } else if (kmh < limit - 5) overLimit = false
+    }
+
     /** Oturum başında bir kez: yaklaşan bakım ve yağmur uyarısı. */
     private fun showStartupAlerts() {
+        if (!SessionAlerts.locationShown && !com.newrex.auto.DriveState.hasLocationPermission(ctx)) {
+            SessionAlerts.locationShown = true
+            toast("📍 Hız, yolculuk ve park modu için telefonda NewREX'e konum izni ver.", long = true)
+            return
+        }
         if (!SessionAlerts.maintenanceShown) {
             SessionAlerts.maintenanceShown = true
             Prefs.maintenanceDue().firstOrNull { it.second <= 15 }?.let { (m, days) ->
@@ -219,6 +300,15 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
                     days == 0L -> "${m.emoji} ${m.title} bugün!"
                     else -> "${m.emoji} ${m.title} için $days gün kaldı"
                 }, long = true)
+            }
+        }
+        if (!SessionAlerts.oilShown) {
+            SessionAlerts.oilShown = true
+            val km = com.newrex.auto.VehicleData.odometerKm.value ?: com.newrex.auto.data.CarLog.estimatedOdometer()
+            com.newrex.auto.data.CarLog.oilKmLeft(km)?.takeIf { it <= 500 }?.let { left ->
+                handler.postDelayed({
+                    toast(if (left < 0) "🛢️ Yağ değişimi ${(-left).toInt()} km gecikti!" else "🛢️ Yağ değişimine ${left.toInt()} km kaldı", long = true)
+                }, 6500)
             }
         }
         scope.launch {
@@ -255,11 +345,13 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
             onClose = { hideKeyboard() })
         keyboard = kb
         root.addView(kb, flp(MATCH, MATCH))
+        refreshPagerLock()
     }
 
     fun hideKeyboard() {
         keyboard?.let { root.removeView(it) }
         keyboard = null
+        refreshPagerLock()
     }
 
     fun toast(message: String, long: Boolean = false) {
@@ -415,7 +507,9 @@ class CarUi(val ctx: Context, private val onRebuild: () -> Unit) {
 object SessionAlerts {
     var maintenanceShown = false
     var rainShown = false
-    fun reset() { maintenanceShown = false; rainShown = false }
+    var locationShown = false
+    var oilShown = false
+    fun reset() { maintenanceShown = false; rainShown = false; locationShown = false; oilShown = false }
 }
 
 fun kindIcon(kind: Kind) = when (kind) {

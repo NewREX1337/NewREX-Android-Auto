@@ -26,14 +26,33 @@ object Prefs {
         }
     }
 
+    /** Tema değişince artar; araç ekranı bunu dinleyip kendini yeni renklerle yeniden kurar. */
+    val theme = MutableStateFlow(0)
+
+    /** Hazır renklerden biri (0..5) ya da -1: [customAccent]. */
     var accentIndex: Int
         get() = sp.getInt("accent", 0)
-        set(v) = sp.edit().putInt("accent", v).apply()
+        set(v) { sp.edit().putInt("accent", v).apply(); theme.value++ }
+
+    /** Kullanıcının kendi seçtiği tema rengi. */
+    var customAccent: Int
+        get() = sp.getInt("customAccent", 0xFF7C5CFF.toInt())
+        set(v) { sp.edit().putInt("customAccent", v).putInt("accent", -1).apply(); theme.value++ }
+
+    /** Arka plan rengi; 0 = otomatik (tema renginin koyu tonu). */
+    var bgColor: Int
+        get() = sp.getInt("bgColor", 0)
+        set(v) { sp.edit().putInt("bgColor", v).apply(); theme.value++ }
 
     /** true → sürüşte video/web gizlenir (varsayılan); false → görüntü açık kalır. */
     var parkModeVideo: Boolean
         get() = sp.getBoolean("parkModeVideo", true)
         set(v) { sp.edit().putBoolean("parkModeVideo", v).apply(); bump() }
+
+    /** Tam ekran videonun ekrana yerleşimi: 0 sığdır (kenarda siyah bant), 1 doldur (kenarlar kırpılır), 2 uzat. */
+    var videoFit: Int
+        get() = sp.getInt("videoFit", 0).coerceIn(0, 2)
+        set(v) = sp.edit().putInt("videoFit", v).apply()
 
     var playlists: List<Playlist>
         get() {
