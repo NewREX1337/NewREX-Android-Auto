@@ -9,7 +9,6 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -26,8 +25,10 @@ import com.newrex.auto.PhotoPickActivity
 import com.newrex.auto.R
 import com.newrex.auto.data.Board
 import com.newrex.auto.data.BoardItem
+import com.newrex.auto.data.Prefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -60,13 +61,6 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
     /** Ekranın renkleri fotoğrafa göre değişince: (renk1, renk2). */
     var onTheme: ((Int, Int) -> Unit)? = null
     var onOpenApps: (() -> Unit)? = null
-
-    private val tick = object : Runnable {
-        override fun run() {
-            holders.values.forEach { it.updateClock() }
-            handler.postDelayed(this, 10_000)
-        }
-    }
 
     init {
         addView(layer, flp(MATCH, MATCH))
@@ -108,11 +102,13 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
         scope.launch {
             combine(Board.items, Board.photos) { i, _ -> i }.collect { sync(it) }
         }
-    }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        handler.post(tick)
+        // Telefondan saat tasarımı değişince saat yeniden kurulur
+        scope.launch {
+            Prefs.looks.drop(1).collect {
+                holders.values.filter { it.item.type == BoardItem.CLOCK }.forEach { layer.removeView(it.view); holders.remove(it.item.id) }
+                sync(Board.items.value)
+            }
+        }
     }
 
     override fun onDetachedFromWindow() {
@@ -172,8 +168,6 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
         private val content: View
         private val removeBadge: View
         private val sizeBadge: View
-        private var clockTime: TextView? = null
-        private var clockDate: TextView? = null
         private var wiggle: ObjectAnimator? = null
         private var photoW = WRAP
         private var photoH = WRAP
@@ -188,34 +182,16 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
                 Board.update(item.copy(size = (item.size + 1) % 3))
             }
             view.addView(sizeBadge, flp(ctx.dp(34), ctx.dp(34), Gravity.BOTTOM or Gravity.END))
-            updateClock()
         }
 
         private fun buildClock(s: Float): View {
-            val time = TextView(ctx).apply {
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, ctx.dpf(intArrayOf(56, 84, 116)[item.size]) * s)
-                setTextColor(Palette.TEXT)
-                typeface = Typeface.create("sans-serif-thin", Typeface.NORMAL)
-                includeFontPadding = false
-                setShadowLayer(ctx.dpf(14), 0f, ctx.dpf(2), 0x88000000.toInt())
-                letterSpacing = 0.02f
-            }
-            val date = TextView(ctx).apply {
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, ctx.dpf(intArrayOf(15, 19, 24)[item.size]) * s)
-                setTextColor(Palette.TEXT_DIM)
-                typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-                includeFontPadding = false
-                setShadowLayer(ctx.dpf(8), 0f, ctx.dpf(1), 0x88000000.toInt())
-            }
-            clockTime = time
-            clockDate = date
-            return LinearLayout(ctx).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER_HORIZONTAL
-                setPadding(ctx.dp(10), ctx.dp(6), ctx.dp(10), ctx.dp(8))
-                addView(time, lp(WRAP, WRAP))
-                addView(date, lp(WRAP, WRAP).margins(t = ctx.dp(6)))
-            }
+            val (w, h) = ClockView.sizeFor(Prefs.clockStyle, item.size, s, ctx.resources.displayMetrics.density)
+            // Ekrandan taşmasın
+            val maxW = (layer.width.takeIf { it > 0 } ?: ctx.resources.displayMetrics.widthPixels) * 0.8f
+            val maxH = (layer.height.takeIf { it > 0 } ?: ctx.resources.displayMetrics.heightPixels) * 0.82f
+            val fit = minOf(1f, maxW / w, maxH / h)
+            photoW = (w * fit).toInt(); photoH = (h * fit).toInt()
+            return ClockView(ctx, Prefs.clockStyle)
         }
 
         private fun buildPhoto(s: Float): View {
@@ -240,13 +216,6 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
                 setBackgroundColor(0x22FFFFFF)
                 item.file?.let { load(Board.file(it)) { crossfade(400); size(photoW, photoH) } }
             }
-        }
-
-        fun updateClock() {
-            val t = clockTime ?: return
-            val now = Date()
-            t.text = SimpleDateFormat("HH:mm", tr).format(now)
-            clockDate?.text = SimpleDateFormat("d MMMM EEEE", tr).format(now)
         }
 
         fun decorate() {

@@ -37,7 +37,9 @@ import com.newrex.auto.data.Prefs
 import com.newrex.auto.ui.MATCH
 import com.newrex.auto.ui.Palette
 import com.newrex.auto.ui.WRAP
+import com.newrex.auto.ui.ClockView
 import com.newrex.auto.ui.ColorPickerView
+import com.newrex.auto.ui.FmDisplayView
 import com.newrex.auto.ui.WaveBackground
 import com.newrex.auto.ui.dp
 import com.newrex.auto.ui.dpf
@@ -60,6 +62,7 @@ class MainActivity : Activity() {
     private lateinit var wave: WaveBackground
     private lateinit var logo: TextView
     private lateinit var themeSummary: TextView
+    private lateinit var looksSummary: TextView
     private lateinit var locationCard: View
     private lateinit var locationStatus: TextView
     private lateinit var photosBox: LinearLayout
@@ -121,6 +124,9 @@ class MainActivity : Activity() {
 
         themeSummary = summary()
         col.addView(section(R.drawable.ic_settings, 0xFF00BCD4.toInt(), "Tema", themeSummary, *themeBody()))
+
+        looksSummary = summary()
+        col.addView(section(R.drawable.ic_radio, 0xFFFFB238.toInt(), "Saat ve radyo görünümü", looksSummary, *looksBody()))
 
         mirrorStatus = label("", 14f, Palette.TEXT_DIM, lines = 6)
         mirrorButton = button("Ekranı arabaya yansıt") {
@@ -481,6 +487,53 @@ class MainActivity : Activity() {
                 addView(label("HEX", 13f, Palette.TEXT_DIM), lp(WRAP, WRAP).margins(l = dp(12), r = dp(8)))
                 addView(hexBox, lp(0, dp(40), 1f))
             }, lp(MATCH, WRAP).margins(t = dp(6)))
+        }
+    }
+
+    // ---- Saat ve radyo görünümü ----
+
+    private fun looksBody(): Array<View> {
+        val clocks = ClockView.STYLES.indices.map { i -> ClockView(this, i) }
+        val fms = FmDisplayView.STYLES.indices.map { i -> FmDisplayView(this, i).apply { freq = 1000 } }
+        val clockRow = choiceRow(clocks, ClockView.STYLES.map { it.name + if (it.analog) " ◷" else "" }, dp(150), dp(120),
+            { Prefs.clockStyle }) { Prefs.clockStyle = it }
+        val fmRow = choiceRow(fms, FmDisplayView.STYLES.map { it.name }, dp(210), dp(90), { Prefs.fmStyle }) { Prefs.fmStyle = it }
+        refreshLooksSummary()
+        return arrayOf(
+            label("Saat", 15f, bold = true), clockRow,
+            label("Radyo frekans göstergesi", 15f, bold = true), fmRow,
+            label("◷ olanlar yuvarlak (akrepli) saat. Seçtiğin tasarım araç ekranına hemen yansır.", 12f, Palette.TEXT_FAINT, lines = 2),
+        )
+    }
+
+    private fun refreshLooksSummary() {
+        looksSummary.text = "Saat: ${ClockView.STYLES[Prefs.clockStyle.coerceIn(0, ClockView.STYLES.lastIndex)].name} · " +
+            "Radyo: ${FmDisplayView.STYLES[Prefs.fmStyle.coerceIn(0, FmDisplayView.STYLES.lastIndex)].name}"
+    }
+
+    /** Yatay kaydırılan önizleme kartları; seçili olanın çerçevesi tema renginde. */
+    private fun choiceRow(previews: List<View>, names: List<String>, w: Int, h: Int, current: () -> Int, onPick: (Int) -> Unit): View {
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val cards = previews.mapIndexed { i, v ->
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                setPadding(dp(8), dp(8), dp(8), dp(6))
+                addView(v, lp(MATCH, h))
+                addView(label(names[i], 13f, Palette.TEXT_DIM), lp(WRAP, WRAP).margins(t = dp(4)))
+                row.addView(this, lp(w, WRAP).margins(r = dp(10)))
+            }
+        }
+        fun paint() = cards.forEachIndexed { i, c ->
+            val sel = i == current()
+            c.background = rounded(if (sel) Palette.withAlpha(Palette.accent, 0x26) else 0x22000000, dpf(16),
+                dp(if (sel) 2 else 1), if (sel) Palette.accent else 0x22FFFFFF)
+        }
+        cards.forEachIndexed { i, c -> c.setOnClickListener { onPick(i); paint(); refreshLooksSummary() } }
+        paint()
+        return android.widget.HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(row)
         }
     }
 

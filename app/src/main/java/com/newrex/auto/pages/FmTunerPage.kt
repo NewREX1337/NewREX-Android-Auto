@@ -5,9 +5,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Paint
-import android.graphics.RectF
 import android.graphics.Shader
-import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
@@ -23,7 +21,9 @@ import com.newrex.auto.data.FmPreset
 import com.newrex.auto.data.FmPresets
 import com.newrex.auto.data.Kind
 import com.newrex.auto.data.MediaEntry
+import com.newrex.auto.data.Prefs
 import com.newrex.auto.ui.CarUi
+import com.newrex.auto.ui.FmDisplayView
 import com.newrex.auto.ui.MATCH
 import com.newrex.auto.ui.Page
 import com.newrex.auto.ui.Palette
@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 /**
- * Klasik FM radyo görünümü: lambalı (nixie) frekans göstergesi, kaydırılan skala, ileri/geri istasyon arama.
+ * Klasik FM radyo görünümü: frekans göstergesi (telefondan 8 tasarımdan biri seçilir), kaydırılan skala, ileri/geri istasyon arama.
  * Frekanslara internet radyoları yerleştirilir; hazır olanlar İstanbul frekanslarıdır, ☆ ile her frekansa
  * istenen istasyon kaydedilebilir.
  */
@@ -48,7 +48,7 @@ class FmTunerPage(ui: CarUi) : Page(ui) {
     override val title = "FM"
 
     private val handler = Handler(Looper.getMainLooper())
-    private lateinit var nixie: NixieView
+    private lateinit var nixie: FmDisplayView
     private lateinit var dial: DialView
     private lateinit var stationName: TextView
     private lateinit var stationInfo: TextView
@@ -58,8 +58,9 @@ class FmTunerPage(ui: CarUi) : Page(ui) {
     private val tuneLater = Runnable { tuneNow() }
 
     override fun build(): View = with(ctx) {
-        nixie = NixieView(this)
+        nixie = FmDisplayView(this, Prefs.fmStyle)
         dial = DialView(this)
+        dial.pointer = nixie.pointerColor
         stationName = label("", 22f, bold = true).apply { gravity = Gravity.CENTER }
         stationInfo = label("", 13f, Palette.TEXT_DIM, lines = 2).apply { gravity = Gravity.CENTER }
 
@@ -121,6 +122,9 @@ class FmTunerPage(ui: CarUi) : Page(ui) {
         }
         root.addView(column, flp(MATCH, MATCH))
         scope.launch { PlayerHub.now.collect { refreshInfo() } }
+        scope.launch {
+            Prefs.looks.collect { nixie.style = Prefs.fmStyle; dial.pointer = nixie.pointerColor; dial.invalidate() }
+        }
         scope.launch { FmPresets.changes.collect { dial.invalidate(); refreshInfo(); refreshCities() } }
         com.newrex.auto.DriveState.bestLocation(ctx)?.let { FmPresets.autoCity(it.latitude, it.longitude) }
         setFreq(freq, play = false)
@@ -218,84 +222,11 @@ class FmTunerPage(ui: CarUi) : Page(ui) {
 
     // ---- Görünümler ----
 
-    /** Eski lambalı (nixie) göstergeler gibi turuncu parlayan rakamlar. */
-    private class NixieView(context: Context) : View(context) {
-        var freq = 1000
-            set(v) { field = v; invalidate() }
-        private val glass = Paint(Paint.ANTI_ALIAS_FLAG)
-        private val rim = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-        private val ghost = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create("sans-serif-thin", Typeface.NORMAL)
-            textAlign = Paint.Align.CENTER
-        }
-        private val digit = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-            textAlign = Paint.Align.CENTER
-        }
-        private val rect = RectF()
-
-        override fun onDraw(canvas: Canvas) {
-            val text = FmPresets.format(freq).padStart(5, ' ')   // "100.0" / " 87.5"
-            val h = height.toFloat()
-            val tubeH = h * 0.92f
-            val tubeW = tubeH * 0.56f
-            val gap = tubeW * 0.12f
-            val dotW = tubeW * 0.35f
-            val total = 4 * tubeW + dotW + 4 * gap
-            var x = (width - total) / 2f
-            val top = (h - tubeH) / 2f
-            for (ch in text) {
-                val isDot = ch == '.'
-                val w = if (isDot) dotW else tubeW
-                tube(canvas, x, top, w, tubeH, isDot)
-                val cx = x + w / 2
-                if (isDot) {
-                    digit.setShadowLayer(w * 0.4f, 0f, 0f, ORANGE)
-                    digit.color = ORANGE_LIGHT
-                    canvas.drawCircle(cx, top + tubeH * 0.78f, w * 0.13f, digit)
-                } else {
-                    val size = tubeH * 0.62f
-                    ghost.textSize = size
-                    ghost.color = 0x14FFB070
-                    canvas.drawText("8", cx, top + tubeH * 0.72f, ghost)
-                    if (ch != ' ') {
-                        digit.textSize = size
-                        digit.color = ORANGE_LIGHT
-                        digit.setShadowLayer(size * 0.18f, 0f, 0f, ORANGE)
-                        canvas.drawText(ch.toString(), cx, top + tubeH * 0.72f, digit)
-                    }
-                }
-                x += w + gap
-            }
-        }
-
-        /** Cam tüp: koyu, üstte yansıması olan yuvarlak gövde. */
-        private fun tube(canvas: Canvas, x: Float, y: Float, w: Float, h: Float, small: Boolean) {
-            val r = w / 2
-            val top = if (small) y + h * 0.55f else y
-            rect.set(x, top, x + w, y + h)
-            glass.shader = LinearGradient(x, 0f, x + w, 0f,
-                intArrayOf(0x40FFFFFF, 0x0CFFFFFF, 0x06FFFFFF, 0x26FFFFFF), null, Shader.TileMode.CLAMP)
-            canvas.drawRoundRect(rect, r, r, glass)
-            rim.strokeWidth = w * 0.025f
-            rim.color = 0x33FFFFFF
-            canvas.drawRoundRect(rect, r, r, rim)
-            // Taban
-            glass.shader = null
-            glass.color = 0xFF14161C.toInt()
-            canvas.drawRect(x + w * 0.1f, y + h - h * 0.05f, x + w * 0.9f, y + h, glass)
-        }
-
-        companion object {
-            const val ORANGE = 0xFFFF7A1A.toInt()
-            const val ORANGE_LIGHT = 0xFFFFB066.toInt()
-        }
-    }
-
     /** 87.5–108 MHz skalası: ortadaki ibre seçili frekans, noktalar kayıtlı istasyonlar. */
     private class DialView(context: Context) : View(context) {
         var freq = 1000
             set(v) { field = v; invalidate() }
+        var pointer = FmDisplayView.ORANGE
         private val p = Paint(Paint.ANTI_ALIAS_FLAG)
         private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
 
@@ -329,7 +260,7 @@ class FmTunerPage(ui: CarUi) : Page(ui) {
                 }
             }
             // İbre
-            p.color = NixieView.ORANGE
+            p.color = pointer
             p.strokeWidth = 3 * d
             canvas.drawLine(cx, h * 0.12f, cx, h * 0.92f, p)
             // Kenarlara doğru soluklaşma

@@ -45,6 +45,16 @@ object Playlists {
         "sports" to "Spor", "travel" to "Gezi", "weather" to "Hava durumu", "undefined" to "Diğer",
     )
 
+    /** Listede gösterilmeyen dini kanallar (grubu "Religious" olanlar zaten çıkarılır). */
+    private val HIDDEN = listOf("diyanet", "semerkand", "lalegul", "lalegül", "dost tv", "diyar tv", "sat 7", "sat-7",
+        "al-zahra", "al-rafidain", "sercem", "ilke tv", "qaf tv", "hilal tv", "rehber tv", "berat tv", "mesaj tv", "kanal hayat")
+
+    /** A Haber, A Spor, ATV, A2 gibi kanallar listenin sonuna konur. */
+    private val LAST = Regex("^(a |a2|atv)", RegexOption.IGNORE_CASE)
+
+    private fun hidden(name: String, group: String?) =
+        group?.contains("religious", ignoreCase = true) == true || HIDDEN.any { name.lowercase().contains(it) }
+
     data class Result(val channels: List<MediaEntry>, val errors: List<String>)
 
     suspend fun loadAll(context: Context, forceRefresh: Boolean = false): Result =
@@ -58,7 +68,7 @@ object Playlists {
                     errors += "${pl.name}: ${e.message ?: "açılamadı"}"
                 }
             }
-            Result(channels.distinctBy { it.url }, errors)
+            Result(channels.distinctBy { it.url }.sortedBy { LAST.containsMatchIn(it.title) }, errors)
         }
 
     private fun fetch(context: Context, pl: Playlist, forceRefresh: Boolean): String {
@@ -94,6 +104,7 @@ object Playlists {
                 }
                 line.isEmpty() || line.startsWith("#") -> Unit
                 else -> {
+                    if (hidden(name.orEmpty(), group)) { name = null; logo = null; group = null; continue }
                     out += MediaEntry(
                         kind = Kind.TV,
                         title = name?.ifBlank { null } ?: line.substringAfterLast('/'),

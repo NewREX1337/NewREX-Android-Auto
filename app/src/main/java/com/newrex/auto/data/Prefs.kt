@@ -44,6 +44,19 @@ object Prefs {
         get() = sp.getInt("bgColor", 0)
         set(v) { sp.edit().putInt("bgColor", v).apply(); theme.value++ }
 
+    /** Saat ve FM göstergesi görünümü değişince artar (araç ekranı yeniden kurulmadan güncellenir). */
+    val looks = MutableStateFlow(0)
+
+    /** Karşılama ekranındaki saatin tasarımı (ClockView.STYLES sırası). */
+    var clockStyle: Int
+        get() = sp.getInt("clockStyle", 0)
+        set(v) { sp.edit().putInt("clockStyle", v).apply(); looks.value++ }
+
+    /** FM sayfasındaki frekans göstergesinin tasarımı (FmDisplayView.STYLES sırası). */
+    var fmStyle: Int
+        get() = sp.getInt("fmStyle", 0)
+        set(v) { sp.edit().putInt("fmStyle", v).apply(); looks.value++ }
+
     /** true → sürüşte video/web gizlenir (varsayılan); false → görüntü açık kalır. */
     var parkModeVideo: Boolean
         get() = sp.getBoolean("parkModeVideo", true)
