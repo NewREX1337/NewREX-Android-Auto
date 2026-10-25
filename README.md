@@ -1,51 +1,54 @@
 # NewREX Android Auto
 
-**Orijinal geliştirici: NewREX** · Ücretsiz ve açık kaynak · Reklam yok, takip yok, veri toplanmaz
+Arabanın ekranında **TV, YouTube, radyo ve podcast**. Ücretsiz, reklamsız, hiçbir bilgini toplamaz.
 
-Android Auto için canlı TV, YouTube, radyo, podcast ve ekran yansıtma uygulaması.
+## ✨ Neler var?
 
-## 📥 İndir
-
-[**Releases**](https://github.com/NewREX1337/NewREX-Android-Auto/releases) sayfasından son sürümün `.apk` dosyasını indir.
-
-## ✨ Özellikler
-
-- 📺 Canlı TV / IPTV
+- 📺 Canlı TV
 - ▶️ YouTube
-- 📻 İnternet radyosu + klasik FM ekranı (frekansla arama; İstanbul, Ankara, İzmir frekansları)
-- 🎙️ Podcast (kaldığın yerden devam)
-- 🖼️ Karşılama ekranı: kendi fotoğrafların ve saat, taşınabilir/büyütülebilir; yukarı kaydırınca uygulamalar
-- 📱 Ekran yansıtma (telefon ekranı araç ekranında)
-- 🚗 Araç paneli: hız, yolculuk, sürüş puanı, hız uyarısı, yakıt defteri, tahmini kilometre ve menzil, yolculuk geçmişi
-- 🌤️ Hava durumu, 🔧 bakım hatırlatıcı (tarih ve kilometreye göre), 🅿️ "Arabam nerede?" ve otopark hatırlatıcısı
-- 🅿️ Park modu: araç hareket edince video gizlenir, ses devam eder
-- 🎨 İstediğin tema ve arka plan rengi, neon dokunma efekti
+- 📻 Radyo (FM radyo gibi frekansla da arayabilirsin)
+- 🎙️ Podcast
+- 🖼️ Açılışta kendi fotoğrafların ve saat
+- 📱 Telefon ekranını arabaya yansıtma
+- 🚗 Hız, yolculuk, yakıt ve bakım takibi
+- 🌤️ Hava durumu, 🅿️ "Arabam nerede?"
+- 🎨 İstediğin renk
 
-## 🔧 Kurulum
+Araba hareket edince video kapanır, ses devam eder (güvenliğin için).
 
-1. Telefonda eski bir NewREX varsa **önce kaldır**.
-2. **King Installer**'ı kur. NewREX APK'sını **King Installer ile** yükle: APK'yı seç, üç seçeneği de kapalı bırak,
-   **Install as king** → Play Protect sorarsa **Uygulamayı tara** → **Yükle**.
-   (Samsung'da engellenirse **Ayarlar → Güvenlik ve gizlilik → Otomatik Engelleyici**'yi kapat.)
-3. **Ayarlar → Bağlı cihazlar → Android Auto** → en alttaki **Sürüm**'e 10 kez dokun →
-   **⋮ → Geliştirici ayarları → Bilinmeyen kaynaklar**'ı işaretle.
-4. Telefonda NewREX'i bir kez aç ve konum iznini ver. Arabada Android Auto menüsünden aç.
+## 📲 Nasıl kurulur?
 
-> APK'ya dokunup normal kurarsan uygulama arabada **görünmez** (Android Auto reddeder). King Installer şart.
-> Kontrol: Android Auto ayarları → **Başlatıcıyı özelleştirme** listesinde NewREX varsa arabada da görünür.
-> Görünmüyorsa NewREX → **Yardım → Sorun giderme** ekran görüntüsüyle bir *Issue* aç.
+Sırayla yap, hiçbir adımı atlama.
 
-## 🔒 Güvenlik
+**1. NewREX'i indir**
+[Buraya dokun](https://github.com/NewREX1337/NewREX-Android-Auto/releases/latest), sayfada aşağı in ve sonu **.apk** olan dosyaya dokun.
 
-Resmi APK'lar sadece bu sayfadan yayınlanır. İmza parmak izi (SHA-256):
+**2. King Installer'ı indir ve kur**
+[Buraya dokun](https://github.com/fcaronte/KingInstaller/releases/latest), sonu **.apk** olan dosyayı indir, aç ve **Yükle**'ye bas.
+> Telefon "izin ver" derse **Ayarlar**'a gir, izni aç, geri dön.
 
-```
-8e:bb:a5:7e:25:0c:57:f5:04:1a:14:ca:61:8f:8d:57:99:34:14:8c:54:90:c8:d0:51:24:f9:db:81:dc:ec:8c
-```
+**3. NewREX'i King Installer ile kur**
+King Installer'ı aç → **Select APK** → indirdiğin NewREX dosyasını seç → **Install as king**'e bas → **Yükle**.
+> "Uygulamayı tara" çıkarsa ona bas, sonra **Yükle**.
+> ⚠️ NewREX dosyasına direkt dokunup kurma. Öyle kurulursa arabada **görünmez**.
 
-Ayrıntılar: [Gizlilik](PRIVACY.md)
+**4. Android Auto'da bir ayar aç**
+Telefonun **Ayarlar**'ına gir, üstteki arama kutusuna **Android Auto** yaz ve aç.
+En alttaki **Sürüm** yazısına **10 kere** dokun → sağ üstteki **⋮** → **Geliştirici ayarları** → **Bilinmeyen kaynaklar**'ı işaretle.
+
+**5. NewREX'i bir kez aç**
+Telefonda NewREX'i aç, konum sorarsa **İzin ver** de.
+
+**6. Arabaya bağlan**
+NewREX menüde çıkar. 🎉
+
+### Görünmüyor mu?
+
+- Android Auto ayarlarında **Başlatıcıyı özelleştir**'e gir, NewREX'i işaretle.
+- Orada da yoksa: NewREX'i sil ve 3. adımdan tekrar yap.
+- Samsung kurulumu engellerse: **Ayarlar → Güvenlik ve gizlilik → Otomatik Engelleyici**'yi kapat.
 
 ## 📄 Lisans
 
-Copyright © 2026 NewREX · [GPL-3.0](LICENSE) + [ek koşullar](NOTICE.md).
-Kodu değiştirip paylaşan herkes **"Orijinal geliştirici: NewREX"** yazısını korumak ve farklı bir uygulama adı kullanmak zorundadır.
+Copyright © 2026 NewREX · [GPL-3.0](LICENSE) + [ek koşullar](NOTICE.md) · [Gizlilik](PRIVACY.md)
+Kodu değiştirip paylaşan herkes **"Orijinal geliştirici: NewREX"** yazısını korumak zorundadır.
