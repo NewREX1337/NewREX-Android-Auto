@@ -15,6 +15,7 @@ import com.newrex.auto.R
 import com.newrex.auto.data.Kind
 import com.newrex.auto.data.Prefs
 import com.newrex.auto.ui.CarUi
+import com.newrex.auto.ui.CardArt
 import com.newrex.auto.ui.MATCH
 import com.newrex.auto.ui.Page
 import com.newrex.auto.ui.Palette
@@ -71,12 +72,12 @@ class HomePage(ui: CarUi) : Page(ui) {
         val gap = dp(if (compact) 8 else 12)
 
         val bigCards = listOf(
-            bigCard("TV", "Canlı TV ve IPTV", R.drawable.ic_live_tv, 0xFF06B6D4.toInt(), compact, live = true) { ui.push(TvPage(ui)) },
-            bigCard("YouTube", "Video izle", R.drawable.ic_smart_display, 0xFFEF4444.toInt(), compact) {
+            bigCard("TV", "Canlı TV ve IPTV", R.drawable.ic_live_tv, 0xFF06B6D4.toInt(), CardArt.Kind.TV, compact, live = true) { ui.push(TvPage(ui)) },
+            bigCard("YouTube", "Video izle", R.drawable.ic_smart_display, 0xFFEF4444.toInt(), CardArt.Kind.YOUTUBE, compact) {
                 ui.push(WebPage(ui, WebPage.Mode.YOUTUBE))
             },
-            bigCard("Radyo", "Türk radyoları", R.drawable.ic_radio, 0xFF8B5CF6.toInt(), compact) { ui.push(RadioPage(ui)) },
-            bigCard("Web", "İnternet tarayıcı", R.drawable.ic_language, 0xFF3B82F6.toInt(), compact) {
+            bigCard("Radyo", "Türk radyoları", R.drawable.ic_radio, 0xFF8B5CF6.toInt(), CardArt.Kind.RADIO, compact) { ui.push(RadioPage(ui)) },
+            bigCard("Web", "İnternet tarayıcı", R.drawable.ic_language, 0xFF3B82F6.toInt(), CardArt.Kind.WEB, compact) {
                 ui.push(WebPage(ui, WebPage.Mode.WEB))
             },
         )
@@ -110,14 +111,13 @@ class HomePage(ui: CarUi) : Page(ui) {
         container.addView(View(this), lp(MATCH, gap))
         addGrid(shortcuts.map { smallCard(it, compact) }, cols, dp(if (compact) 92 else 108), gap)
 
-        // Hakkında: en altta, aşağı kaydırınca görünen küçük bir bağlantı
-        container.addView(label("NewREX hakkında  ›", 14f, Palette.TEXT_DIM).apply {
-            gravity = Gravity.CENTER
-            setPadding(dp(18), dp(10), dp(18), dp(10))
-            val r = dpf(18)
-            background = pressable(rounded(0, r), r)
-            onTap { ui.push(AboutPage(ui)) }
-        }, lp(WRAP, WRAP).margins(t = dp(18)).apply { gravity = Gravity.CENTER_HORIZONTAL })
+        // Hakkında ayrı bir sayfa: en alttan biraz daha aşağı kaydırınca gelir
+        container.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            addView(label("NewREX hakkında", 13f, Palette.TEXT_FAINT), lp(WRAP, WRAP))
+            addView(icon(R.drawable.ic_down, 22, Palette.TEXT_FAINT), lp(dp(22), dp(22)))
+        }, lp(MATCH, WRAP).margins(t = dp(18)))
     }
 
     /** Görünümleri [perRow] sütunlu satırlara dizer; son satır eksikse boşlukla doldurulur. */
@@ -134,14 +134,16 @@ class HomePage(ui: CarUi) : Page(ui) {
 
     /** Büyük kart: koyu cam üzerinde rengin hafif tonu, renkli simge rozeti ve ince renkli kenar. */
     private fun bigCard(
-        title: String, subtitle: String, iconRes: Int, color: Int,
+        title: String, subtitle: String, iconRes: Int, color: Int, art: CardArt.Kind,
         compact: Boolean, live: Boolean = false, onClick: () -> Unit,
     ): View = with(ctx) {
         val r = dpf(if (compact) 18 else 22)
         val pad = dp(if (compact) 12 else 16)
+        // Koyu zemin + rengin tonu + karta özel çizim (yayın dalgası, oynat simgesi, ekolayzer, küre) + ince kenar
         val look = LayerDrawable(arrayOf(
-            rounded(0xCC10131F.toInt(), r),
-            gradient(Palette.withAlpha(color, 0x55), Palette.withAlpha(color, 0x10), r),
+            rounded(0xE00E111C.toInt(), r),
+            gradient(Palette.withAlpha(color, 0x48), Palette.withAlpha(color, 0x0C), r),
+            CardArt(art, color, resources.displayMetrics.density),
             rounded(0, r, dp(1), Palette.withAlpha(color, 0x70)),
         ))
         FrameLayout(this).apply {

@@ -29,7 +29,9 @@ import com.newrex.auto.ui.WRAP
 import com.newrex.auto.ui.dp
 import com.newrex.auto.ui.dpf
 import com.newrex.auto.ui.flp
+import com.newrex.auto.ui.icon
 import com.newrex.auto.ui.label
+import com.newrex.auto.ui.neonText
 import com.newrex.auto.ui.lp
 import com.newrex.auto.ui.margins
 import com.newrex.auto.ui.onTap
@@ -233,10 +235,10 @@ class AboutPage(ui: CarUi) : Page(ui) {
         val logo = SpannableStringBuilder("NewREX").apply {
             setSpan(ForegroundColorSpan(Palette.accent), 3, 6, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
-        LinearLayout(this).apply {
+        val info = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            addView(label(logo, 52f, bold = true), lp(WRAP, WRAP))
+            addView(label(logo, 52f, bold = true).apply { neonText(14) }, lp(WRAP, WRAP))
             addView(label("Android Auto", 20f, Palette.TEXT_DIM), lp(WRAP, WRAP).margins(t = dp(2)))
             addView(label("Sürüm ${BuildConfig.VERSION_NAME}", 14f, Palette.TEXT_FAINT), lp(WRAP, WRAP).margins(t = dp(14)))
             addView(label("Orijinal geliştirici: ${Brand.ORIGINAL_DEVELOPER}", 18f, bold = true), lp(WRAP, WRAP).margins(t = dp(16)))
@@ -244,6 +246,16 @@ class AboutPage(ui: CarUi) : Page(ui) {
             addView(label(Brand.COPYRIGHT, 13f, Palette.TEXT_FAINT), lp(WRAP, WRAP).margins(t = dp(10)))
             addView(label(Brand.LICENSE_NOTICE, 12f, Palette.TEXT_FAINT, lines = 3).apply { gravity = Gravity.CENTER },
                 lp(MATCH, WRAP).margins(dp(30), dp(4), dp(30), 0))
+        }
+        FrameLayout(this).apply {
+            addView(info, flp(MATCH, MATCH))
+            // Yukarı kaydırınca uygulamalara dönülür
+            addView(LinearLayout(this@with).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                addView(icon(R.drawable.ic_up, 22, Palette.TEXT_FAINT), lp(dp(22), dp(22)))
+                addView(label("Uygulamalar", 13f, Palette.TEXT_FAINT), lp(WRAP, WRAP))
+            }, flp(WRAP, WRAP, Gravity.TOP or Gravity.CENTER_HORIZONTAL).margins(t = dp(12)))
         }
     }
 }

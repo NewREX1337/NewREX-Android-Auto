@@ -98,12 +98,13 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
     private val wave = WaveBackground(ctx)
     private val pager = VerticalPager(ctx)
     private lateinit var board: BoardView
+    private lateinit var aboutPage: Page
     private var surfaceVisible = true
 
     val pageCount get() = stack.size
 
-    /** Uygulamalar sayfası mı açık (karşılama ekranı değil)? */
-    val onApps get() = pager.page == 1
+    /** Uygulamalar (ya da altındaki Hakkında) sayfası mı açık, karşılama ekranı değil? */
+    val onApps get() = pager.page >= 1
 
     /** Android Auto bölünmüş ekrandayken (sağda müzik/harita kartı) arayüz sadeleşir. */
     val compact = MutableStateFlow(false)
@@ -137,7 +138,10 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         }
         pager.addView(board, flp(MATCH, MATCH))
         pager.addView(column, flp(MATCH, MATCH))
-        pager.onPosition = { wave.mix = it }
+        // Uygulamalar sayfasının en altından aşağı kaydırınca "Hakkında" gelir
+        aboutPage = com.newrex.auto.pages.AboutPage(this)
+        pager.addView(aboutPage.build().also { aboutPage.view = it }, flp(MATCH, MATCH))
+        pager.onPosition = { wave.mix = it.coerceIn(0f, 1f) }
         pager.onPage = {
             if (it == 1) board.exitEdit()
             // Uygulamalar sayfasında arka plan daha seyrek çizilir (telefonu yormasın)
@@ -247,6 +251,7 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         handler.removeCallbacksAndMessages(null)
         stack.forEach { it.destroy() }
         stack.clear()
+        if (::aboutPage.isInitialized) aboutPage.destroy()
         scope.cancel()
     }
 

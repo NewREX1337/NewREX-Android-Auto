@@ -13,9 +13,9 @@ import android.widget.FrameLayout
 import kotlin.math.abs
 
 /**
- * Sayfa sayfa dikey kaydırma: parmakla yukarı çekince alttaki sayfa gelir. Alttaki sayfada içerik en
- * üstteyken aşağı çekince üstteki sayfaya dönülür. Android Auto'nun kaydırmaları da sahte parmak
- * hareketi olarak geldiği için aynı şekilde çalışır.
+ * Sayfa sayfa dikey kaydırma: parmakla yukarı çekince alttaki sayfa gelir, aşağı çekince üstteki.
+ * Sayfanın içinde kaydırılabilir bir liste varsa önce liste sonuna kadar kayar, sonra sayfa değişir.
+ * Android Auto'nun kaydırmaları da sahte parmak hareketi olarak geldiği için aynı şekilde çalışır.
  */
 class VerticalPager(context: Context) : FrameLayout(context) {
     private val slop = ViewConfiguration.get(context).scaledTouchSlop
@@ -26,7 +26,7 @@ class VerticalPager(context: Context) : FrameLayout(context) {
     private var tracker: VelocityTracker? = null
     private var anim: ValueAnimator? = null
 
-    /** 0 = ilk sayfa, 1 = ikinci sayfa; arası kaydırma sırasındaki konum. */
+    /** Sayfa numarası (0'dan başlar); küsuratlı değerler kaydırma sırasındaki ara konumdur. */
     var position = 0f
         private set
 
@@ -36,7 +36,8 @@ class VerticalPager(context: Context) : FrameLayout(context) {
     var onPosition: ((Float) -> Unit)? = null
     var onPage: ((Int) -> Unit)? = null
 
-    val page: Int get() = if (position < 0.5f) 0 else 1
+    val page: Int get() = kotlin.math.round(position).toInt()
+    private val last: Int get() = (childCount - 1).coerceAtLeast(0)
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
@@ -95,8 +96,9 @@ class VerticalPager(context: Context) : FrameLayout(context) {
         val dx = ev.x - downX
         if (abs(dy) > slop && abs(dy) > abs(dx) * 1.2f) {
             val current = getChildAt(page)
-            val wantsNext = dy < 0 && page == 0
-            val wantsPrev = dy > 0 && page == 1 && !canScrollUp(current, downX, downY - current.translationY)
+            val y = downY - current.translationY
+            val wantsNext = dy < 0 && page < last && !canScroll(current, downX, y, 1)
+            val wantsPrev = dy > 0 && page > 0 && !canScroll(current, downX, y, -1)
             if (wantsNext || wantsPrev) { dragging = true; downY = ev.y }
         }
     }
@@ -113,10 +115,11 @@ class VerticalPager(context: Context) : FrameLayout(context) {
         when (ev.actionMasked) {
             MotionEvent.ACTION_MOVE -> {
                 val h = height.coerceAtLeast(1)
-                var p = startPos - (ev.y - downY) / h
-                // Kenarlarda hafif esneme
+                // Bir hareketle en fazla bir sayfa ilerlenir; kenarlarda hafif esneme
+                val from = kotlin.math.round(startPos)
+                var p = (startPos - (ev.y - downY) / h).coerceIn(from - 1f, from + 1f)
                 if (p < 0f) p *= 0.3f
-                if (p > 1f) p = 1f + (p - 1f) * 0.3f
+                if (p > last) p = last + (p - last) * 0.3f
                 setPos(p)
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -124,11 +127,12 @@ class VerticalPager(context: Context) : FrameLayout(context) {
                 t?.computeCurrentVelocity(1000)
                 val vy = t?.yVelocity ?: 0f
                 val fast = context.dpf(500)
+                val from = kotlin.math.round(startPos).toInt()
                 val target = when {
-                    vy < -fast -> 1
-                    vy > fast -> 0
-                    else -> if (position >= 0.5f) 1 else 0
-                }
+                    vy < -fast && position > from -> from + 1
+                    vy > fast && position < from -> from - 1
+                    else -> kotlin.math.round(position).toInt()
+                }.coerceIn(0, last)
                 dragging = false
                 tracker?.recycle(); tracker = null
                 goTo(target)
@@ -137,16 +141,16 @@ class VerticalPager(context: Context) : FrameLayout(context) {
         return true
     }
 
-    /** Dokunulan noktadaki kaydırılabilir bir görünüm yukarı kaydırılabiliyor mu? */
-    private fun canScrollUp(v: View, x: Float, y: Float): Boolean {
+    /** Dokunulan noktadaki kaydırılabilir bir görünüm o yöne (-1 yukarı, 1 aşağı) kayabiliyor mu? */
+    private fun canScroll(v: View, x: Float, y: Float, direction: Int): Boolean {
         if (v.visibility != View.VISIBLE) return false
-        if (v.canScrollVertically(-1)) return true
+        if (v.canScrollVertically(direction)) return true
         if (v !is ViewGroup) return false
         for (i in v.childCount - 1 downTo 0) {
             val c = v.getChildAt(i)
             val cx = x + v.scrollX - c.left - c.translationX
             val cy = y + v.scrollY - c.top - c.translationY
-            if (cx >= 0 && cy >= 0 && cx < c.width && cy < c.height && canScrollUp(c, cx, cy)) return true
+            if (cx >= 0 && cy >= 0 && cx < c.width && cy < c.height && canScroll(c, cx, cy, direction)) return true
         }
         return false
     }
