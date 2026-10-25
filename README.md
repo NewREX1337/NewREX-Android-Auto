@@ -23,12 +23,16 @@ Android Auto için canlı TV, YouTube, radyo, podcast ve ekran yansıtma uygulam
 
 ## 🔧 Kurulum
 
-1. Telefonda eski bir NewREX varsa **önce kaldır**. (Shizuku kuruluysa onu da kaldır.)
-2. **King Installer**'ı kur, NewREX APK'sını **King Installer ile** yükle.
+1. Telefonda eski bir NewREX varsa **önce kaldır**.
+2. APK'yı indir ve aç → **Yükle**. Play Protect sorarsa **Uygulamayı tara** → **Yükle**.
    (Samsung'da engellenirse **Ayarlar → Güvenlik ve gizlilik → Otomatik Engelleyici**'yi kapat.)
 3. **Ayarlar → Bağlı cihazlar → Android Auto** → en alttaki **Sürüm**'e 10 kez dokun →
    **⋮ → Geliştirici ayarları → Bilinmeyen kaynaklar**'ı işaretle.
 4. Telefonda NewREX'i bir kez aç ve konum iznini ver. Arabada Android Auto menüsünden aç.
+
+**Arabada görünmüyorsa:** NewREX'i kaldır, **King Installer**'ı kur ve APK'yı **King Installer ile** yükle
+(üç seçeneği de kapalı bırak, *Install as king*). Sonra 4. adımı tekrarla.
+Hâlâ görünmüyorsa NewREX → **Yardım → Sorun giderme** ekran görüntüsüyle bir *Issue* aç.
 
 ## 🔒 Güvenlik
 
