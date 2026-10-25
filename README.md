@@ -12,7 +12,7 @@ Android Auto için canlı TV, YouTube, radyo, podcast ve ekran yansıtma uygulam
 
 - 📺 Canlı TV / IPTV
 - ▶️ YouTube
-- 📻 İnternet radyosu
+- 📻 İnternet radyosu + klasik FM ekranı (frekansla arama; İstanbul, Ankara, İzmir frekansları)
 - 🎙️ Podcast (kaldığın yerden devam)
 - 🖼️ Karşılama ekranı: kendi fotoğrafların ve saat, taşınabilir/büyütülebilir; yukarı kaydırınca uygulamalar
 - 📱 Ekran yansıtma (telefon ekranı araç ekranında)

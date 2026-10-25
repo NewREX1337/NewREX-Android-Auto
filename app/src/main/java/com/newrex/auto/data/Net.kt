@@ -121,8 +121,9 @@ object RadioApi {
     suspend fun popular(countryCode: String = "TR", limit: Int = 300) =
         query("/search?countrycode=$countryCode&hidebroken=true&order=clickcount&reverse=true&limit=$limit")
 
-    suspend fun search(name: String, limit: Int = 150) =
-        query("/search?name=${URLEncoder.encode(name, "UTF-8")}&hidebroken=true&order=clickcount&reverse=true&limit=$limit")
+    suspend fun search(name: String, country: String? = null, limit: Int = 150) =
+        query("/search?name=${URLEncoder.encode(name, "UTF-8")}" + (country?.let { "&countrycode=$it" } ?: "") +
+            "&hidebroken=true&order=clickcount&reverse=true&limit=$limit")
 
     private suspend fun query(path: String): List<MediaEntry> = withContext(Dispatchers.IO) {
         var last: Exception? = null

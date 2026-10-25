@@ -22,6 +22,7 @@ import com.newrex.auto.ui.TileAdapter
 import com.newrex.auto.ui.WRAP
 import com.newrex.auto.ui.circleButton
 import com.newrex.auto.ui.dp
+import com.newrex.auto.ui.dpf
 import com.newrex.auto.ui.flp
 import com.newrex.auto.ui.label
 import com.newrex.auto.ui.lp
@@ -30,8 +31,9 @@ import com.newrex.auto.ui.pill
 import com.newrex.auto.ui.tileGrid
 import kotlinx.coroutines.launch
 
-class RadioPage(ui: CarUi) : Page(ui) {
-    override val title = "Radyo"
+/** Radyo listesi. [onPick] verilirse (FM ekranından) dokunulan istasyon çalınmaz, seçilip geri dönülür. */
+class RadioPage(ui: CarUi, private val onPick: ((MediaEntry) -> Unit)? = null) : Page(ui) {
+    override val title = if (onPick != null) "Bu frekansa istasyon seç" else "Radyo"
 
     private enum class Tab(val label: String) { POPULAR("Popüler"), FAVORITES("Favoriler"), RECENT("Son dinlenen"), SEARCH("Arama") }
 
@@ -84,6 +86,10 @@ class RadioPage(ui: CarUi) : Page(ui) {
 
     private fun refreshTabs(): Unit = with(ctx) {
         tabs.removeAllViews()
+        // Klasik FM radyo ekranı (frekansla arama) ayrı bir sayfada
+        if (onPick == null) tabs.addView(pill("Frekansla ara", R.drawable.ic_radio, selected = false) { ui.push(FmTunerPage(ui)) }
+            .apply { background = com.newrex.auto.ui.rounded(Palette.withAlpha(0xFFFF7A1A.toInt(), 0x55), dpf(20), dp(1), 0xFFFF7A1A.toInt()) },
+            lp(WRAP, dp(40)).margins(r = dp(14)))
         Tab.values().filter { it != Tab.SEARCH || searchQuery.isNotEmpty() }.forEach { t ->
             val text = if (t == Tab.SEARCH) "Arama: $searchQuery" else t.label
             tabs.addView(pill(text, selected = t == tab) { tab = t; refreshTabs(); show() },
@@ -132,7 +138,10 @@ class RadioPage(ui: CarUi) : Page(ui) {
         val favKeys = Prefs.favorites(Kind.RADIO).map { it.key }.toSet()
         tiles.items = list.mapIndexed { i, st ->
             Tile(st.key, st.title, st.group.ifBlank { null }, st.image, R.drawable.ic_radio,
-                favorite = st.key in favKeys) { PlayerHub.play(list, i) }
+                favorite = st.key in favKeys) {
+                val pick = onPick
+                if (pick != null) { ui.pop(); pick(st) } else PlayerHub.play(list, i)
+            }
         }
         status.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         status.text = when (tab) {

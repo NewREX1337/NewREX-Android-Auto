@@ -120,6 +120,7 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         Palette.load()
         Board.init(ctx)
         com.newrex.auto.data.CarLog.init(ctx)
+        com.newrex.auto.data.FmPresets.init(ctx)
         val bg = Palette.safeBackground(Prefs.bgColor)
         root.setBackgroundColor(if (bg != 0) bg else Palette.BG_TOP)
 
