@@ -72,6 +72,15 @@ class VerticalPager(context: Context) : FrameLayout(context) {
         }
     }
 
+    /**
+     * İçerideki liste "bana bırak" dese de sayfa izlemeye devam eder: liste sonuna gelince aynı
+     * hareketle sayfa değişebilsin (araçta her kaydırma ayrı bir hareket, ikinci kez kaydırmak gerekmesin).
+     */
+    override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
+        if (locked) super.requestDisallowInterceptTouchEvent(disallowIntercept)
+        else parent?.requestDisallowInterceptTouchEvent(disallowIntercept)
+    }
+
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
         if (locked || childCount < 2) return false
         when (ev.actionMasked) {
@@ -128,9 +137,10 @@ class VerticalPager(context: Context) : FrameLayout(context) {
                 val vy = t?.yVelocity ?: 0f
                 val fast = context.dpf(500)
                 val from = kotlin.math.round(startPos).toInt()
+                // Araçta kaydırma kısa ve yavaş geliyor: sayfanın beşte biri kadar çekmek yeterli
                 val target = when {
-                    vy < -fast && position > from -> from + 1
-                    vy > fast && position < from -> from - 1
+                    (vy < -fast || position - from > 0.2f) && position > from -> from + 1
+                    (vy > fast || from - position > 0.2f) && position < from -> from - 1
                     else -> kotlin.math.round(position).toInt()
                 }.coerceIn(0, last)
                 dragging = false
