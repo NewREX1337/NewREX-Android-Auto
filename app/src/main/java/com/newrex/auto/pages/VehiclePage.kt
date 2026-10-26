@@ -52,8 +52,9 @@ class VehiclePage(ui: CarUi) : Page(ui) {
 
         val speed = gauge(gauges, R.drawable.ic_speed, "Hız", big = true)
         val fuel = gauge(gauges, R.drawable.ic_gas, "Yakıt / menzil")
-        val odo = gauge(gauges, R.drawable.ic_history, "Kilometre")
+        val odo = gauge(gauges, R.drawable.ic_car, "Kilometre")
         val trip = gauge(gauges, R.drawable.ic_place, "Bu yolculuk")
+        val time = gauge(gauges, R.drawable.ic_history, "Yoldasın")
         val alt = gauge(gauges, R.drawable.ic_up, "Rakım / yön")
 
         val noPermission = "📍 Telefonda konum izni ver"
@@ -82,9 +83,12 @@ class VehiclePage(ui: CarUi) : Page(ui) {
             while (true) {
                 DriveState.ensureGps()
                 val tripKm = DriveState.tripMeters.value / 1000f
-                val mins = ((System.currentTimeMillis() - DriveState.tripStart) / 60_000).coerceAtLeast(0)
-                trip.first.text = "%.1f".format(tripKm)
-                trip.second.text = if (!DriveState.hasLocationPermission(ctx)) noPermission else "km • ${duration(mins)}"
+                val start = DriveState.tripStart
+                val mins = if (start > 0) ((System.currentTimeMillis() - start) / 60_000).coerceAtLeast(0) else null
+                trip.first.text = String.format(tr, "%.1f km", tripKm)
+                trip.second.text = if (!DriveState.hasLocationPermission(ctx)) noPermission else "GPS ile ölçülür"
+                time.first.text = mins?.let { duration(it) } ?: "—"
+                time.second.text = if (start > 0) "${SimpleDateFormat("HH:mm", tr).format(Date(start))}'den beri" else ""
 
                 val carOdo = VehicleData.odometerKm.value
                 val currentKm = carOdo ?: CarLog.estimatedOdometer(tripKm)
@@ -229,7 +233,27 @@ class VehiclePage(ui: CarUi) : Page(ui) {
             }, lp(WRAP, dp(40)).margins(r = dp(8)))
         }
         b.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(row) })
-        b.addView(label(if (current == 0) "Seçtiğin hızı geçince ekranda uyarı ve kısa bir sinyal sesi çıkar."
+        // Uyarı sesi: dokununca seçilir ve bir kez dinletilir
+        val sounds = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        com.newrex.auto.SpeedAlert.SOUNDS.forEachIndexed { i, name ->
+            sounds.addView(pill("🔔 $name", selected = i == CarLog.speedSound, heightDp = 40) {
+                CarLog.speedSound = i
+                com.newrex.auto.SpeedAlert.preview(ctx, i)
+            }, lp(WRAP, dp(40)).margins(r = dp(8)))
+        }
+        b.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(sounds) },
+            lp(MATCH, WRAP).margins(t = dp(8)))
+        // Konuşan ses: "Dikkat! Hız sınırını aştın." — dokununca seçilir ve dinletilir
+        val voices = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        com.newrex.auto.SpeedAlert.VOICES.forEachIndexed { i, (name, _) ->
+            voices.addView(pill("🗣 $name", selected = i == CarLog.speedVoice, heightDp = 40) {
+                CarLog.speedVoice = i
+                if (i > 0) com.newrex.auto.SpeedAlert.previewVoice(ctx, i)
+            }, lp(WRAP, dp(40)).margins(r = dp(8)))
+        }
+        b.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(voices) },
+            lp(MATCH, WRAP).margins(t = dp(8)))
+        b.addView(label(if (current == 0) "Seçtiğin hızı geçince arabanın hoparlöründen sesli uyarı ve ekranda büyük kırmızı uyarı çıkar."
             else "$current km/s geçilince uyarır. Hız GPS ile ölçüldüğünde birkaç km/s sapabilir.",
             12f, Palette.TEXT_FAINT, lines = 2), lp(MATCH, WRAP).margins(t = dp(8)))
         b
@@ -341,7 +365,8 @@ class VehiclePage(ui: CarUi) : Page(ui) {
             addView(sub, lp(WRAP, WRAP).margins(t = dp(2)))
             if (big) background = rounded(Palette.withAlpha(Palette.accent, 0x33), dpf(18), dp(1), Palette.withAlpha(Palette.accent, 0x88))
         }
-        row.addView(card, lp(0, WRAP, if (big) 1.3f else 1f).margins(r = dp(8)))
+        // Genişlik 0 olunca kaydırılabilir satırda kartlar en küçük boyuta iniyor, "12.3 km" gibi yazılar kesiliyordu
+        row.addView(card, lp(WRAP, WRAP, if (big) 1.3f else 1f).margins(r = dp(8)))
         value to sub
     }
 }

@@ -48,6 +48,50 @@ class DebugRadio : BroadcastReceiver() {
                 PlayerHub.play(listOf(e), 0)
             }
             "stop" -> PlayerHub.stop()
+            "voice" -> {
+                // Telefonun Türkçe sesiyle "Hız sınırı. 95" kaydı: /sdcard/Android/data/com.newrex.auto/files/hiz.wav
+                val app = context.applicationContext
+                var t: android.speech.tts.TextToSpeech? = null
+                t = android.speech.tts.TextToSpeech(app) { st ->
+                    val tts = t ?: return@TextToSpeech
+                    val r = tts.setLanguage(java.util.Locale("tr", "TR"))
+                    val f = java.io.File(app.getExternalFilesDir(null), "hiz.wav")
+                    log("tts durum=$st dil=$r")
+                    tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                        override fun onStart(id: String?) = Unit
+                        override fun onDone(id: String?) = log("ses kaydı hazır: ${f.length()}")
+                        @Deprecated("Deprecated in Java")
+                        override fun onError(id: String?) = log("ses kaydı hatası")
+                    })
+                    tts.synthesizeToFile("Hız sınırı. 95", null, f, "v")
+                }
+            }
+            "voices" -> {
+                // Türkçe sesleri listeler ve her birini dosyaya kaydeder: files/v_<ad>.wav
+                val app = context.applicationContext
+                var t: android.speech.tts.TextToSpeech? = null
+                t = android.speech.tts.TextToSpeech(app) { _ ->
+                    val tts = t ?: return@TextToSpeech
+                    val text = intent.getStringExtra("text") ?: "Dikkat! Hız sınırını aştın. Doksan beş."
+                    val list = tts.voices.orEmpty().filter { it.locale.language == "tr" }.sortedBy { it.name }
+                    list.forEach { v -> log("ses: ${v.name} ağ=${v.isNetworkConnectionRequired} kalite=${v.quality} kurulu=${!v.features.contains("notInstalled")}") }
+                    tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                        override fun onStart(id: String?) = Unit
+                        override fun onDone(id: String?) = log("kayıt bitti: $id")
+                        @Deprecated("Deprecated in Java")
+                        override fun onError(id: String?) = log("kayıt hatası: $id")
+                    })
+                    list.filter { !it.isNetworkConnectionRequired }.forEach { v ->
+                        tts.voice = v
+                        tts.synthesizeToFile(text, null, java.io.File(app.getExternalFilesDir(null), "v_${v.name}.wav"), v.name)
+                    }
+                }
+            }
+            "kmh" -> DriveState.speedKmh.value = intent.getIntExtra("v", 0).toFloat()
+            "speed" -> {
+                SpeedAlert.init(context)
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ SpeedAlert.play(context, 95); log("hız uyarısı çalındı") }, 3000)
+            }
             "logos" -> scope.launch {
                 val list = RadioApi.popular()
                 val before = list.count { Logos.best(it) != null }

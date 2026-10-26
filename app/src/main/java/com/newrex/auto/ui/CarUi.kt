@@ -157,6 +157,7 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         }
 
         scope.launch { DriveState.driving.collect { updateDriveChip(it) } }
+        com.newrex.auto.SpeedAlert.init(ctx)
         scope.launch { DriveState.speedKmh.collect { checkSpeedLimit(it) } }
         scope.launch {
             combine(compact, WeatherHub.report) { c, w -> c to w }.collect { (c, w) ->
@@ -271,24 +272,46 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
 
     private var overLimit = false
     private var lastSpeedAlert = 0L
+    private var speedBanner: TextView? = null
 
-    /** Hız uyarısı: sınır geçilince bir kez uyarır; hız sınırın 5 km/s altına inince yeniden kurulur. */
+    /** Şeride dokunulunca bu aşımda şerit ve ses kapanır; hız sınırın altına inince yeniden kurulur. */
+    private var speedMuted = false
+
+    /**
+     * Hız uyarısı: sınır geçilince sesli uyarır ve ekranın üstünde büyük kırmızı bir şerit çıkar. Şerit hız
+     * sınırın altına inene kadar kalır; sınırın üstünde kalınırsa ses 45 sn'de bir tekrarlanır.
+     */
     private fun checkSpeedLimit(kmh: Float?) {
         val limit = com.newrex.auto.data.CarLog.speedLimit
-        if (limit <= 0 || kmh == null) { overLimit = false; return }
+        if (limit <= 0 || kmh == null) { overLimit = false; showSpeedBanner(null, limit); return }
         val now = System.currentTimeMillis()
         if (kmh > limit + 0.5f) {
-            if (!overLimit && now - lastSpeedAlert > 20_000) {
+            if (!speedMuted && ((!overLimit && now - lastSpeedAlert > 20_000) || now - lastSpeedAlert > 45_000)) {
                 lastSpeedAlert = now
-                toast("⚠️ Hız sınırını aştın: ${kmh.toInt()} km/s (sınır $limit)", long = true)
-                runCatching {
-                    val tone = android.media.ToneGenerator(android.media.AudioManager.STREAM_NOTIFICATION, 80)
-                    tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 400)
-                    handler.postDelayed({ tone.release() }, 800)
-                }
+                com.newrex.auto.SpeedAlert.play(ctx, kmh.toInt())
             }
             overLimit = true
-        } else if (kmh < limit - 5) overLimit = false
+        } else if (kmh < limit - 3) { overLimit = false; speedMuted = false }
+        showSpeedBanner(if (overLimit && !speedMuted) kmh.toInt() else null, limit)
+    }
+
+    private fun showSpeedBanner(kmh: Int?, limit: Int) {
+        if (kmh == null) {
+            speedBanner?.let { root.removeView(it) }
+            speedBanner = null
+            return
+        }
+        val b = speedBanner ?: ctx.label("", 26f, bold = true).apply {
+            gravity = Gravity.CENTER
+            setTextColor(android.graphics.Color.WHITE)
+            setPadding(ctx.dp(28), ctx.dp(12), ctx.dp(28), ctx.dp(12))
+            background = rounded(0xF2D32F2F.toInt(), ctx.dpf(18), ctx.dp(2), android.graphics.Color.WHITE)
+            elevation = ctx.dpf(12)
+            setOnClickListener { speedMuted = true; showSpeedBanner(null, limit) }
+            speedBanner = this
+            root.addView(this, flp(WRAP, WRAP, Gravity.TOP or Gravity.CENTER_HORIZONTAL).margins(t = ctx.dp(64)))
+        }
+        b.text = "⚠️  $kmh km/s  •  sınır $limit   ✕"
     }
 
     /** Oturum başında bir kez: yaklaşan bakım ve yağmur uyarısı. */

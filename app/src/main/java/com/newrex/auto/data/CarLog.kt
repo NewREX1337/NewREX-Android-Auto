@@ -64,6 +64,16 @@ object CarLog {
         get() = sp.getInt("speedLimit", 0)
         set(v) { sp.edit().putInt("speedLimit", v).apply(); bump() }
 
+    /** Hız uyarısının sesi (SpeedAlert.SOUNDS sırası). */
+    var speedSound: Int
+        get() = sp.getInt("speedSound", 0)
+        set(v) { sp.edit().putInt("speedSound", v).apply(); bump() }
+
+    /** Sesten sonra konuşan ses (SpeedAlert.VOICES sırası); 0 = konuşmasın. */
+    var speedVoice: Int
+        get() = sp.getInt("speedVoiceIx", 1)
+        set(v) { sp.edit().putInt("speedVoiceIx", v).apply(); bump() }
+
     /** Depo hacmi (litre); menzil tahmini için. Toyota C-HR hibrit ~43 L. */
     var tankLiters: Float
         get() = sp.getFloat("tank", 43f)
