@@ -231,7 +231,8 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         backButton.visibility = if (stack.size > 1) View.VISIBLE else View.GONE
         titleView.text = top.title
         actionsBox.removeAllViews()
-        top.actions().forEach { actionsBox.addView(it, lp(ctx.dp(44), ctx.dp(44)).margins(l = ctx.dp(8))) }
+        // "wide" etiketli düğmeler (ör. yazılı "TV+") yazıya göre genişler, diğerleri yuvarlak kalır
+        top.actions().forEach { actionsBox.addView(it, lp(if (it.tag == "wide") WRAP else ctx.dp(44), ctx.dp(44)).margins(l = ctx.dp(8))) }
         refreshMini()
         refreshPagerLock()
         // Animasyon sadece ana sayfalarda; alt sayfalarda ve videoda durur, telefonu yormaz

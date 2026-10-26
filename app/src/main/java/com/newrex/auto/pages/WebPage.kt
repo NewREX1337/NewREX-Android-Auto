@@ -36,6 +36,8 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
     enum class Mode(val title: String, val home: String) {
         YOUTUBE("YouTube", "https://m.youtube.com"),
         WEB("Web", "https://www.google.com"),
+        // Turkcell TV+: kullanıcı kendi hesabıyla girer; giriş bilgileri sadece sayfa ile TV+ arasında kalır
+        TVPLUS("TV+", "https://tvplus.com.tr/canli-tv"),
     }
 
     override val title = mode.title
@@ -141,6 +143,15 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
                 }
 
                 override fun onHideCustomView() = exitFullscreen()
+
+                // Şifreli (DRM) yayınlar için oynatıcı izni: sadece TV+ sayfasına verilir
+                override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
+                    val host = request.origin?.host.orEmpty()
+                    val drm = android.webkit.PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID
+                    if (mode == Mode.TVPLUS && (host == "tvplus.com.tr" || host.endsWith(".tvplus.com.tr")) &&
+                        drm in request.resources) request.grant(arrayOf(drm))
+                    else request.deny()
+                }
             }
             // Sayfadaki bir yazı kutusuna dokunulunca kendi klavyemizi aç
             setOnTouchListener { _, ev ->

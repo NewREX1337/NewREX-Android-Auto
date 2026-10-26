@@ -27,6 +27,7 @@ import com.newrex.auto.ui.label
 import com.newrex.auto.ui.lp
 import com.newrex.auto.ui.margins
 import com.newrex.auto.ui.panel
+import com.newrex.auto.ui.pill
 import com.newrex.auto.ui.tileGrid
 import com.newrex.auto.ui.verticalList
 import kotlinx.coroutines.launch
@@ -81,6 +82,7 @@ class TvPage(ui: CarUi) : Page(ui) {
             ui.showKeyboard("Kanal ara") { q -> query = q; showGroup() }
         },
         ctx.circleButton(R.drawable.ic_refresh) { load(true) },
+        ctx.pill("TV+", R.drawable.ic_live_tv) { ui.push(WebPage(ui, WebPage.Mode.TVPLUS)) }.apply { tag = "wide" },
     )
 
     private fun load(force: Boolean) {
