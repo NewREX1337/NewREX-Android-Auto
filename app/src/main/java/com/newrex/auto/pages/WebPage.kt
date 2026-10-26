@@ -158,8 +158,8 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
             orientation = LinearLayout.VERTICAL
             addView(webBox, lp(MATCH, 0, 1f))
         }
-        fullscreenBox.addView(fitButton, flp(WRAP, dp(44), android.view.Gravity.BOTTOM or android.view.Gravity.START)
-            .margins(l = dp(16), b = dp(16)))
+        fullscreenBox.addView(fitButton, flp(WRAP, dp(44), android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL)
+            .margins(t = dp(14)))
         pageRoot = FrameLayout(this).apply {
             setPadding(dp(8), dp(4), dp(8), dp(4))
             addView(column, flp(MATCH, MATCH))
@@ -197,16 +197,38 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
         fitButton.postDelayed(hideFit, 3500)
     }
 
-    /** Sayfadaki videolara seçili yerleşimi uygular (kenardaki siyah bantlar için). */
-    private fun applyFit() {
-        val fit = arrayOf("contain", "cover", "fill")[Prefs.videoFit]
+    /**
+     * Sayfadaki videolara seçili yerleşimi uygular (kenardaki siyah bantlar için). YouTube video kutusunu
+     * 16:9 boyutlandırıp kendisi konumlandırdığı için kutu yerinden oynatılmaz; ölçülüp ekranı kaplayacak
+     * kadar büyütülür ("doldur" oranı korur, kenarları kırpar; "uzat" ekrana göre esnetir).
+     */
+    private fun applyFit(active: Boolean = true) {
+        val mode = if (active) Prefs.videoFit else 0
         web.evaluateJavascript("""(function(){
+            var mode = $mode;
             var s = document.getElementById('newrex-fit');
             if (!s) { s = document.createElement('style'); s.id = 'newrex-fit'; document.head.appendChild(s); }
-            s.textContent = 'video { object-fit: $fit !important; }';
+            window.__newrexFit = mode;
+            function fit() {
+                s.textContent = '';
+                if (window.__newrexFit == 0) return;
+                var v = document.querySelector('video');
+                if (!v) return;
+                var r = v.getBoundingClientRect();
+                if (r.width < 10 || r.height < 10) return;
+                var W = window.innerWidth, H = window.innerHeight;
+                var sx = W / r.width, sy = H / r.height;
+                if (window.__newrexFit == 1) { sx = sy = Math.max(sx, sy); }
+                var dx = W / 2 - (r.left + r.width / 2), dy = H / 2 - (r.top + r.height / 2);
+                s.textContent = 'video { transform-origin: center center !important; transform: translate(' + dx + 'px,' + dy + 'px) scale(' + sx + ',' + sy + ') !important; }';
+            }
+            if (!window.__newrexFitHooked) {
+                window.__newrexFitHooked = true;
+                window.addEventListener('resize', function(){ setTimeout(fit, 300); });
+            }
+            fit(); setTimeout(fit, 400); setTimeout(fit, 1200);
         })()""", null)
     }
-
 
     override fun actions(): List<View> = listOf(
         ctx.circleButton(R.drawable.ic_search) {
@@ -254,6 +276,8 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
 
     private fun exitFullscreen(refresh: Boolean = true) {
         val wasFull = customView != null
+        // Tam ekrandan çıkınca sayfadaki normal video boyutuna dön
+        if (wasFull) applyFit(active = false)
         customView?.let { fullscreenBox.removeView(it) }
         fullscreenBox.visibility = View.GONE
         customCallback?.onCustomViewHidden()
