@@ -587,7 +587,6 @@ class MainActivity : Activity() {
         val brand = Build.MANUFACTURER.lowercase()
         val oem = listOf("xiaomi", "redmi", "poco", "oppo", "realme", "oneplus", "huawei", "honor", "vivo").any { brand.contains(it) }
         val head = when {
-            BuildConfig.AUDIO_ONLY -> "ℹ️ Ses sürümü: arabanın müzik ekranında görünür."
             installer != "com.android.vending" ->
                 "❌ Android Auto bu kurulumu tanımıyor. Aşağıdaki \"Arabada görünür yap\" düğmesine bas."
             initiating != null && initiating !in SelfInstall.INSTALLERS ->
@@ -609,7 +608,7 @@ class MainActivity : Activity() {
 
     /** "Arabada görünür yap": King Installer'ın işini uygulamanın içinden yapar. */
     private fun fixRow(): View {
-        if (BuildConfig.PARK_ONLY || BuildConfig.AUDIO_ONLY) return View(this)
+        if (BuildConfig.PARK_ONLY) return View(this)
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         box.addView(button("Arabada görünür yap") { fixInstall() }, lp(MATCH, WRAP).margins(t = dp(8)))
         box.addView(label("Yükleyiciler:\n" + SelfInstall.report(this), 12f, Palette.TEXT_FAINT, lines = 4), lp(MATCH, WRAP).margins(t = dp(4)))
@@ -641,8 +640,6 @@ class MainActivity : Activity() {
 
     /** Arabaya giriş kapısı seçimi: Otomatik / Normal / Park. */
     private fun entryRow(): View {
-        if (BuildConfig.AUDIO_ONLY) return label("Bu NewREX Ses: arabanın müzik ekranında görünür, sürüşte de radyo ve TV sesi çalar. " +
-            "Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı.", 13f, Palette.TEXT_DIM, lines = 4)
         if (BuildConfig.PARK_ONLY) return label("Bu NewREX'in Park sürümü: arabada park halindeyken açılır, King Installer gerekmez. " +
             "Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı.", 13f, Palette.TEXT_DIM, lines = 4)
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }

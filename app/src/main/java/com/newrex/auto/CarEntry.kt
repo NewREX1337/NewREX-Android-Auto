@@ -37,8 +37,8 @@ object CarEntry {
     }
 
     fun apply(context: Context) {
-        // Park ve Ses sürümlerinde kapı seçimi yok
-        if (BuildConfig.PARK_ONLY || BuildConfig.AUDIO_ONLY) return
+        // Park sürümünde normal kapı hiç yok
+        if (BuildConfig.PARK_ONLY) return
         val parked = effective(context) == PARKED
         set(context, NewRexCarAppService::class.java, !parked)
         set(context, CarActivity::class.java, parked)

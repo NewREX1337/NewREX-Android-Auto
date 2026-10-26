@@ -31,14 +31,6 @@ object PlayerHub {
     private var exo: ExoPlayer? = null
     private var session: MediaSession? = null
     private var sessionPlayer: Player? = null
-
-    /** Ses sürümünde medya oturumunu NewRexMediaService açar; PlayerHub kendi oturumunu açmaz. */
-    var externalSession = false
-
-    /** Ses sürümü: Android Auto'nun listeden seçtiği öğeyi (mediaId) kanala/istasyona çevirir. */
-    var resolver: ((String) -> Pair<List<MediaEntry>, Int>?)? = null
-
-    val forSession: Player get() = sessionPlayer ?: error("PlayerHub.init çağrılmadı")
     private var appContext: Context? = null
     private var queue: List<MediaEntry> = emptyList()
     private var index = 0
@@ -129,24 +121,6 @@ object PlayerHub {
             override fun seekToNextMediaItem() = next()
             override fun seekToPrevious() = prev()
             override fun seekToPreviousMediaItem() = prev()
-
-            // Arabanın müzik ekranından seçilen öğe kendi listesiyle çalınsın (ileri/geri o listede gezsin)
-            override fun setMediaItems(items: MutableList<MediaItem>, startIndex: Int, startPositionMs: Long) {
-                val id = items.getOrNull(startIndex.coerceAtLeast(0))?.mediaId
-                val r = id?.let { resolver?.invoke(it) }
-                if (r != null) PlayerHub.play(r.first, r.second) else super.setMediaItems(items, startIndex, startPositionMs)
-            }
-
-            override fun setMediaItems(items: MutableList<MediaItem>, resetPosition: Boolean) = setMediaItems(items, 0, 0)
-            override fun setMediaItems(items: MutableList<MediaItem>) = setMediaItems(items, 0, 0)
-            override fun setMediaItem(item: MediaItem) = setMediaItems(mutableListOf(item), 0, 0)
-            override fun setMediaItem(item: MediaItem, resetPosition: Boolean) = setMediaItems(mutableListOf(item), 0, 0)
-            override fun setMediaItem(item: MediaItem, startPositionMs: Long) = setMediaItems(mutableListOf(item), 0, 0)
-
-            override fun play() {
-                if (now.value == null) Prefs.recents().takeIf { it.isNotEmpty() }?.let { PlayerHub.play(it, 0); return }
-                super.play()
-            }
         }
         exo = p
         this.sessionPlayer = sessionPlayer
@@ -232,7 +206,6 @@ object PlayerHub {
         error.value = null
         Prefs.addRecent(e)
         val item = MediaItem.Builder()
-            .setMediaId(e.key)
             .setUri(e.url)
             .setMediaMetadata(
                 MediaMetadata.Builder()
@@ -242,7 +215,6 @@ object PlayerHub {
                         Kind.RADIO -> "NewREX Radyo"
                         Kind.PODCAST -> e.group.ifBlank { "NewREX Podcast" }
                     })
-                    .apply { e.image?.let { setArtworkUri(android.net.Uri.parse(it)) } }
                     .build()
             )
             .apply { if (e.url.contains(".m3u8", ignoreCase = true)) setMimeType(MimeTypes.APPLICATION_M3U8) }
@@ -251,7 +223,7 @@ object PlayerHub {
         position.value = 0
         duration.value = 0
         // Medya oturumu sadece biz bir şey çalınca açılır; yoksa açılışta Spotify'ın tuşlarını üstleniyorduk
-        if (session == null && !externalSession) {
+        if (session == null) {
             val c = appContext
             val sp = sessionPlayer
             if (c != null && sp != null) session = MediaSession.Builder(c, sp).setId("newrex").build()
