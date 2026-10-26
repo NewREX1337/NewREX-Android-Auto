@@ -608,6 +608,8 @@ class MainActivity : Activity() {
 
     /** Arabaya giriş kapısı seçimi: Otomatik / Normal / Park. */
     private fun entryRow(): View {
+        if (BuildConfig.AUDIO_ONLY) return label("Bu NewREX Ses: arabanın müzik ekranında görünür, sürüşte de radyo ve TV sesi çalar. " +
+            "Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı.", 13f, Palette.TEXT_DIM, lines = 4)
         if (BuildConfig.PARK_ONLY) return label("Bu NewREX'in Park sürümü: arabada park halindeyken açılır, King Installer gerekmez. " +
             "Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı.", 13f, Palette.TEXT_DIM, lines = 4)
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }

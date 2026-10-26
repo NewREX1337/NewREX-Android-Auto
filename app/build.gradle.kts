@@ -50,11 +50,22 @@ android {
         create("full") {
             dimension = "door"
             buildConfigField("boolean", "PARK_ONLY", "false")
+            buildConfigField("boolean", "AUDIO_ONLY", "false")
         }
         create("park") {
             dimension = "door"
             versionNameSuffix = "-park"
             buildConfigField("boolean", "PARK_ONLY", "true")
+            buildConfigField("boolean", "AUDIO_ONLY", "false")
+        }
+        // ses: arabanın müzik ekranında görünen ayrı uygulama. Android Auto "Bilinmeyen kaynaklar" medya
+        // uygulamalarına işler, sürüşte de çalışır (sadece ses). Park sürümüyle yan yana kurulabilir.
+        create("ses") {
+            dimension = "door"
+            applicationIdSuffix = ".ses"
+            versionNameSuffix = "-ses"
+            buildConfigField("boolean", "PARK_ONLY", "false")
+            buildConfigField("boolean", "AUDIO_ONLY", "true")
         }
     }
 
