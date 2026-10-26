@@ -30,6 +30,8 @@ data class Tile(
     val favorite: Boolean = false,
     /** Logo yoksa/açılmazsa simge yerine baş harfler gösterilsin (radyolar). */
     val letters: Boolean = false,
+    /** Logo yoksa simgenin rengi (gri yerine); ör. TV seçim ekranındaki kısayollar. */
+    val tint: Int? = null,
     val onClick: () -> Unit,
 )
 
@@ -88,7 +90,8 @@ class TileAdapter(private val ctx: Context) : RecyclerView.Adapter<TileAdapter.V
         h.root.neonGlow(active, 10)
         h.root.onTap(action = t.onClick)
 
-        val fallback = if (t.letters) LetterArt(t.title, ctx.resources.displayMetrics.density) else tinted(t.fallbackIcon)
+        val fallback = if (t.letters) LetterArt(t.title, ctx.resources.displayMetrics.density)
+            else ContextCompat.getDrawable(ctx, t.fallbackIcon)?.mutate()?.apply { setTint(t.tint ?: Palette.TEXT_FAINT) }
         h.image.clearColorFilter()
         if (t.image.isNullOrBlank()) {
             // Kutucuk başka bir istasyondan geri dönüştürülmüş olabilir: onun yarım kalan logosu buraya düşmesin

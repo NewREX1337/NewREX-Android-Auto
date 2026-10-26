@@ -157,7 +157,6 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         }
 
         scope.launch { DriveState.driving.collect { updateDriveChip(it) } }
-        com.newrex.auto.SpeedAlert.init(ctx)
         scope.launch { com.newrex.auto.Saver.active.collect { wave.invalidate() } }
         scope.launch { DriveState.speedKmh.collect { checkSpeedLimit(it) } }
         scope.launch {
@@ -290,7 +289,7 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         if (kmh > limit + 0.5f) {
             if (!speedMuted && ((!overLimit && now - lastSpeedAlert > 20_000) || now - lastSpeedAlert > 45_000)) {
                 lastSpeedAlert = now
-                com.newrex.auto.SpeedAlert.play(ctx, kmh.toInt())
+                com.newrex.auto.SpeedAlert.play(ctx)
             }
             overLimit = true
         } else if (kmh < limit - 3) { overLimit = false; speedMuted = false }

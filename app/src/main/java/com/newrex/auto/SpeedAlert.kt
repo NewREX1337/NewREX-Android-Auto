@@ -9,10 +9,7 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Handler
 import android.os.Looper
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import com.newrex.auto.data.CarLog
-import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.sin
@@ -20,114 +17,81 @@ import kotlin.math.sin
 /**
  * Hız uyarısının sesi. Navigasyon uygulamalarının yön tarifi gibi çalınır: Android Auto bu sesi arabanın
  * hoparlöründen verir ve çalan radyoyu o sırada kısar. (Bildirim sesi arabaya gitmiyordu, telefon sessizdeyse
- * hiç duyulmuyordu.) Önce seçilen uyarı sesi, sonra istenirse Türkçe "Hız sınırı, 95".
+ * hiç duyulmuyordu.) Sesler araçların kendi uyarı tonları gibi: alçak, yumuşak başlayıp sönen notalar.
  */
 object SpeedAlert {
     /** Seçilebilir sesler (Araç → Hız uyarısı). Masaüstündeki örnek dosyalarla aynı formüller. */
-    val SOUNDS = listOf("Bip", "Ding dong", "Üçlü", "Çan", "Acil")
+    val SOUNDS = listOf("Nazik", "Ding dong", "Üçlü", "Çan", "Uyarı")
 
-    /**
-     * Konuşan sesler: telefonun Google metin okuma motorundaki Türkçe sesler (telefonun içinde çalışır, internete
-     * bir şey gönderilmez). Telefonda o ses yoksa telefonun varsayılan Türkçe sesi kullanılır.
-     */
-    val VOICES = listOf("Kapalı" to null, "Kadın 1" to "tr-tr-x-cfs-local", "Kadın 2" to "tr-tr-x-efu-local",
-        "Kadın 3" to "tr-tr-x-mfm-local", "Erkek 1" to "tr-tr-x-tmc-local", "Erkek 2" to "tr-tr-x-ama-local")
-
-    private const val RATE = 22050
+    private const val RATE = 44100
 
     private val attrs: AudioAttributes = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
-        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build()
 
     private val handler = Handler(Looper.getMainLooper())
-    private var tts: TextToSpeech? = null
-    private var ttsReady = false
     private var focus: AudioFocusRequest? = null
 
-    fun init(context: Context) {
-        if (tts != null) return
-        val app = context.applicationContext
-        tts = TextToSpeech(app) { status ->
-            val t = tts ?: return@TextToSpeech
-            if (status != TextToSpeech.SUCCESS) return@TextToSpeech
-            ttsReady = t.setLanguage(Locale("tr", "TR")) >= TextToSpeech.LANG_AVAILABLE
-            t.setAudioAttributes(attrs)
-            t.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(id: String?) = Unit
-                override fun onDone(id: String?) { handler.post { release(app) } }
-                @Deprecated("Deprecated in Java")
-                override fun onError(id: String?) { handler.post { release(app) } }
-            })
-        }
-    }
+    /** Uyarıyı çalar. */
+    fun play(context: Context) = play(context, CarLog.speedSound)
 
-    /** Uyarıyı çalar. Türkçe ses yoksa ya da konuşma kapalıysa sadece uyarı sesi çalar. */
-    fun play(context: Context, kmh: Int) = play(context, CarLog.speedSound, CarLog.speedVoice, "Dikkat! Hız sınırını aştın. $kmh.")
-
-    /** Ayarlarda sese dokununca dinletmek için. */
-    fun preview(context: Context, sound: Int) = play(context, sound, 0, null)
-
-    /** Ayarlarda konuşan sese dokununca dinletmek için. */
-    fun previewVoice(context: Context, voice: Int) = play(context, -1, voice, "Dikkat! Hız sınırını aştın.")
-
-    private fun play(context: Context, sound: Int, voice: Int, speech: String?) {
+    /** Ayarlarda sese dokununca dinletmek için de kullanılır. */
+    fun play(context: Context, sound: Int) {
         val app = context.applicationContext
         val am = app.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK).setAudioAttributes(attrs).build()
         focus?.let { am.abandonAudioFocusRequest(it) }
         focus = req
         am.requestAudioFocus(req)
-        val ms = if (sound >= 0) playPcm(samples(sound)) else 0L
-        handler.postDelayed({
-            val t = tts
-            if (speech != null && voice > 0 && t != null && ttsReady) {
-                val name = VOICES.getOrNull(voice)?.second
-                t.voices.orEmpty().firstOrNull { it.name == name }?.let { t.voice = it } ?: t.setLanguage(Locale("tr", "TR"))
-                t.speak(speech, TextToSpeech.QUEUE_FLUSH, null, "speed")
-            } else release(app)
-        }, ms + 150L)
-    }
-
-    private fun release(app: Context) {
-        val req = focus ?: return
-        focus = null
-        (app.getSystemService(Context.AUDIO_SERVICE) as AudioManager).abandonAudioFocusRequest(req)
+        val ms = playPcm(samples(sound))
+        handler.postDelayed({ if (focus === req) { am.abandonAudioFocusRequest(req); focus = null } }, ms + 200L)
     }
 
     // ---- Ses üretimi ----
 
-    private val BELL = listOf(1.0 to 1.0, 2.0 to 0.5, 3.0 to 0.25, 4.2 to 0.12)
+    /** Yumuşak, sıcak tını: temel nota + hafif üst sesler (marimba / araç gong'u gibi). */
+    private val WARM = listOf(1.0 to 1.0, 2.0 to 0.18, 3.0 to 0.06)
 
-    private fun tone(out: ArrayList<Float>, freq: Double, ms: Int, vol: Double = 0.8, decay: Double? = null,
-                     harmonics: List<Pair<Double, Double>> = listOf(1.0 to 1.0), fade: Double = 300.0) {
+    /** Çan tınısı: biraz daha zengin, uzun sönen. */
+    private val BELL = listOf(1.0 to 1.0, 2.0 to 0.35, 2.76 to 0.12, 5.4 to 0.04)
+
+    /**
+     * Tek nota: 12 ms'de yumuşakça yükselir, [decay] saniyelik üstel sönümle biter (sert başlayıp kesilmez).
+     * [at] ms'den başlayarak [out] üzerine eklenir; notalar birbirinin üstüne binebilir.
+     */
+    private fun note(out: FloatArray, at: Int, freq: Double, ms: Int, decay: Double, vol: Double = 0.5,
+                     harmonics: List<Pair<Double, Double>> = WARM) {
+        val start = RATE * at / 1000
         val n = RATE * ms / 1000
+        val attack = RATE * 0.012
         val total = harmonics.sumOf { it.second }
         for (i in 0 until n) {
-            // Başı ve sonu yumuşak: çıt sesi olmasın
-            var env = minOf(1.0, i / fade, (n - i) / fade)
-            if (decay != null) env *= exp(-i / (RATE * decay))
+            val k = start + i
+            if (k >= out.size) break
+            val env = minOf(1.0, i / attack) * exp(-i / (RATE * decay)) * minOf(1.0, (n - i) / (RATE * 0.02))
             val v = harmonics.sumOf { (h, a) -> a * sin(2 * PI * freq * h * i / RATE) } / total
-            out += (v * env * vol).toFloat()
+            out[k] += (v * env * vol).toFloat()
         }
     }
 
-    private fun silence(out: ArrayList<Float>, ms: Int) = repeat(RATE * ms / 1000) { out += 0f }
-
-    private fun samples(sound: Int): ArrayList<Float> {
-        val s = ArrayList<Float>()
-        when (sound) {
-            1 -> { tone(s, 1319.0, 450, decay = 0.18, harmonics = BELL); tone(s, 1047.0, 700, decay = 0.25, harmonics = BELL) }
-            2 -> { tone(s, 660.0, 130); silence(s, 70); tone(s, 880.0, 130); silence(s, 70); tone(s, 1175.0, 220) }
-            3 -> tone(s, 1047.0, 1100, vol = 0.7, decay = 0.35, harmonics = BELL, fade = 150.0)
-            4 -> repeat(5) { tone(s, 1000.0, 90); silence(s, 60) }
-            else -> { tone(s, 880.0, 180); silence(s, 120); tone(s, 880.0, 180) }
+    private fun samples(sound: Int): FloatArray = when (sound) {
+        // Ding dong: Mi → Do, kapı zili gibi
+        1 -> FloatArray(RATE * 1500 / 1000).also { note(it, 0, 659.3, 900, 0.35); note(it, 380, 523.3, 1100, 0.45) }
+        // Üçlü: Do-Mi-Sol yükselen akor
+        2 -> FloatArray(RATE * 1300 / 1000).also {
+            note(it, 0, 523.3, 600, 0.22); note(it, 160, 659.3, 600, 0.22); note(it, 320, 784.0, 950, 0.35)
         }
-        return s
+        // Çan: alçak La, uzun sönen
+        3 -> FloatArray(RATE * 1800 / 1000).also { note(it, 0, 440.0, 1800, 0.6, vol = 0.55, harmonics = BELL) }
+        // Uyarı: üç yumuşak vuruş (Re), dikkat çekici ama tiz değil
+        4 -> FloatArray(RATE * 1000 / 1000).also { for (j in 0..2) note(it, j * 260, 587.3, 240, 0.09, vol = 0.55) }
+        // Nazik: aynı notadan iki kısa yumuşak ton
+        else -> FloatArray(RATE * 900 / 1000).also { note(it, 0, 587.3, 380, 0.14); note(it, 300, 587.3, 600, 0.2) }
     }
 
     /** Sesi çalar, süresini (ms) döner. */
-    private fun playPcm(samples: List<Float>): Long = runCatching {
+    private fun playPcm(samples: FloatArray): Long = runCatching {
         val pcm = ShortArray(samples.size) { (samples[it].coerceIn(-1f, 1f) * Short.MAX_VALUE).toInt().toShort() }
         val track = AudioTrack.Builder()
             .setAudioAttributes(attrs)

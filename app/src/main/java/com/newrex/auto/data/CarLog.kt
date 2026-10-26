@@ -45,7 +45,8 @@ data class FuelEntry(val time: Long, val liters: Float, val price: Float, val km
  * Her şey sadece telefonda saklanır. Kilometre ve menzil GPS'e ve girilen değerlere dayanan tahminlerdir.
  */
 object CarLog {
-    private const val MAX_TRIPS = 30
+    /** Saklanan en fazla yolculuk (eskiler silinir). Günde birkaç yolculukla yaklaşık bir yıl. */
+    private const val MAX_TRIPS = 500
     private lateinit var sp: SharedPreferences
 
     /** Kayıtlar değişince artar; ekranlar bunu dinleyip yenilenir. */
@@ -69,10 +70,6 @@ object CarLog {
         get() = sp.getInt("speedSound", 0)
         set(v) { sp.edit().putInt("speedSound", v).apply(); bump() }
 
-    /** Sesten sonra konuşan ses (SpeedAlert.VOICES sırası); 0 = konuşmasın. */
-    var speedVoice: Int
-        get() = sp.getInt("speedVoiceIx", 1)
-        set(v) { sp.edit().putInt("speedVoiceIx", v).apply(); bump() }
 
     /** Depo hacmi (litre); menzil tahmini için. Toyota C-HR hibrit ~43 L. */
     var tankLiters: Float

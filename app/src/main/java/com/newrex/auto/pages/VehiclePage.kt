@@ -238,20 +238,10 @@ class VehiclePage(ui: CarUi) : Page(ui) {
         com.newrex.auto.SpeedAlert.SOUNDS.forEachIndexed { i, name ->
             sounds.addView(pill("🔔 $name", selected = i == CarLog.speedSound, heightDp = 40) {
                 CarLog.speedSound = i
-                com.newrex.auto.SpeedAlert.preview(ctx, i)
+                com.newrex.auto.SpeedAlert.play(ctx, i)
             }, lp(WRAP, dp(40)).margins(r = dp(8)))
         }
         b.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(sounds) },
-            lp(MATCH, WRAP).margins(t = dp(8)))
-        // Konuşan ses: "Dikkat! Hız sınırını aştın." — dokununca seçilir ve dinletilir
-        val voices = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        com.newrex.auto.SpeedAlert.VOICES.forEachIndexed { i, (name, _) ->
-            voices.addView(pill("🗣 $name", selected = i == CarLog.speedVoice, heightDp = 40) {
-                CarLog.speedVoice = i
-                if (i > 0) com.newrex.auto.SpeedAlert.previewVoice(ctx, i)
-            }, lp(WRAP, dp(40)).margins(r = dp(8)))
-        }
-        b.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(voices) },
             lp(MATCH, WRAP).margins(t = dp(8)))
         b.addView(label(if (current == 0) "Seçtiğin hızı geçince arabanın hoparlöründen sesli uyarı ve ekranda büyük kırmızı uyarı çıkar."
             else "$current km/s geçilince uyarır. Hız GPS ile ölçüldüğünde birkaç km/s sapabilir.",
@@ -310,16 +300,32 @@ class VehiclePage(ui: CarUi) : Page(ui) {
         }
     }
 
+    /** Yolculuk geçmişinde açık sayfa (her sayfada [TRIPS_PER_PAGE] yolculuk). */
+    private var tripPage = 0
+    private val TRIPS_PER_PAGE = 10
+
     private fun tripsPanel(): View = with(ctx) {
         val b = box(R.drawable.ic_history, "Yolculuk geçmişi")
-        val trips = CarLog.trips().take(6)
-        if (trips.isEmpty()) {
-            b.addView(label("Araç kapanınca (Android Auto bağlantısı kesilince) yolculuk buraya kaydedilir.",
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        b.addView(list, lp(MATCH, WRAP))
+        fillTrips(list)
+        b
+    }
+
+    private fun fillTrips(list: LinearLayout): Unit = with(ctx) {
+        list.removeAllViews()
+        val all = CarLog.trips()
+        if (all.isEmpty()) {
+            list.addView(label("Araç kapanınca (Android Auto bağlantısı kesilince) yolculuk buraya kaydedilir.",
                 13f, Palette.TEXT_DIM, lines = 2))
+            return
         }
+        val pages = (all.size + TRIPS_PER_PAGE - 1) / TRIPS_PER_PAGE
+        tripPage = tripPage.coerceIn(0, pages - 1)
+        val trips = all.drop(tripPage * TRIPS_PER_PAGE).take(TRIPS_PER_PAGE)
         val fmt = SimpleDateFormat("d MMM HH:mm", tr)
         trips.forEach { t ->
-            b.addView(LinearLayout(this).apply {
+            list.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(12), dp(8), dp(12), dp(8))
@@ -331,7 +337,17 @@ class VehiclePage(ui: CarUi) : Page(ui) {
                 addView(label("${t.score}", 15f, c, bold = true))
             }, lp(MATCH, WRAP).margins(b = dp(6)))
         }
-        b
+        if (pages > 1) {
+            list.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                if (tripPage > 0) addView(pill("‹ Yeni yolculuklar", heightDp = 40) { tripPage--; fillTrips(list) },
+                    lp(WRAP, dp(40)).margins(r = dp(12)))
+                addView(label("Sayfa ${tripPage + 1} / $pages  •  ${all.size} yolculuk", 14f, Palette.TEXT_DIM), lp(WRAP, WRAP).margins(r = dp(12)))
+                if (tripPage < pages - 1) addView(pill("Eski yolculuklar ›", heightDp = 40) { tripPage++; fillTrips(list) },
+                    lp(WRAP, dp(40)))
+            }, lp(MATCH, WRAP).margins(t = dp(4)))
+        }
     }
 
     private fun parkPanel(): View = with(ctx) {

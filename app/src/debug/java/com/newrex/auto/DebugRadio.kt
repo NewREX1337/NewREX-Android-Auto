@@ -7,6 +7,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import com.newrex.auto.data.CarLog
 import com.newrex.auto.data.FmPresets
 import com.newrex.auto.data.Kind
 import com.newrex.auto.data.Logos
@@ -96,10 +97,16 @@ class DebugRadio : BroadcastReceiver() {
             "info" -> log("şu an görüntü=${PlayerHub.player.videoFormat?.height}p sınır=${PlayerHub.player.trackSelectionParameters.maxVideoHeight}")
             "saver" -> Prefs.saverMode = intent.getIntExtra("m", 0)
             "kmh" -> DriveState.speedKmh.value = intent.getIntExtra("v", 0).toFloat()
-            "speed" -> {
-                SpeedAlert.init(context)
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ SpeedAlert.play(context, 95); log("hız uyarısı çalındı") }, 3000)
+            "trips" -> {
+                CarLog.init(context)
+                val now = System.currentTimeMillis()
+                repeat(intent.getIntExtra("n", 25)) { i ->
+                    val start = now - (i + 1) * 3_600_000L * 5
+                    CarLog.addTrip(com.newrex.auto.data.TripRecord(start, start + 1_800_000L, 10f + i, 25, 90 + i, 0, 0, 80))
+                }
+                log("deneme yolculukları eklendi")
             }
+            "speed" -> SpeedAlert.play(context, intent.getIntExtra("s", 0))
             "logos" -> scope.launch {
                 val list = RadioApi.popular()
                 val before = list.count { Logos.best(it) != null }
