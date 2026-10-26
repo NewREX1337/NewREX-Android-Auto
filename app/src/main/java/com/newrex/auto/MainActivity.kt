@@ -173,6 +173,8 @@ class MainActivity : Activity() {
                 "Görünmüyorsa: Android Auto ayarları → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı.",
                 14f, Palette.TEXT_DIM, lines = 10),
             label("Sorun giderme", 15f, bold = true),
+            label(verdict(), 14f, Palette.TEXT, lines = 8),
+            button("Pil kısıtlamasını kaldır") { askBatteryExemption() },
             label(diagnostics(), 13f, Palette.TEXT_DIM, lines = 20)))
 
         col.addView(label(
@@ -571,6 +573,42 @@ class MainActivity : Activity() {
     }
 
     /** Uygulama arabada görünmüyorsa ekran görüntüsü alınıp geliştiriciye gönderilecek bilgiler. */
+    /** Görünmeme sorununun olası sebebi, sade bir dille. */
+    private fun verdict(): String {
+        val info = if (Build.VERSION.SDK_INT >= 30) runCatching { packageManager.getInstallSourceInfo(packageName) }.getOrNull() else null
+        @Suppress("DEPRECATION")
+        val installer = info?.installingPackageName ?: runCatching { packageManager.getInstallerPackageName(packageName) }.getOrNull()
+        val initiating = info?.initiatingPackageName
+        val pm = getSystemService(POWER_SERVICE) as android.os.PowerManager
+        val sleeping = !pm.isIgnoringBatteryOptimizations(packageName)
+        val brand = Build.MANUFACTURER.lowercase()
+        val oem = listOf("xiaomi", "redmi", "poco", "oppo", "realme", "oneplus", "huawei", "honor", "vivo").any { brand.contains(it) }
+        val head = when {
+            installer != "com.android.vending" ->
+                "❌ Yanlış kurulmuş. NewREX'i sil ve King Installer ile \"Install as king\" seçerek tekrar kur."
+            initiating != null && initiating != "com.google.android.packageinstaller" ->
+                "❌ Telefonun kendi yükleyicisi kullanılmış ($initiating). King Installer'da telefonuna uygun yöntemi seç " +
+                    "(Oppo/Realme/OnePlus için o düğme var) ya da önce \"Reinstall Google Installer\" yap."
+            Prefs.lastCarBind == 0L ->
+                "⚠️ Kurulum doğru ama Android Auto NewREX'i hiç açmayı denemedi. Android Auto → Geliştirici ayarları → " +
+                    "\"Bilinmeyen kaynaklar\" açık olmalı; açıksa kapatıp tekrar aç ve telefonu yeniden başlat." +
+                    if (oem) " Bu marka ($brand) Android Auto'da ek kısıtlama yapabiliyor." else ""
+            Prefs.lastCarSession == 0L ->
+                "⚠️ Android Auto NewREX'i gördü ama ekranda açmadı. Android Auto → \"Başlatıcıyı özelleştir\" listesinde NewREX'i işaretle."
+            else -> "✅ Kurulum ve bağlantı düzgün görünüyor."
+        }
+        return if (sleeping) "$head\n🔋 Pil tasarrufu NewREX'i uyutabiliyor; aşağıdaki düğmeyle kısıtlamayı kaldır." else head
+    }
+
+    @android.annotation.SuppressLint("BatteryLife")
+    private fun askBatteryExemption() {
+        val pm = getSystemService(POWER_SERVICE) as android.os.PowerManager
+        if (pm.isIgnoringBatteryOptimizations(packageName)) { android.widget.Toast.makeText(this, "Zaten kısıtlama yok.", android.widget.Toast.LENGTH_SHORT).show(); return }
+        runCatching {
+            startActivity(Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
+        }.onFailure { startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
+    }
+
     private fun diagnostics(): String {
         val fmt = java.text.SimpleDateFormat("d MMM HH:mm", tr)
         fun time(t: Long) = if (t == 0L) "hiç olmadı" else fmt.format(java.util.Date(t))
@@ -578,7 +616,7 @@ class MainActivity : Activity() {
             if (Build.VERSION.SDK_INT >= 30) {
                 val i = packageManager.getInstallSourceInfo(packageName)
                 val source = if (Build.VERSION.SDK_INT >= 33) " • kaynak=${i.packageSource}" else ""
-                "yükleyen=${i.installingPackageName} • başlatan=${i.initiatingPackageName}$source"
+                "yükleyen=${i.installingPackageName} • başlatan=${i.initiatingPackageName} • kaynak uygulama=${i.originatingPackageName}$source"
             } else {
                 @Suppress("DEPRECATION")
                 "yükleyen=${packageManager.getInstallerPackageName(packageName)}"
