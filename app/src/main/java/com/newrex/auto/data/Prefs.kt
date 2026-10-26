@@ -88,6 +88,11 @@ object Prefs {
         get() = sp.getLong("diag_bind", 0)
         set(v) = sp.edit().putLong("diag_bind", v).apply()
 
+    /** Araç ekranı "park uygulaması" kapısından en son ne zaman açıldı. */
+    var lastParkedSession: Long
+        get() = sp.getLong("diag_parked", 0)
+        set(v) = sp.edit().putLong("diag_parked", v).apply()
+
     var lastCarSession: Long
         get() = sp.getLong("diag_session", 0)
         set(v) = sp.edit().putLong("diag_session", v).apply()

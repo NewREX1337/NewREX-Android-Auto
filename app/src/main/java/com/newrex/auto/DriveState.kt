@@ -71,7 +71,8 @@ object DriveState {
         gpsCleanup = startGps(c)
     }
 
-    fun start(carContext: CarContext) {
+    /** [context] bir CarContext ise aracın hız bilgisi de dinlenir; değilse (park uygulaması) sadece GPS. */
+    fun start(context: Context) {
         stop()
         tripMeters.value = 0f
         tripStart = System.currentTimeMillis()
@@ -79,9 +80,9 @@ object DriveState {
         com.newrex.auto.data.TripStats.reset()
         val cleanups = ArrayList<() -> Unit>()
 
-        try {
-            val info = carContext.getCarService(CarHardwareManager::class.java).carInfo
-            val executor = ContextCompat.getMainExecutor(carContext)
+        if (context is CarContext) try {
+            val info = context.getCarService(CarHardwareManager::class.java).carInfo
+            val executor = ContextCompat.getMainExecutor(context)
             val listener = OnCarDataAvailableListener<Speed> { speed ->
                 val value = speed.rawSpeedMetersPerSecond
                 carSpeed = if (value.status == CarValue.STATUS_SUCCESS) value.value else null
@@ -93,7 +94,7 @@ object DriveState {
             // Araç hız bilgisi vermiyor; GPS'e güveniyoruz
         }
 
-        appContext = carContext.applicationContext
+        appContext = context.applicationContext
         ensureGps()
         stopListening = { cleanups.forEach { runCatching { it() } } }
     }

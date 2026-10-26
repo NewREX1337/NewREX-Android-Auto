@@ -29,6 +29,7 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
+        android:appCategory="game"
         android:theme="@style/Theme.NewREX.Phone">
 
         <meta-data
@@ -74,6 +75,22 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
 
+
+        <!-- Android Auto park uygulaması kapısı (Android 15+): Play Store dışı kurulumda da "Bilinmeyen
+             kaynaklar" ile açılır. Sadece araç ekranında görünür, telefonun uygulama listesinde yoktur. -->
+        <activity
+            android:name=".CarActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.NewREX.Car"
+            android:resizeableActivity="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|keyboard|keyboardHidden|navigation">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.CAR_LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".MainActivity"
