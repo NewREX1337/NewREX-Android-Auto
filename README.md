@@ -22,7 +22,7 @@ Araba hareket edince video kapanır, ses devam eder.
 [Buraya dokun](https://github.com/NewREX1337/NewREX-Android-Auto/releases/latest), sonu **.apk** olan dosyayı indir.
 
 **2. Play Protect'i kısa süreliğine kapat**
-Play Store → sağ üstte profil resmin → **Play Protect** → ⚙️ → **"Uygulamaları Play Protect ile tara"**yı kapat.
+Play Store → sağ üstte profil resmin → **Play Protect** → ⚙️ → **"Uygulamaları Play Protect ile tara"** ayarını kapat.
 
 **3. Kur**
 İndirdiğin dosyaya dokun → **Yükle**.
