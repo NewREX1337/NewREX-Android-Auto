@@ -175,6 +175,7 @@ class MainActivity : Activity() {
                 14f, Palette.TEXT_DIM, lines = 10),
             label("Sorun giderme", 15f, bold = true),
             label(verdict(), 14f, Palette.TEXT, lines = 8),
+            fixRow(),
             entryRow(),
             button("Pil kısıtlamasını kaldır") { askBatteryExemption() },
             label(diagnostics(), 13f, Palette.TEXT_DIM, lines = 20)))
@@ -586,11 +587,11 @@ class MainActivity : Activity() {
         val brand = Build.MANUFACTURER.lowercase()
         val oem = listOf("xiaomi", "redmi", "poco", "oppo", "realme", "oneplus", "huawei", "honor", "vivo").any { brand.contains(it) }
         val head = when {
+            BuildConfig.AUDIO_ONLY -> "ℹ️ Ses sürümü: arabanın müzik ekranında görünür."
             installer != "com.android.vending" ->
-                "❌ Yanlış kurulmuş. NewREX'i sil ve King Installer ile \"Install as king\" seçerek tekrar kur."
-            initiating != null && initiating != "com.google.android.packageinstaller" ->
-                "❌ Telefonun kendi yükleyicisi kullanılmış ($initiating). King Installer'da telefonuna uygun yöntemi seç " +
-                    "(Oppo/Realme/OnePlus için o düğme var) ya da önce \"Reinstall Google Installer\" yap."
+                "❌ Android Auto bu kurulumu tanımıyor. Aşağıdaki \"Arabada görünür yap\" düğmesine bas."
+            initiating != null && initiating !in SelfInstall.INSTALLERS ->
+                "❌ Telefonun kendi yükleyicisi kullanılmış ($initiating). Aşağıdaki \"Arabada görünür yap\" düğmesine bas."
             CarEntry.effective(this) == CarEntry.PARKED && Prefs.lastParkedSession == 0L ->
                 "⚠️ Park kapısı açık ama araçta henüz açılmadı. Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" " +
                     "açık olmalı; sonra telefonu arabaya bağla, park halindeyken uygulamalar listesinde NewREX'e dokun."
@@ -604,6 +605,38 @@ class MainActivity : Activity() {
             else -> "✅ Kurulum ve bağlantı düzgün görünüyor."
         }
         return if (sleeping) "$head\n🔋 Pil tasarrufu NewREX'i uyutabiliyor; aşağıdaki düğmeyle kısıtlamayı kaldır." else head
+    }
+
+    /** "Arabada görünür yap": King Installer'ın işini uygulamanın içinden yapar. */
+    private fun fixRow(): View {
+        if (BuildConfig.PARK_ONLY || BuildConfig.AUDIO_ONLY) return View(this)
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        box.addView(button("Arabada görünür yap") { fixInstall() }, lp(MATCH, WRAP).margins(t = dp(8)))
+        box.addView(label("Yükleyiciler:\n" + SelfInstall.report(this), 12f, Palette.TEXT_FAINT, lines = 4), lp(MATCH, WRAP).margins(t = dp(4)))
+        return box
+    }
+
+    private fun fixInstall() {
+        fun toast(t: String) = android.widget.Toast.makeText(this, t, android.widget.Toast.LENGTH_LONG).show()
+        if (!SelfInstall.canRequestInstalls(this)) {
+            toast("Önce NewREX'e \"bilinmeyen uygulamaları yükleme\" izni ver, sonra tekrar bas.")
+            runCatching { startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))) }
+            return
+        }
+        val installer = SelfInstall.available(this)
+        if (installer == null) {
+            val disabled = SelfInstall.INSTALLERS.firstOrNull { SelfInstall.state(this, it) == SelfInstall.State.DISABLED }
+            AlertDialog.Builder(this)
+                .setTitle("Google yükleyicisi kapalı")
+                .setMessage(if (disabled != null)
+                    "Bu telefonda Google'ın paket yükleyicisi kapatılmış. Bilgisayara bağlayıp şu komutu bir kez çalıştır, sonra tekrar bas:\n\nadb shell pm enable $disabled"
+                else "Bu telefonda Google'ın paket yükleyicisi bulunamadı. Bu Yardım bölümünün ekran görüntüsünü geliştiriciye gönder.")
+                .setPositiveButton("Tamam", null)
+                .show()
+            return
+        }
+        toast("Açılan ekranda \"Güncelle\" ya da \"Yükle\"ye bas. NewREX yeniden açılınca bu bölüme tekrar bak.")
+        if (!SelfInstall.start(this, installer)) toast("Yükleyici açılamadı. Bu bölümün ekran görüntüsünü geliştiriciye gönder.")
     }
 
     /** Arabaya giriş kapısı seçimi: Otomatik / Normal / Park. */

@@ -1,11 +1,11 @@
-import java.util.Properties
+﻿import java.util.Properties
 
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
 
-// İmza bilgileri repoya girmez; keystore.properties yalnızca geliştiricinin bilgisayarında durur.
+// Ä°mza bilgileri repoya girmez; keystore.properties yalnÄ±zca geliÅŸtiricinin bilgisayarÄ±nda durur.
 val keystoreFile = rootProject.file("keystore.properties")
 val keystore = Properties().apply {
     if (keystoreFile.exists()) keystoreFile.inputStream().use { load(it) }
@@ -19,8 +19,8 @@ android {
         applicationId = "com.newrex.auto"
         minSdk = 26
         targetSdk = 35
-        versionCode = 13
-        versionName = "1.5.0"
+        versionCode = 14
+        versionName = "1.5.1"
     }
 
     signingConfigs {
@@ -43,8 +43,8 @@ android {
 
     buildFeatures { buildConfig = true }
 
-    // full: Samsung/Pixel (King Installer) için, iki kapı da var. park: Xiaomi/Tecno gibi King'in çalışmadığı
-    // Android 15+ telefonlar için; içinde Android Auto araç uygulaması tanımı yok, sadece park kapısı var.
+    // full: Samsung/Pixel (King Installer) iÃ§in, iki kapÄ± da var. park: Xiaomi/Tecno gibi King'in Ã§alÄ±ÅŸmadÄ±ÄŸÄ±
+    // Android 15+ telefonlar iÃ§in; iÃ§inde Android Auto araÃ§ uygulamasÄ± tanÄ±mÄ± yok, sadece park kapÄ±sÄ± var.
     flavorDimensions += "door"
     productFlavors {
         create("full") {
@@ -58,8 +58,8 @@ android {
             buildConfigField("boolean", "PARK_ONLY", "true")
             buildConfigField("boolean", "AUDIO_ONLY", "false")
         }
-        // ses: arabanın müzik ekranında görünen ayrı uygulama. Android Auto "Bilinmeyen kaynaklar" medya
-        // uygulamalarına işler, sürüşte de çalışır (sadece ses). Park sürümüyle yan yana kurulabilir.
+        // ses: arabanÄ±n mÃ¼zik ekranÄ±nda gÃ¶rÃ¼nen ayrÄ± uygulama. Android Auto "Bilinmeyen kaynaklar" medya
+        // uygulamalarÄ±na iÅŸler, sÃ¼rÃ¼ÅŸte de Ã§alÄ±ÅŸÄ±r (sadece ses). Park sÃ¼rÃ¼mÃ¼yle yan yana kurulabilir.
         create("ses") {
             dimension = "door"
             applicationIdSuffix = ".ses"
