@@ -2,6 +2,9 @@
 package com.newrex.auto.ui
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.view.Gravity
 import android.view.ViewGroup
@@ -10,9 +13,11 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import coil.dispose
 import coil.load
 import coil.transform.RoundedCornersTransformation
 
@@ -23,6 +28,8 @@ data class Tile(
     val image: String?,
     val fallbackIcon: Int,
     val favorite: Boolean = false,
+    /** Logo yoksa/açılmazsa simge yerine baş harfler gösterilsin (radyolar). */
+    val letters: Boolean = false,
     val onClick: () -> Unit,
 )
 
@@ -81,8 +88,11 @@ class TileAdapter(private val ctx: Context) : RecyclerView.Adapter<TileAdapter.V
         h.root.neonGlow(active, 10)
         h.root.onTap(action = t.onClick)
 
-        val fallback = tinted(t.fallbackIcon)
+        val fallback = if (t.letters) LetterArt(t.title, ctx.resources.displayMetrics.density) else tinted(t.fallbackIcon)
+        h.image.clearColorFilter()
         if (t.image.isNullOrBlank()) {
+            // Kutucuk başka bir istasyondan geri dönüştürülmüş olabilir: onun yarım kalan logosu buraya düşmesin
+            h.image.dispose()
             h.image.setImageDrawable(fallback)
         } else {
             h.image.load(t.image) {
@@ -90,9 +100,26 @@ class TileAdapter(private val ctx: Context) : RecyclerView.Adapter<TileAdapter.V
                 placeholder(fallback)
                 error(fallback)
                 transformations(RoundedCornersTransformation(ctx.dpf(8)))
+                // Şeffaf zeminli siyah logolar (ör. Metro FM) koyu kutucukta kayboluyor: beyaza çevrilir
+                listener(onSuccess = { _, r -> if (darkOnClear(r.drawable)) h.image.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN) })
             }
         }
     }
+
+    /** Logo çoğunlukla şeffaf zemin üstünde koyu, renksiz çizgilerden mi oluşuyor. */
+    private fun darkOnClear(d: Drawable): Boolean = runCatching {
+        val bmp = d.toBitmap(24, 24, Bitmap.Config.ARGB_8888)
+        var clear = 0; var solid = 0; var lum = 0L; var sat = 0L
+        for (y in 0 until 24) for (x in 0 until 24) {
+            val c = bmp.getPixel(x, y)
+            if (Color.alpha(c) < 100) { clear++; continue }
+            val r = Color.red(c); val g = Color.green(c); val b = Color.blue(c)
+            solid++
+            lum += (r * 299 + g * 587 + b * 114) / 1000
+            sat += maxOf(r, g, b) - minOf(r, g, b)
+        }
+        solid > 0 && clear > 24 * 24 / 5 && lum / solid < 60 && sat / solid < 40
+    }.getOrDefault(false)
 
     private fun tinted(res: Int): Drawable? =
         ContextCompat.getDrawable(ctx, res)?.mutate()?.apply { setTint(Palette.TEXT_FAINT) }

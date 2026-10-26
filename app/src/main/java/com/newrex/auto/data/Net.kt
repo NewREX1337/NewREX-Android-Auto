@@ -160,8 +160,9 @@ object RadioApi {
                 kind = Kind.RADIO,
                 title = o.optString("name").trim(),
                 url = stream,
-                image = o.optString("favicon").ifBlank { null },
+                image = o.optString("favicon").takeIf { it.startsWith("http") },
                 group = o.optString("tags").split(',').firstOrNull()?.trim().orEmpty(),
+                home = o.optString("homepage").takeIf { it.startsWith("http") },
             )
         }.distinctBy { it.url }
     }

@@ -493,8 +493,9 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         val pod = e.kind == Kind.PODCAST
         (miniPrev.getChildAt(0) as ImageView).setImageResource(if (pod) R.drawable.ic_replay else R.drawable.ic_prev)
         (miniNext.getChildAt(0) as ImageView).setImageResource(if (pod) R.drawable.ic_forward else R.drawable.ic_next)
-        val fallback = kindIcon(e.kind)
-        miniImage.load(e.image) {
+        val fallback = if (e.kind == Kind.RADIO) LetterArt(e.title, ctx.resources.displayMetrics.density)
+        else androidx.core.content.ContextCompat.getDrawable(ctx, kindIcon(e.kind))
+        miniImage.load(com.newrex.auto.data.Logos.best(e)) {
             placeholder(fallback); error(fallback); fallback(fallback)
             transformations(RoundedCornersTransformation(ctx.dpf(8)))
         }

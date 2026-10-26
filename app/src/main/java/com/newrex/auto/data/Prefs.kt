@@ -24,6 +24,7 @@ object Prefs {
             sp = context.applicationContext.getSharedPreferences("newrex", Context.MODE_PRIVATE)
             positions = context.applicationContext.getSharedPreferences("newrex_positions", Context.MODE_PRIVATE)
         }
+        Logos.init(context)
     }
 
     /** Tema değişince artar; araç ekranı bunu dinleyip kendini yeni renklerle yeniden kurar. */

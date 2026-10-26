@@ -147,9 +147,7 @@ object FmPresets {
 
     fun format(freq: Int) = "${freq / 10}.${freq % 10}"
 
-    private fun norm(t: String) = t.lowercase(java.util.Locale("tr", "TR"))
-        .replace('ü', 'u').replace('ö', 'o').replace('ç', 'c').replace('ş', 's').replace('ğ', 'g').replace('ı', 'i')
-        .replace(Regex("\\s+"), " ").trim()
+    private fun norm(t: String) = t.normName()
 
     private fun user(): List<FmPreset> {
         val arr = runCatching { JSONArray(sp.getString("presets_$city", "[]")) }.getOrElse { JSONArray() }
@@ -192,6 +190,11 @@ object FmPresets {
     fun cached(p: FmPreset): MediaEntry? =
         if (!p.url.isNullOrBlank()) MediaEntry(Kind.RADIO, p.title, p.url, p.image, "${format(p.freq)} MHz")
         else resolved[p.freq]
+
+    /** Çalmayan yayının yerine yedeği bulununca bu oturumda frekans da yedeğe geçer. */
+    fun heal(deadUrl: String, alt: MediaEntry) {
+        for ((f, e) in resolved) if (e.url == deadUrl) resolved[f] = e.copy(url = alt.url, image = e.image ?: alt.image)
+    }
 
     /** Hazır frekansın yayınını Radio Browser'da bulur (Türkiye'deki en çok dinlenen eşleşme). */
     suspend fun resolve(p: FmPreset): MediaEntry? {

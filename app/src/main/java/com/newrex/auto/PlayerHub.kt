@@ -16,17 +16,50 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.session.MediaSession
 import com.newrex.auto.data.Kind
+import com.newrex.auto.data.FmPresets
 import com.newrex.auto.data.MediaEntry
+import com.newrex.auto.data.Net
 import com.newrex.auto.data.Prefs
+import com.newrex.auto.data.RadioApi
+import com.newrex.auto.data.normName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 
 /** Tek bir oynatıcı: TV, radyo ve podcast aynı oynatıcıyı paylaşır, sayfadan çıkınca ses devam eder. */
 object PlayerHub {
     // Bazı IPTV sunucuları tarayıcı dışı istemcileri reddediyor
     private const val STREAM_USER_AGENT =
         "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36"
+
+    // Radyolar ise tarayıcıya yayın değil web sayfası gönderiyor ya da birkaç saniye sonra kesiyor
+    // (StreamTheWorld: Joy Türk, Süper FM, Metro FM, Virgin; Shoutcast sunucuları). Oynatıcı gibi tanıtılır.
+    private const val AUDIO_USER_AGENT = Net.USER_AGENT
+
+    /** Kopan canlı yayına kaç kez yeniden bağlanılır (1, 2, 4, 8, sonra 15 sn arayla; tünelde ~2 dk bekler). */
+    private const val MAX_RETRIES = 10
+
+    private lateinit var tvSources: DefaultMediaSourceFactory
+    private lateinit var audioSources: DefaultMediaSourceFactory
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var retries = 0
+
+    /** Bu yayın en az bir kez çaldı mı: çalmış yayın kopunca uzun beklenir, hiç açılmayan için kısa. */
+    private var playedOk = false
+    private var healJob: Job? = null
+
+    /** Bu istasyon için denenmiş ve çalmayan adresler. */
+    private val dead = HashSet<String>()
+    private val reconnect = Runnable { reload() }
+
+    /** 30 sn sorunsuz çalan yayında yeniden bağlanma hakkı yenilenir. */
+    private val stable = Runnable { retries = 0 }
 
     private var exo: ExoPlayer? = null
     private var session: MediaSession? = null
@@ -64,13 +97,18 @@ object PlayerHub {
 
     fun init(context: Context) {
         if (exo != null) return
-        val http = DefaultHttpDataSource.Factory()
-            .setUserAgent(STREAM_USER_AGENT)
-            .setAllowCrossProtocolRedirects(true)
-            .setConnectTimeoutMs(10_000)
-            .setReadTimeoutMs(15_000)
+        fun sources(userAgent: String) = DefaultMediaSourceFactory(DefaultDataSource.Factory(context,
+            DefaultHttpDataSource.Factory()
+                .setUserAgent(userAgent)
+                .setAllowCrossProtocolRedirects(true)
+                .setConnectTimeoutMs(10_000)
+                .setReadTimeoutMs(15_000)))
+            // Mobil veride kısa kopmalarda hemen hata vermesin
+            .setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(6))
+        tvSources = sources(STREAM_USER_AGENT)
+        audioSources = sources(AUDIO_USER_AGENT)
         val p = ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(context, http)))
+            .setMediaSourceFactory(audioSources)
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -88,9 +126,15 @@ object PlayerHub {
 
             override fun onPlaybackStateChanged(state: Int) {
                 buffering.value = state == Player.STATE_BUFFERING
-                if (state == Player.STATE_READY) error.value = null
-                // Biten bölüm bir dahaki sefere baştan başlasın
-                if (state == Player.STATE_ENDED) now.value?.takeIf { it.kind == Kind.PODCAST }?.let { Prefs.savePosition(it.url, 0) }
+                if (state == Player.STATE_READY) { error.value = null; playedOk = true; handler.postDelayed(stable, 30_000) }
+                else handler.removeCallbacks(stable)
+                if (state == Player.STATE_ENDED) {
+                    val e = now.value
+                    // Biten bölüm bir dahaki sefere baştan başlasın
+                    if (e?.kind == Kind.PODCAST) Prefs.savePosition(e.url, 0)
+                    // Canlı yayın "bitmez": sunucu bağlantıyı kapattıysa yeniden bağlan
+                    else if (e != null) retry()
+                }
             }
 
             override fun onPlayerError(e: PlaybackException) {
@@ -99,6 +143,18 @@ object PlayerHub {
                     p.prepare()
                     return
                 }
+                val cur = now.value
+                // Adres ölmüşse (404, 501…) beklemeden yedek yayına geç; diğer hatalarda önce yeniden bağlan
+                // (bozuk yayın listesi, çözülemeyen ses gibi 3000+ hatalar da tekrar denemekle düzelmez)
+                val gone = e.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ||
+                    e.errorCode == PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND ||
+                    e.errorCode >= PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED
+                if (cur?.kind == Kind.RADIO && gone && heal(cur)) return
+                if (cur != null && cur.kind != Kind.PODCAST && retry()) return
+                // İnternet yokken yedek yayın aramak boşuna
+                val offline = e.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
+                    e.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT
+                if (cur?.kind == Kind.RADIO && !offline && heal(cur)) return
                 buffering.value = false
                 error.value = "Yayın açılamadı. Başka bir kanal/istasyon deneyin."
             }
@@ -178,6 +234,7 @@ object PlayerHub {
     }
 
     fun stop() {
+        cancelRecovery()
         now.value?.takeIf { it.kind == Kind.PODCAST }?.let { e -> exo?.let { Prefs.savePosition(e.url, it.currentPosition) } }
         exo?.stop()
         exo?.clearMediaItems()
@@ -189,6 +246,7 @@ object PlayerHub {
     }
 
     fun release() {
+        cancelRecovery()
         now.value?.takeIf { it.kind == Kind.PODCAST }?.let { e -> exo?.let { Prefs.savePosition(e.url, it.currentPosition) } }
         handler.removeCallbacks(ticker)
         session?.release()
@@ -199,27 +257,88 @@ object PlayerHub {
         playing.value = false
     }
 
+    /** Kopan canlı yayına artan aralıklarla yeniden bağlanır. Bir süre düzgün çaldıysa sayaç sıfırlanır. */
+    private fun retry(): Boolean {
+        if (retries >= (if (playedOk) MAX_RETRIES else 2)) return false
+        buffering.value = true
+        handler.removeCallbacks(reconnect)
+        handler.postDelayed(reconnect, (1000L shl retries.coerceAtMost(4)).coerceAtMost(15_000))
+        retries++
+        return true
+    }
+
+    /** Yayın tamamen ölmüşse aynı adlı istasyonun başka bir yayın adresine geçer. */
+    private fun heal(e: MediaEntry): Boolean {
+        if (healJob?.isActive == true) return true
+        dead += e.url
+        val name = e.title.normName()
+        if (name.isEmpty()) return false
+        buffering.value = true
+        healJob = scope.launch {
+            val alt = runCatching { RadioApi.search(e.title, country = "TR", limit = 20) }.getOrNull().orEmpty()
+                .filter { it.url !in dead }
+                .firstOrNull { val n = it.title.normName(); n == name || n.startsWith("$name ") }
+            if (now.value?.key != e.key) return@launch
+            if (alt == null) {
+                buffering.value = false
+                error.value = "Yayın açılamadı. Başka bir kanal/istasyon deneyin."
+                return@launch
+            }
+            val fixed = e.copy(url = alt.url, image = e.image ?: alt.image, home = e.home ?: alt.home)
+            FmPresets.heal(e.url, fixed)
+            if (index in queue.indices && queue[index].key == e.key) queue = queue.toMutableList().also { it[index] = fixed }
+            retries = 0
+            playedOk = false
+            now.value = fixed
+            reload()
+        }
+        return true
+    }
+
+    private fun cancelRecovery() {
+        handler.removeCallbacks(reconnect)
+        handler.removeCallbacks(stable)
+        healJob?.cancel()
+        retries = 0
+    }
+
+    private fun itemFor(e: MediaEntry) = MediaItem.Builder()
+        .setMediaId(e.key)
+        .setUri(e.url)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle(e.title)
+                .setArtist(when (e.kind) {
+                    Kind.TV -> "NewREX TV"
+                    Kind.RADIO -> "NewREX Radyo"
+                    Kind.PODCAST -> e.group.ifBlank { "NewREX Podcast" }
+                })
+                .build()
+        )
+        .apply { if (e.url.contains(".m3u8", ignoreCase = true)) setMimeType(MimeTypes.APPLICATION_M3U8) }
+        .build()
+
+    private fun sourceFor(e: MediaEntry) = (if (e.kind == Kind.TV) tvSources else audioSources).createMediaSource(itemFor(e))
+
+    /** Aynı yayını baştan açar (yönlendirmeli adresler yeni sunucuya bağlanır). */
+    private fun reload() {
+        val p = exo ?: return
+        val e = now.value ?: return
+        p.setMediaSource(sourceFor(e))
+        p.prepare()
+        p.play()
+    }
+
     private fun start() {
+        cancelRecovery()
+        dead.clear()
+        playedOk = false
         now.value?.takeIf { it.kind == Kind.PODCAST }?.let { e -> exo?.let { Prefs.savePosition(e.url, it.currentPosition) } }
         val e = queue[index]
         now.value = e
         error.value = null
         Prefs.addRecent(e)
-        val item = MediaItem.Builder()
-            .setUri(e.url)
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(e.title)
-                    .setArtist(when (e.kind) {
-                        Kind.TV -> "NewREX TV"
-                        Kind.RADIO -> "NewREX Radyo"
-                        Kind.PODCAST -> e.group.ifBlank { "NewREX Podcast" }
-                    })
-                    .build()
-            )
-            .apply { if (e.url.contains(".m3u8", ignoreCase = true)) setMimeType(MimeTypes.APPLICATION_M3U8) }
-            .build()
-        if (e.kind == Kind.PODCAST) player.setMediaItem(item, Prefs.position(e.url)) else player.setMediaItem(item)
+        if (e.kind == Kind.PODCAST) player.setMediaSource(sourceFor(e), Prefs.position(e.url)) else player.setMediaSource(sourceFor(e))
         position.value = 0
         duration.value = 0
         // Medya oturumu sadece biz bir şey çalınca açılır; yoksa açılışta Spotify'ın tuşlarını üstleniyorduk

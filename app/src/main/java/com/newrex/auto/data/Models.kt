@@ -12,6 +12,8 @@ data class MediaEntry(
     val url: String,
     val image: String?,
     val group: String,
+    /** İstasyonun web sitesi (logosu yoksa oradan bulunur). */
+    val home: String? = null,
 ) {
     val key: String get() = "$kind|$url"
 
@@ -21,6 +23,7 @@ data class MediaEntry(
         .put("url", url)
         .put("image", image ?: "")
         .put("group", group)
+        .put("home", home ?: "")
 
     companion object {
         fun fromJson(o: JSONObject) = MediaEntry(
@@ -29,9 +32,15 @@ data class MediaEntry(
             url = o.optString("url"),
             image = o.optString("image").ifBlank { null },
             group = o.optString("group"),
+            home = o.optString("home").ifBlank { null },
         )
     }
 }
+
+/** Ad karşılaştırması için: küçük harf, Türkçe harfler sadeleşmiş ("JOY TÜRK" = "joy turk"). */
+fun String.normName(): String = lowercase(java.util.Locale("tr", "TR"))
+    .replace('ü', 'u').replace('ö', 'o').replace('ç', 'c').replace('ş', 's').replace('ğ', 'g').replace('ı', 'i')
+    .replace(Regex("\\s+"), " ").trim()
 
 data class Playlist(val name: String, val url: String)
 

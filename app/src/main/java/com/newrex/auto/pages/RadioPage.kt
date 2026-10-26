@@ -10,6 +10,7 @@ import android.widget.TextView
 import com.newrex.auto.PlayerHub
 import com.newrex.auto.R
 import com.newrex.auto.data.Kind
+import com.newrex.auto.data.Logos
 import com.newrex.auto.data.MediaEntry
 import com.newrex.auto.data.Prefs
 import com.newrex.auto.data.RadioApi
@@ -134,15 +135,34 @@ class RadioPage(ui: CarUi, private val onPick: ((MediaEntry) -> Unit)? = null) :
         }
     }
 
+    private var logoJob: kotlinx.coroutines.Job? = null
+    private var checkedList: List<MediaEntry>? = null
+
+    /** Logosu eksik/bozuk istasyonların logosunu arka planda bulur, bulundukça kutucuğu günceller. */
+    private fun checkLogos(list: List<MediaEntry>) {
+        if (list === checkedList) return
+        checkedList = list
+        logoJob?.cancel()
+        logoJob = scope.launch {
+            Logos.check(list) { e, logo ->
+                val i = tiles.items.indexOfFirst { it.key == e.key }
+                if (i >= 0) {
+                    tiles.items = tiles.items.toMutableList().also { it[i] = it[i].copy(image = logo) }
+                }
+            }
+        }
+    }
+
     private fun refreshTiles(list: List<MediaEntry>) {
         val favKeys = Prefs.favorites(Kind.RADIO).map { it.key }.toSet()
         tiles.items = list.mapIndexed { i, st ->
-            Tile(st.key, st.title, st.group.ifBlank { null }, st.image, R.drawable.ic_radio,
-                favorite = st.key in favKeys) {
+            Tile(st.key, st.title, st.group.ifBlank { null }, Logos.best(st), R.drawable.ic_radio,
+                favorite = st.key in favKeys, letters = true) {
                 val pick = onPick
                 if (pick != null) { ui.pop(); pick(st) } else PlayerHub.play(list, i)
             }
         }
+        checkLogos(list)
         status.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         status.text = when (tab) {
             Tab.FAVORITES -> "Henüz favori radyo yok.\nÇalarken alttaki ☆ simgesine dokun."
