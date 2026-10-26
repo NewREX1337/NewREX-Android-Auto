@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Park sürümü: Android Auto'nun araç uygulaması tanımı çıkarılır. Bu tanım varken Android Auto park kapısını
+     ("Uses for PROJECTION not defined") reddediyor; GameSnacks gibi park uygulamalarında da bu tanım yok. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            tools:node="remove" />
+        <meta-data
+            android:name="androidx.car.app.minCarApiLevel"
+            tools:node="remove" />
+        <service
+            android:name=".NewRexCarAppService"
+            tools:node="remove" />
+    </application>
+</manifest>

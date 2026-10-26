@@ -43,6 +43,21 @@ android {
 
     buildFeatures { buildConfig = true }
 
+    // full: Samsung/Pixel (King Installer) için, iki kapı da var. park: Xiaomi/Tecno gibi King'in çalışmadığı
+    // Android 15+ telefonlar için; içinde Android Auto araç uygulaması tanımı yok, sadece park kapısı var.
+    flavorDimensions += "door"
+    productFlavors {
+        create("full") {
+            dimension = "door"
+            buildConfigField("boolean", "PARK_ONLY", "false")
+        }
+        create("park") {
+            dimension = "door"
+            versionNameSuffix = "-park"
+            buildConfigField("boolean", "PARK_ONLY", "true")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

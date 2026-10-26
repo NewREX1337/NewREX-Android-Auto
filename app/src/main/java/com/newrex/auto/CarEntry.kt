@@ -30,13 +30,15 @@ object CarEntry {
     }.getOrDefault(false)
 
     /** Şu an kullanılan kapı. */
-    fun effective(context: Context): Int = when (Prefs.carEntry) {
+    fun effective(context: Context): Int = if (BuildConfig.PARK_ONLY) PARKED else when (Prefs.carEntry) {
         NORMAL -> NORMAL
         PARKED -> if (parkedSupported()) PARKED else NORMAL
         else -> if (!trustedInstall(context) && parkedSupported()) PARKED else NORMAL
     }
 
     fun apply(context: Context) {
+        // Park sürümünde normal kapı hiç yok
+        if (BuildConfig.PARK_ONLY) return
         val parked = effective(context) == PARKED
         set(context, NewRexCarAppService::class.java, !parked)
         set(context, CarActivity::class.java, parked)
