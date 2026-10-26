@@ -126,6 +126,9 @@ class MainActivity : Activity() {
         themeSummary = summary()
         col.addView(section(R.drawable.ic_settings, 0xFF00BCD4.toInt(), "Tema", themeSummary, *themeBody()))
 
+        val saverSummary = summary()
+        col.addView(section(R.drawable.ic_speed, 0xFF16B98A.toInt(), "Tasarruf modu", saverSummary, saverBody(saverSummary)))
+
         looksSummary = summary()
         col.addView(section(R.drawable.ic_radio, 0xFFFFB238.toInt(), "Saat ve radyo görünümü", looksSummary, *looksBody()))
 
@@ -604,6 +607,37 @@ class MainActivity : Activity() {
             else -> "✅ Kurulum ve bağlantı düzgün görünüyor."
         }
         return if (sleeping) "$head\n🔋 Pil tasarrufu NewREX'i uyutabiliyor; aşağıdaki düğmeyle kısıtlamayı kaldır." else head
+    }
+
+    /** Tasarruf modu: Kapalı / Açık / Otomatik. */
+    private fun saverBody(summary: TextView): View {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val info = label("", 13f, Palette.TEXT_DIM, lines = 5)
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fun paint() {
+            for (i in 0 until row.childCount) {
+                val sel = i == Prefs.saverMode
+                row.getChildAt(i).background = rounded(if (sel) Palette.withAlpha(Palette.accent, 0x33) else 0x22FFFFFF, dpf(18),
+                    dp(if (sel) 2 else 1), if (sel) Palette.accent else 0x33FFFFFF)
+            }
+            val why = Saver.reason()
+            summary.text = if (why != null) "Açık ($why)" else Saver.NAMES[Prefs.saverMode]
+            info.text = "Açıkken hareketli arka plan ve dokunma efektleri durur, TV en fazla 480p açılır (daha az ısınma ve internet), " +
+                "radyo logoları internetten aranmaz. Otomatik: telefon pil tasarrufundayken ya da ısındığında kendiliğinden açılır."
+        }
+        Saver.NAMES.forEachIndexed { i, n ->
+            row.addView(TextView(this).apply {
+                text = n
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                textSize = 14f
+                setOnClickListener { Prefs.saverMode = i; paint() }
+            }, lp(0, dp(40), 1f).margins(r = dp(6)))
+        }
+        paint()
+        box.addView(row, lp(MATCH, WRAP))
+        box.addView(info, lp(MATCH, WRAP).margins(t = dp(8)))
+        return box
     }
 
     /** "Arabada görünür yap": King Installer'ın işini uygulamanın içinden yapar. */

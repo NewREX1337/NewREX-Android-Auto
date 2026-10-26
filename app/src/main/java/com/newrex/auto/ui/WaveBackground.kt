@@ -90,7 +90,9 @@ class WaveBackground(context: Context) : View(context) {
         canvas.drawRect(0f, 0f, w, h, bgPaint)
         canvas.drawRect(0f, 0f, w, h, glowPaint)
 
-        val t = (SystemClock.uptimeMillis() - start) / 1000f
+        // Tasarruf modunda şeritler sabit bir karede durur (saniyede 25 kez yeniden çizilmez)
+        val saver = com.newrex.auto.Saver.on
+        val t = if (saver) 20f else (SystemClock.uptimeMillis() - start) / 1000f
         // Açılış: şeritler ilk 3 saniyede genişleyerek belirir
         val intro = (t / 3f).coerceAtMost(1f).let { 1f - (1f - it) * (1f - it) * (1f - it) }
 
@@ -98,7 +100,7 @@ class WaveBackground(context: Context) : View(context) {
         drawRibbon(canvas, w, h, t, intro, 0.70f, g2, -0.8f, 2.1f)
         drawRibbon(canvas, w, h, t, intro, 0.55f, blend(g1, Color.WHITE, 0.4f), 0.6f, 4.2f)
 
-        for (p in particles) {
+        if (!saver) for (p in particles) {
             val x = ((p[0] + t * 0.004f * p[2]) % 1f) * w
             val y = (p[1] * 0.9f + 0.05f) * h + sin(t * 0.3f + p[3]) * context.dpf(10)
             val tw = 0.5f + 0.5f * sin(t * 0.8f * p[2] + p[3])
@@ -108,7 +110,7 @@ class WaveBackground(context: Context) : View(context) {
 
         // Tek bir zamanlayıcı: ek invalidate çağrıları kare sayısını katlamasın
         removeCallbacks(frame)
-        if (running) postDelayed(frame, frameMs)
+        if (running && !saver) postDelayed(frame, frameMs)
     }
 
     /** Birbirine çok yakın, hafif kayan ince çizgilerden oluşan tek bir ışık şeridi. */

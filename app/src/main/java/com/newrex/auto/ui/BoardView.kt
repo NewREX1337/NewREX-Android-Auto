@@ -81,10 +81,12 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
             val arrow = ctx.icon(R.drawable.ic_up, 26, Palette.TEXT_DIM)
             addView(arrow, lp(ctx.dp(26), ctx.dp(26)))
             addView(ctx.label("Uygulamalar", 13f, Palette.TEXT_DIM), lp(WRAP, WRAP))
-            // Yukarı kaydırılabileceğini belli eden hafif zıplama
-            ObjectAnimator.ofFloat(arrow, View.TRANSLATION_Y, 0f, -ctx.dpf(5), 0f).apply {
+            // Yukarı kaydırılabileceğini belli eden hafif zıplama. Sonsuz döngü bütün araç ekranını saniyede 60 kez
+            // yeniden çizdiriyordu (ölçüldü); 3 kez zıplayıp durur.
+            if (!com.newrex.auto.Saver.on) ObjectAnimator.ofFloat(arrow, View.TRANSLATION_Y, 0f, -ctx.dpf(5), 0f).apply {
                 duration = 1800
-                repeatCount = ValueAnimator.INFINITE
+                repeatCount = 2
+                startDelay = 800
                 start()
             }
             onTap { onOpenApps?.invoke() }

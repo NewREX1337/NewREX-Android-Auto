@@ -96,7 +96,7 @@ class TileAdapter(private val ctx: Context) : RecyclerView.Adapter<TileAdapter.V
             h.image.setImageDrawable(fallback)
         } else {
             h.image.load(t.image) {
-                crossfade(true)
+                crossfade(!com.newrex.auto.Saver.on)
                 placeholder(fallback)
                 error(fallback)
                 transformations(RoundedCornersTransformation(ctx.dpf(8)))

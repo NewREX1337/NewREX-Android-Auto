@@ -161,6 +161,19 @@ class SettingsPage(ui: CarUi) : Page(ui) {
                     }
                 }, lp(WRAP, dp(44)).margins(t = dp(12)))
             }))
+            addView(section("Tasarruf modu", LinearLayout(this@with).apply {
+                orientation = LinearLayout.VERTICAL
+                val row = LinearLayout(this@with).apply { orientation = LinearLayout.HORIZONTAL }
+                com.newrex.auto.Saver.NAMES.forEachIndexed { i, n ->
+                    row.addView(pill(n, selected = i == Prefs.saverMode) { Prefs.saverMode = i; ui.pop(); ui.push(SettingsPage(ui)) },
+                        lp(WRAP, dp(44)).margins(r = dp(10)))
+                }
+                addView(row)
+                val why = com.newrex.auto.Saver.reason()
+                addView(label((if (why != null) "Şu an açık ($why). " else "Şu an kapalı. ") + "Açıkken hareketli arka plan ve dokunma efektleri durur, TV en fazla 480p açılır (daha az ısınma ve internet), " +
+                "radyo logoları internetten aranmaz. Otomatik: telefon pil tasarrufundayken ya da ısındığında kendiliğinden açılır.",
+                    13f, Palette.TEXT_FAINT, lines = 4), lp(MATCH, WRAP).margins(t = dp(10)))
+            }))
             addView(section("Park modu", LinearLayout(this@with).apply {
                 orientation = LinearLayout.VERTICAL
                 val toggleLabel = label("", 15f, bold = true)

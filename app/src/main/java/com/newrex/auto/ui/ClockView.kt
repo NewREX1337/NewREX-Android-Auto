@@ -97,7 +97,7 @@ class ClockView(context: Context, style: Int = 0) : View(context) {
         removeCallbacks(tick)
         if (!isAttachedToWindow) return
         val now = System.currentTimeMillis()
-        val period = if (STYLES[style].seconds) 1000L else 60_000L
+        val period = if (STYLES[style].seconds && !com.newrex.auto.Saver.on) 1000L else 60_000L
         postDelayed(tick, period - now % period + 20)
     }
 

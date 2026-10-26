@@ -158,6 +158,7 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
 
         scope.launch { DriveState.driving.collect { updateDriveChip(it) } }
         com.newrex.auto.SpeedAlert.init(ctx)
+        scope.launch { com.newrex.auto.Saver.active.collect { wave.invalidate() } }
         scope.launch { DriveState.speedKmh.collect { checkSpeedLimit(it) } }
         scope.launch {
             combine(compact, WeatherHub.report) { c, w -> c to w }.collect { (c, w) ->

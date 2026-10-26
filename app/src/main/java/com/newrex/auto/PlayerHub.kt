@@ -179,6 +179,13 @@ object PlayerHub {
             override fun seekToPreviousMediaItem() = prev()
         }
         exo = p
+        scope.launch {
+            Saver.active.collect { on ->
+                p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
+                    .apply { if (on) setMaxVideoSize(854, 480) else clearVideoSizeConstraints() }
+                    .build()
+            }
+        }
         this.sessionPlayer = sessionPlayer
         appContext = context.applicationContext
         handler.post(ticker)

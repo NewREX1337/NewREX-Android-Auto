@@ -34,6 +34,11 @@ class DebugRadio : BroadcastReceiver() {
                 override fun onPlaybackStateChanged(state: Int) = log("durum=" + listOf("?", "BOŞ", "YÜKLENİYOR", "HAZIR", "BİTTİ")[state])
                 override fun onIsPlayingChanged(isPlaying: Boolean) = log("çalıyor=$isPlaying")
                 override fun onPlayerError(error: PlaybackException) = log("hata=${error.errorCodeName} ${error.cause?.message}")
+                override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                    tracks.groups.filter { it.type == androidx.media3.common.C.TRACK_TYPE_VIDEO }.forEach { g ->
+                        for (i in 0 until g.length) if (g.isTrackSelected(i)) log("seçilen görüntü: ${g.getTrackFormat(i).height}p")
+                    }
+                }
             })
             scope.launch { PlayerHub.now.collect { log("şimdi=${it?.title} ${it?.url}") } }
             scope.launch { PlayerHub.error.collect { if (it != null) log("ekrandaki hata=$it") } }
@@ -87,6 +92,7 @@ class DebugRadio : BroadcastReceiver() {
                     }
                 }
             }
+            "saver" -> Prefs.saverMode = intent.getIntExtra("m", 0)
             "kmh" -> DriveState.speedKmh.value = intent.getIntExtra("v", 0).toFloat()
             "speed" -> {
                 SpeedAlert.init(context)

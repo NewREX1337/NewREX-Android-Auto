@@ -25,6 +25,7 @@ object Prefs {
             positions = context.applicationContext.getSharedPreferences("newrex_positions", Context.MODE_PRIVATE)
         }
         Logos.init(context)
+        com.newrex.auto.Saver.init(context)
     }
 
     /** Tema değişince artar; araç ekranı bunu dinleyip kendini yeni renklerle yeniden kurar. */
@@ -57,6 +58,11 @@ object Prefs {
     var fmStyle: Int
         get() = sp.getInt("fmStyle", 0)
         set(v) { sp.edit().putInt("fmStyle", v).apply(); looks.value++ }
+
+    /** Tasarruf modu: 0 kapalı, 1 açık, 2 otomatik (pil tasarrufu / ısınma). Varsayılan otomatik. */
+    var saverMode: Int
+        get() = sp.getInt("saverMode", 2)
+        set(v) { sp.edit().putInt("saverMode", v).apply(); bump(); com.newrex.auto.Saver.update() }
 
     /** true → sürüşte video/web gizlenir (varsayılan); false → görüntü açık kalır. */
     var parkModeVideo: Boolean

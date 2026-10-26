@@ -122,6 +122,7 @@ fun <T : ViewGroup.MarginLayoutParams> T.margins(l: Int = 0, t: Int = 0, r: Int 
 fun View.onTap(action: () -> Unit) = onTap(false, action)
 
 fun View.onTap(immediate: Boolean, action: () -> Unit) = setOnClickListener { v ->
+    if (com.newrex.auto.Saver.on) { action(); return@setOnClickListener }
     v.neonFlash()
     if (immediate) { action(); return@setOnClickListener }
     if (v.getTag(com.newrex.auto.R.id.neon_pending) == true) return@setOnClickListener
