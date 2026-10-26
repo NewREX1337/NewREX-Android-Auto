@@ -88,6 +88,11 @@ object Prefs {
         get() = sp.getLong("diag_bind", 0)
         set(v) = sp.edit().putLong("diag_bind", v).apply()
 
+    /** Arabaya giriş kapısı: 0 otomatik, 1 normal, 2 park (bkz. CarEntry). */
+    var carEntry: Int
+        get() = sp.getInt("carEntry", 0)
+        set(v) = sp.edit().putInt("carEntry", v).apply()
+
     /** Araç ekranı "park uygulaması" kapısından en son ne zaman açıldı. */
     var lastParkedSession: Long
         get() = sp.getLong("diag_parked", 0)

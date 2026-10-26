@@ -42,8 +42,20 @@ Telefonda NewREX'i aç, konum sorarsa **İzin ver** de.
 **6. Arabaya bağlan**
 NewREX menüde çıkar. 🎉
 
+### Xiaomi, Redmi, POCO, Tecno… telefonlarda görünmüyor mu?
+
+King Installer bu telefonlarda işe yaramayabilir. Telefonun **Android 15 veya üstüyse** başka yol var:
+
+1. NewREX dosyasına dokunup **normal kur** (King gerekmez).
+2. 4. adımdaki **Bilinmeyen kaynaklar** ayarını aç.
+3. NewREX'i bir kez aç. Uygulama arabaya kendini **park modunda** tanıtır.
+
+Bu yolla NewREX arabada görünür ama **sadece araç park halindeyken** açılır.
+NewREX'te **Yardım → Arabaya giriş kapısı** bölümünden elle de seçebilirsin.
+
 ### Görünmüyor mu?
 
+- NewREX'i aç, **Yardım** bölümüne bak: sorunun sebebini orada yazar.
 - Android Auto ayarlarında **Başlatıcıyı özelleştir**'e gir, NewREX'i işaretle.
 - Orada da yoksa: NewREX'i sil ve 3. adımdan tekrar yap.
 - Samsung kurulumu engellerse: **Ayarlar → Güvenlik ve gizlilik → Otomatik Engelleyici**'yi kapat.

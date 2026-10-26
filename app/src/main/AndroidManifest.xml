@@ -55,6 +55,14 @@
             android:theme="@style/Theme.NewREX.Translucent" />
 
         <receiver
+            android:name=".CarEntryReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".ParkTimerReceiver"
             android:exported="false" />
 

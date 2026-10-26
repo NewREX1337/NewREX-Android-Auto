@@ -87,6 +87,7 @@ class MainActivity : Activity() {
         Board.init(this)
         CarLog.init(this)
         Palette.load()
+        CarEntry.apply(this)
 
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -174,6 +175,7 @@ class MainActivity : Activity() {
                 14f, Palette.TEXT_DIM, lines = 10),
             label("Sorun giderme", 15f, bold = true),
             label(verdict(), 14f, Palette.TEXT, lines = 8),
+            entryRow(),
             button("Pil kısıtlamasını kaldır") { askBatteryExemption() },
             label(diagnostics(), 13f, Palette.TEXT_DIM, lines = 20)))
 
@@ -589,6 +591,10 @@ class MainActivity : Activity() {
             initiating != null && initiating != "com.google.android.packageinstaller" ->
                 "❌ Telefonun kendi yükleyicisi kullanılmış ($initiating). King Installer'da telefonuna uygun yöntemi seç " +
                     "(Oppo/Realme/OnePlus için o düğme var) ya da önce \"Reinstall Google Installer\" yap."
+            CarEntry.effective(this) == CarEntry.PARKED && Prefs.lastParkedSession == 0L ->
+                "⚠️ Park kapısı açık ama araçta henüz açılmadı. Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" " +
+                    "açık olmalı; sonra telefonu arabaya bağla, park halindeyken uygulamalar listesinde NewREX'e dokun."
+            CarEntry.effective(this) == CarEntry.PARKED -> "✅ Park kapısı çalışıyor."
             Prefs.lastCarBind == 0L ->
                 "⚠️ Kurulum doğru ama Android Auto NewREX'i hiç açmayı denemedi. Android Auto → Geliştirici ayarları → " +
                     "\"Bilinmeyen kaynaklar\" açık olmalı; açıksa kapatıp tekrar aç ve telefonu yeniden başlat." +
@@ -598,6 +604,39 @@ class MainActivity : Activity() {
             else -> "✅ Kurulum ve bağlantı düzgün görünüyor."
         }
         return if (sleeping) "$head\n🔋 Pil tasarrufu NewREX'i uyutabiliyor; aşağıdaki düğmeyle kısıtlamayı kaldır." else head
+    }
+
+    /** Arabaya giriş kapısı seçimi: Otomatik / Normal / Park. */
+    private fun entryRow(): View {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val info = label("", 13f, Palette.TEXT_DIM, lines = 4)
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val names = listOf("Otomatik", "Normal", "Park")
+        fun paint() {
+            for (i in 0 until row.childCount) {
+                val sel = i == Prefs.carEntry
+                row.getChildAt(i).background = rounded(if (sel) Palette.withAlpha(Palette.accent, 0x33) else 0x22FFFFFF, dpf(18),
+                    dp(if (sel) 2 else 1), if (sel) Palette.accent else 0x33FFFFFF)
+            }
+            info.text = (if (CarEntry.effective(this) == CarEntry.PARKED)
+                "Şu an: Park kapısı. Arabada her kurulumda görünür ama sadece park halindeyken açılır."
+            else "Şu an: Normal kapı. Sürüşte de açılır (video kapanır); arabada görünmesi için King Installer ile kurulmuş olmalı.") +
+                if (!CarEntry.parkedSupported()) "\nPark kapısı Android 15 ve üstünde var." else "\nDeğiştirdikten sonra telefonu arabadan çıkarıp tekrar bağla."
+        }
+        names.forEachIndexed { i, n ->
+            row.addView(TextView(this).apply {
+                text = n
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                textSize = 14f
+                setOnClickListener { Prefs.carEntry = i; CarEntry.apply(this@MainActivity); paint() }
+            }, lp(0, dp(40), 1f).margins(r = dp(6)))
+        }
+        paint()
+        box.addView(label("Arabaya giriş kapısı", 14f, bold = true))
+        box.addView(row, lp(MATCH, WRAP).margins(t = dp(6)))
+        box.addView(info, lp(MATCH, WRAP).margins(t = dp(6)))
+        return box
     }
 
     @android.annotation.SuppressLint("BatteryLife")
