@@ -72,7 +72,7 @@ class HomePage(ui: CarUi) : Page(ui) {
         val gap = dp(if (compact) 8 else 12)
 
         val bigCards = listOf(
-            bigCard("TV", "Canlı TV ve IPTV", R.drawable.ic_live_tv, 0xFF06B6D4.toInt(), CardArt.Kind.TV, compact, live = true) { ui.push(TvPage(ui)) },
+            bigCard("TV", "Kanallar, IPTV, TV+, Netflix", R.drawable.ic_live_tv, 0xFF06B6D4.toInt(), CardArt.Kind.TV, compact, live = true) { ui.push(TvHubPage(ui)) },
             bigCard("YouTube", "Video izle", R.drawable.ic_smart_display, 0xFFEF4444.toInt(), CardArt.Kind.YOUTUBE, compact) {
                 ui.push(WebPage(ui, WebPage.Mode.YOUTUBE))
             },

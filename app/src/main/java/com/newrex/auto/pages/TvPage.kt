@@ -10,6 +10,7 @@ import com.newrex.auto.PlayerHub
 import com.newrex.auto.R
 import com.newrex.auto.data.Kind
 import com.newrex.auto.data.MediaEntry
+import com.newrex.auto.data.Playlist
 import com.newrex.auto.data.Playlists
 import com.newrex.auto.data.Prefs
 import com.newrex.auto.ui.CarUi
@@ -32,8 +33,14 @@ import com.newrex.auto.ui.tileGrid
 import com.newrex.auto.ui.verticalList
 import kotlinx.coroutines.launch
 
-class TvPage(ui: CarUi) : Page(ui) {
-    override val title = "Canlı TV"
+class TvPage(ui: CarUi, private val source: Source = Source.FREE) : Page(ui) {
+    /** FREE: uygulamanın hazır ücretsiz kanal listesi. MINE: kullanıcının telefondan eklediği IPTV listeleri. */
+    enum class Source { FREE, MINE }
+
+    override val title = if (source == Source.FREE) "TV Kanalları" else "IPTV Listelerim"
+
+    private fun lists() = if (source == Source.FREE) listOf(Playlist(Prefs.DEFAULT_PLAYLIST_NAME, Prefs.DEFAULT_PLAYLIST_URL))
+        else Prefs.playlists.filter { it.url != Prefs.DEFAULT_PLAYLIST_URL }
 
     private companion object {
         const val FAV = "\u0000fav"
@@ -82,7 +89,6 @@ class TvPage(ui: CarUi) : Page(ui) {
             ui.showKeyboard("Kanal ara") { q -> query = q; showGroup() }
         },
         ctx.circleButton(R.drawable.ic_refresh) { load(true) },
-        ctx.pill("TV+", R.drawable.ic_live_tv) { ui.push(WebPage(ui, WebPage.Mode.TVPLUS)) }.apply { tag = "wide" },
     )
 
     private fun load(force: Boolean) {
@@ -90,7 +96,7 @@ class TvPage(ui: CarUi) : Page(ui) {
         status.visibility = View.VISIBLE
         tiles.items = emptyList()
         scope.launch {
-            val result = Playlists.loadAll(ctx, force)
+            val result = Playlists.loadAll(ctx, force, lists())
             channels = result.channels
             val names = channels.map { it.group }.filter { it.isNotBlank() }.distinct().sortedBy { it.lowercase() }
             groups.items = listOf(FAV to "⭐ Favoriler", ALL to "Tüm kanallar") + names.map { it to it }
@@ -119,8 +125,8 @@ class TvPage(ui: CarUi) : Page(ui) {
         }
         status.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         status.text = when {
-            channels.isEmpty() && Prefs.playlists.isEmpty() ->
-                "Henüz IPTV listesi yok.\nTelefondaki NewREX uygulamasından liste ekleyebilirsin."
+            channels.isEmpty() && lists().isEmpty() ->
+                "Henüz IPTV listen yok.\nTelefondaki NewREX uygulamasında \"IPTV listeleri\" bölümünden bağlantı ya da dosya ekleyebilirsin."
             channels.isEmpty() -> "Kanal bulunamadı. İnternet bağlantını kontrol edip yenile butonuna bas."
             query != null -> "\"$query\" için kanal bulunamadı."
             lastGroup == FAV -> "Henüz favori kanal yok.\nİzlerken ☆ simgesine dokunarak ekleyebilirsin."

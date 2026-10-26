@@ -38,6 +38,7 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
         WEB("Web", "https://www.google.com"),
         // Turkcell TV+: kullanıcı kendi hesabıyla girer; giriş bilgileri sadece sayfa ile TV+ arasında kalır
         TVPLUS("TV+", "https://tvplus.com.tr/canli-tv"),
+        NETFLIX("Netflix", "https://www.netflix.com/browse"),
     }
 
     override val title = mode.title
@@ -110,6 +111,12 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
             settings.allowFileAccess = false
             settings.allowContentAccess = false
             settings.safeBrowsingEnabled = true
+            // Hesaba bir kez girilince oturum kalsın (TV+, Netflix, YouTube): çerezler telefonda saklanır, silinmez
+            val view = this
+            android.webkit.CookieManager.getInstance().apply {
+                setAcceptCookie(true)
+                setAcceptThirdPartyCookies(view, true)
+            }
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     // Uygulama açma bağlantılarını (intent://, vnd.youtube:) engelle, sayfada kal
@@ -148,8 +155,8 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
                 override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
                     val host = request.origin?.host.orEmpty()
                     val drm = android.webkit.PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID
-                    if (mode == Mode.TVPLUS && (host == "tvplus.com.tr" || host.endsWith(".tvplus.com.tr")) &&
-                        drm in request.resources) request.grant(arrayOf(drm))
+                    val site = when (mode) { Mode.TVPLUS -> "tvplus.com.tr"; Mode.NETFLIX -> "netflix.com"; else -> null }
+                    if (site != null && (host == site || host.endsWith(".$site")) && drm in request.resources) request.grant(arrayOf(drm))
                     else request.deny()
                 }
             }
@@ -308,6 +315,8 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
 
     override fun onDestroy() {
         exitFullscreen(refresh = false)
+        // Giriş çerezleri hemen diske yazılsın: uygulama kapansa da oturum düşmesin
+        android.webkit.CookieManager.getInstance().flush()
         web.stopLoading()
         web.loadUrl("about:blank")
         web.destroy()

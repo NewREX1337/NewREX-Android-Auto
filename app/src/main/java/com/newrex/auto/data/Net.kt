@@ -57,11 +57,11 @@ object Playlists {
 
     data class Result(val channels: List<MediaEntry>, val errors: List<String>)
 
-    suspend fun loadAll(context: Context, forceRefresh: Boolean = false): Result =
+    suspend fun loadAll(context: Context, forceRefresh: Boolean = false, lists: List<Playlist> = Prefs.playlists): Result =
         withContext(Dispatchers.IO) {
             val channels = ArrayList<MediaEntry>()
             val errors = ArrayList<String>()
-            for (pl in Prefs.playlists) {
+            for (pl in lists) {
                 try {
                     channels += parse(fetch(context, pl, forceRefresh), pl.name)
                 } catch (e: Exception) {
