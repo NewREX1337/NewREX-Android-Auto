@@ -97,22 +97,6 @@ object Logos {
         fromSite(site)
     }
 
-    /**
-     * Bir sitenin kendi simgesi (ör. Netflix, TV+ kısayolları için). Tarayıcıdaki yer imi simgesi gibi
-     * sitenin kendisinden alınır, uygulamaya gömülmez. Sonuç 14 gün saklanır.
-     */
-    suspend fun site(url: String): String? {
-        if (!::sp.isInitialized) return null
-        val key = "site:$url"
-        sp.getString(key, null)?.let { v ->
-            val time = v.substringBefore('|').toLongOrNull() ?: 0L
-            if (System.currentTimeMillis() - time < FOUND_DAYS * DAY) return v.substringAfter('|').ifEmpty { null }
-        }
-        val logo = withContext(Dispatchers.IO) { runCatching { fromSite(url) }.getOrNull() }
-        sp.edit().putString(key, "${System.currentTimeMillis()}|${logo.orEmpty()}").apply()
-        return logo
-    }
-
     /** Akış adresleri (".m3u8", "streamtheworld" vb.) site sayılmaz. */
     private fun looksLikeSite(url: String) = !Regex("m3u8|\\.mp3|\\.aac|stream|:\\d{4}", RegexOption.IGNORE_CASE).containsMatchIn(url)
 
