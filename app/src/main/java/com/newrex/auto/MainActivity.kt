@@ -126,6 +126,11 @@ class MainActivity : Activity() {
         themeSummary = summary()
         col.addView(section(R.drawable.ic_settings, 0xFF00BCD4.toInt(), "Tema", themeSummary, *themeBody()))
 
+        val qualitySummary = summary()
+        col.addView(section(R.drawable.ic_live_tv, 0xFF06B6D4.toInt(), "TV görüntü kalitesi", qualitySummary,
+            choiceButtons(PlayerHub.QUALITIES.map { it.first }, { Prefs.tvQuality }, { Prefs.tvQuality = it }, qualitySummary,
+                "Otomatik: yayının en iyi kalitesi. Düşük seçersen telefon daha az ısınır, daha az internet harcar.")))
+
         val saverSummary = summary()
         col.addView(section(R.drawable.ic_speed, 0xFF16B98A.toInt(), "Tasarruf modu", saverSummary, saverBody(saverSummary)))
 
@@ -609,6 +614,33 @@ class MainActivity : Activity() {
         return if (sleeping) "$head\n🔋 Pil tasarrufu NewREX'i uyutabiliyor; aşağıdaki düğmeyle kısıtlamayı kaldır." else head
     }
 
+    /** Basit seçim düğmeleri (ör. TV kalitesi). */
+    private fun choiceButtons(names: List<String>, get: () -> Int, set: (Int) -> Unit, summary: TextView, note: String): View {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fun paint() {
+            for (i in 0 until row.childCount) {
+                val sel = i == get()
+                row.getChildAt(i).background = rounded(if (sel) Palette.withAlpha(Palette.accent, 0x33) else 0x22FFFFFF, dpf(18),
+                    dp(if (sel) 2 else 1), if (sel) Palette.accent else 0x33FFFFFF)
+            }
+            summary.text = names.getOrNull(get()) ?: ""
+        }
+        names.forEachIndexed { i, n ->
+            row.addView(TextView(this).apply {
+                text = n
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                textSize = 14f
+                setOnClickListener { set(i); paint() }
+            }, lp(0, dp(40), 1f).margins(r = dp(6)))
+        }
+        paint()
+        box.addView(row, lp(MATCH, WRAP))
+        box.addView(label(note, 13f, Palette.TEXT_DIM, lines = 3), lp(MATCH, WRAP).margins(t = dp(8)))
+        return box
+    }
+
     /** Tasarruf modu: Kapalı / Açık / Otomatik. */
     private fun saverBody(summary: TextView): View {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -622,8 +654,8 @@ class MainActivity : Activity() {
             }
             val why = Saver.reason()
             summary.text = if (why != null) "Açık ($why)" else Saver.NAMES[Prefs.saverMode]
-            info.text = "Açıkken hareketli arka plan ve dokunma efektleri durur, TV en fazla 480p açılır (daha az ısınma ve internet), " +
-                "radyo logoları internetten aranmaz. Otomatik: telefon pil tasarrufundayken ya da ısındığında kendiliğinden açılır."
+            info.text = "Açıkken arka plan sabit durur, dokununca çıkan efektler kapanır. Görüntü ve ses kalitesi değişmez. " +
+                "Otomatik: telefon pil tasarrufundayken ya da ısındığında kendiliğinden açılır."
         }
         Saver.NAMES.forEachIndexed { i, n ->
             row.addView(TextView(this).apply {

@@ -59,6 +59,11 @@ object Prefs {
         get() = sp.getInt("fmStyle", 0)
         set(v) { sp.edit().putInt("fmStyle", v).apply(); looks.value++ }
 
+    /** TV görüntü kalitesi (PlayerHub.QUALITIES sırası); 0 = Otomatik (en iyisi). */
+    var tvQuality: Int
+        get() = sp.getInt("tvQuality", 0)
+        set(v) { sp.edit().putInt("tvQuality", v).apply(); bump(); com.newrex.auto.PlayerHub.applyQuality() }
+
     /** Tasarruf modu: 0 kapalı, 1 açık, 2 otomatik (pil tasarrufu / ısınma). Varsayılan otomatik. */
     var saverMode: Int
         get() = sp.getInt("saverMode", 2)

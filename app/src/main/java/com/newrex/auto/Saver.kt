@@ -13,9 +13,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Tasarruf modu: telefonu yoran ama işe yaramayan süsleri kapatır. Açıkken hareketli arka plan durur,
- * dokunma parlamaları ve kayan animasyonlar kapanır, TV en fazla 480p açılır, radyo logoları internetten
- * aranmaz. "Otomatik"te telefon pil tasarrufundayken ya da ısındığında kendiliğinden açılır.
+ * Tasarruf modu: sadece süsleri kapatır. Açıkken arka plan sabit durur, dokunma parlamaları ve kayan
+ * animasyonlar kapanır. TV/radyo/video kalitesine dokunmaz (TV kalitesi ayrı bir ayar). "Otomatik"te telefon
+ * pil tasarrufundayken ya da ısındığında kendiliğinden açılır.
  */
 object Saver {
     const val OFF = 0

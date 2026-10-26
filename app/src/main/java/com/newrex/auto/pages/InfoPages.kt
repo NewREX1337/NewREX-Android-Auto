@@ -170,9 +170,20 @@ class SettingsPage(ui: CarUi) : Page(ui) {
                 }
                 addView(row)
                 val why = com.newrex.auto.Saver.reason()
-                addView(label((if (why != null) "Şu an açık ($why). " else "Şu an kapalı. ") + "Açıkken hareketli arka plan ve dokunma efektleri durur, TV en fazla 480p açılır (daha az ısınma ve internet), " +
-                "radyo logoları internetten aranmaz. Otomatik: telefon pil tasarrufundayken ya da ısındığında kendiliğinden açılır.",
+                addView(label((if (why != null) "Şu an açık ($why). " else "Şu an kapalı. ") + "Açıkken arka plan sabit durur, dokununca çıkan efektler kapanır. Görüntü ve ses kalitesi değişmez. " +
+                "Otomatik: telefon pil tasarrufundayken ya da ısındığında kendiliğinden açılır.",
                     13f, Palette.TEXT_FAINT, lines = 4), lp(MATCH, WRAP).margins(t = dp(10)))
+            }))
+            addView(section("TV görüntü kalitesi", LinearLayout(this@with).apply {
+                orientation = LinearLayout.VERTICAL
+                val row = LinearLayout(this@with).apply { orientation = LinearLayout.HORIZONTAL }
+                com.newrex.auto.PlayerHub.QUALITIES.forEachIndexed { i, (n, _) ->
+                    row.addView(pill(n, selected = i == Prefs.tvQuality) { Prefs.tvQuality = i; ui.pop(); ui.push(SettingsPage(ui)) },
+                        lp(WRAP, dp(44)).margins(r = dp(10)))
+                }
+                addView(row)
+                addView(label("Otomatik: yayının en iyi kalitesi. Düşük seçersen telefon daha az ısınır, daha az internet harcar. " +
+                    "Değişiklik açık kanala hemen uygulanır.", 13f, Palette.TEXT_FAINT, lines = 3), lp(MATCH, WRAP).margins(t = dp(10)))
             }))
             addView(section("Park modu", LinearLayout(this@with).apply {
                 orientation = LinearLayout.VERTICAL

@@ -179,13 +179,7 @@ object PlayerHub {
             override fun seekToPreviousMediaItem() = prev()
         }
         exo = p
-        scope.launch {
-            Saver.active.collect { on ->
-                p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
-                    .apply { if (on) setMaxVideoSize(854, 480) else clearVideoSizeConstraints() }
-                    .build()
-            }
-        }
+        applyQuality()
         this.sessionPlayer = sessionPlayer
         appContext = context.applicationContext
         handler.post(ticker)
@@ -262,6 +256,17 @@ object PlayerHub {
         exo = null
         now.value = null
         playing.value = false
+    }
+
+    /** TV görüntü kalitesi seçimi (Prefs.tvQuality): Otomatik en iyisini seçer, diğerleri üst sınırdır. */
+    val QUALITIES = listOf("Otomatik" to 0, "1080p" to 1080, "720p" to 720, "480p" to 480)
+
+    fun applyQuality() {
+        val p = exo ?: return
+        val h = QUALITIES.getOrNull(Prefs.tvQuality)?.second ?: 0
+        p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
+            .apply { if (h > 0) setMaxVideoSize(h * 16 / 9 + 1, h) else clearVideoSizeConstraints() }
+            .build()
     }
 
     /** Kopan canlı yayına artan aralıklarla yeniden bağlanır. Bir süre düzgün çaldıysa sayaç sıfırlanır. */

@@ -92,6 +92,8 @@ class DebugRadio : BroadcastReceiver() {
                     }
                 }
             }
+            "quality" -> Prefs.tvQuality = intent.getIntExtra("q", 0)
+            "info" -> log("şu an görüntü=${PlayerHub.player.videoFormat?.height}p sınır=${PlayerHub.player.trackSelectionParameters.maxVideoHeight}")
             "saver" -> Prefs.saverMode = intent.getIntExtra("m", 0)
             "kmh" -> DriveState.speedKmh.value = intent.getIntExtra("v", 0).toFloat()
             "speed" -> {

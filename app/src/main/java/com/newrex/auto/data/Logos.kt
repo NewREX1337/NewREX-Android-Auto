@@ -72,7 +72,7 @@ object Logos {
 
     /** Listedeki istasyonların logolarını denetler; logosu değişen her istasyon için [onFound] çağrılır (null: logo yok). */
     suspend fun check(list: List<MediaEntry>, onFound: (MediaEntry, String?) -> Unit) {
-        if (!::sp.isInitialized || com.newrex.auto.Saver.on) return
+        if (!::sp.isInitialized) return
         val siblings = list.filter { !it.image.isNullOrBlank() }.groupBy { it.title.normName() }
         coroutineScope {
             for (e in list) {
