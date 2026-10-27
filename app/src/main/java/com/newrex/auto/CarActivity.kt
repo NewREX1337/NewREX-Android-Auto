@@ -56,7 +56,8 @@ class CarActivity : Activity() {
         val frame = android.widget.FrameLayout(this).apply { addView(newUi.root) }
         setContentView(frame)
         newUi.setInsets(0, 0, 0, 0)
-        if (!guideShown && !BuildConfig.PARK_ONLY && !CarEntry.trustedInstall(this)) {
+        // Telefonda zaten denendiyse (ör. Xiaomi'de tutmadıysa) her bağlantıda aynı adımları tekrar isteme
+        if (!guideShown && !BuildConfig.PARK_ONLY && !CarEntry.trustedInstall(this) && Prefs.selfInstallTried == 0) {
             guideShown = true
             frame.addView(drivingGuide { v -> frame.removeView(v) })
         }

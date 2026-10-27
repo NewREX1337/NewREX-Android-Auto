@@ -105,6 +105,16 @@ object Prefs {
         get() = sp.getInt("carEntry", 0)
         set(v) = sp.edit().putInt("carEntry", v).apply()
 
+    /** "Arabada görünür yap" en son hangi sürümde denendi (0: hiç). Tutmadıysa aynı uyarı tekrar tekrar çıkmasın diye. */
+    var selfInstallTried: Int
+        get() = sp.getInt("selfInstallTried", 0)
+        set(v) = sp.edit().putInt("selfInstallTried", v).apply()
+
+    /** "Kurulum bu telefonda tutmadı" bilgisi hangi sürümde gösterildi. */
+    var installFailShown: Int
+        get() = sp.getInt("installFailShown", 0)
+        set(v) = sp.edit().putInt("installFailShown", v).apply()
+
     /** Araç ekranı "park uygulaması" kapısından en son ne zaman açıldı. */
     var lastParkedSession: Long
         get() = sp.getLong("diag_parked", 0)

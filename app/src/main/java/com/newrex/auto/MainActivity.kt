@@ -214,7 +214,9 @@ class MainActivity : Activity() {
 
         scope.launch { Board.photos.collect { refreshPhotos() } }
         scope.launch { CarLog.changes.collect { refreshCar() } }
-        if (!BuildConfig.PARK_ONLY && !CarEntry.trustedInstall(this)) showDrivingGuide()
+        val untrusted = !BuildConfig.PARK_ONLY && !CarEntry.trustedInstall(this)
+        if (untrusted && Prefs.selfInstallTried == 0) showDrivingGuide()
+        else if (untrusted && Prefs.installFailShown != BuildConfig.VERSION_CODE) showInstallFailed()
         else scope.launch { Updates.check(this@MainActivity)?.let { Updates.show(this@MainActivity, it) } }
         if (intent?.getBooleanExtra(EXTRA_ASK_LOCATION, false) == true) askLocationNow()
     }
@@ -695,6 +697,33 @@ class MainActivity : Activity() {
             .show()
     }
 
+    /**
+     * "Güncelle"ye basıldı ama Android Auto kurulumu hâlâ tanımıyor (çoğunlukla Xiaomi/Redmi/POCO'da telefonun kendi
+     * yükleyicisi araya giriyor). Her açılışta aynı adımı istemek yerine bir kez ne olduğunu anlatır; ekran
+     * görüntüsü geliştiriciye gönderilebilsin diye teknik bilgiyi de yazar.
+     */
+    private fun showInstallFailed() {
+        Prefs.installFailShown = BuildConfig.VERSION_CODE
+        val info = if (Build.VERSION.SDK_INT >= 30) runCatching { packageManager.getInstallSourceInfo(packageName) }.getOrNull() else null
+        @Suppress("DEPRECATION")
+        val installer = info?.installingPackageName ?: runCatching { packageManager.getInstallerPackageName(packageName) }.getOrNull()
+        AlertDialog.Builder(this)
+            .setTitle("Kurulum bu telefonda tutmadı")
+            .setMessage("\"Güncelle\"ye bastın ama Android Auto NewREX'i hâlâ tanımıyor. Bu, bazı telefonlarda (özellikle " +
+                "Xiaomi, Redmi ve POCO) telefonun kendi yükleyicisi araya girdiğinde oluyor. Merak etme, NewREX arabada " +
+                "park halindeyken çalışmaya devam eder.\n\n" +
+                "Bir kez daha denemek istersen:\n" +
+                "• Play Protect'in kapalı olduğundan emin ol.\n" +
+                "• Açılan ekran telefonun kendi ekranıysa (güvenlik taraması vb.) \"Yine de yükle\" ya da \"Devam\" de.\n\n" +
+                "Yine olmazsa bu pencerenin ekran görüntüsünü geliştiriciye gönder:\n" +
+                "${Build.MANUFACTURER} ${Build.MODEL} • Android ${Build.VERSION.RELEASE}\n" +
+                "Kuran: ${installer ?: "-"} / ${info?.initiatingPackageName ?: "-"}\n" +
+                SelfInstall.report(this))
+            .setPositiveButton("Tekrar dene") { _, _ -> fixInstall() }
+            .setNegativeButton("Tamam", null)
+            .show()
+    }
+
     /** "Arabada görünür yap": King Installer'ın işini uygulamanın içinden yapar. */
     private fun fixRow(): View {
         if (BuildConfig.PARK_ONLY) return View(this)
@@ -725,6 +754,11 @@ class MainActivity : Activity() {
         }
         toast("Açılan ekranda \"Güncelle\" ya da \"Yükle\"ye bas. NewREX yeniden açılınca bu bölüme tekrar bak.")
         if (!SelfInstall.start(this, installer)) toast("Yükleyici açılamadı. Bu bölümün ekran görüntüsünü geliştiriciye gönder.")
+        else {
+            // Tutmazsa bir sonraki açılışta "tekrar Güncelle'ye bas" yerine ne olduğunu anlatan bilgi çıksın
+            Prefs.selfInstallTried = BuildConfig.VERSION_CODE
+            Prefs.installFailShown = 0
+        }
     }
 
     /** Arabaya giriş kapısı seçimi: Otomatik / Normal / Park. */
