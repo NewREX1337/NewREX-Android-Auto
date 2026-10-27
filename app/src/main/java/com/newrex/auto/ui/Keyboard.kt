@@ -63,6 +63,8 @@ class KeyboardView(
                 text.setLength(0)
                 text.append(typed.take(200))
                 refresh()
+                // Telefonda "Araca gönder" denince araçta ayrıca Tamam'a basmak gerekmesin
+                onDone(text.toString())
             }
         }, keyLp(1.6f))
         bottom.addView(key("?123") {

@@ -58,15 +58,34 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
         })()"""
 
         // React gibi kütüphaneler değeri doğrudan atamayı fark etmediği için yerel setter + input olayı
+        // Doğrulama kodu ekranları (ör. TV+) her rakam için ayrı, tek haneli kutu kullanır: kod kutulara
+        // birer birer dağıtılır (her birinde sayfanın kendi olayı çalışsın diye aralıklı)
         private const val FILL_FIELD_JS = """function(v){
             var e = document.activeElement; if (!e) return;
-            if (e.isContentEditable) { e.innerText = v; }
-            else {
-                var d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(e), 'value');
-                if (d && d.set) d.set.call(e, v); else e.value = v;
+            function put(el, s) {
+                if (el.isContentEditable) { el.innerText = s; }
+                else {
+                    var d = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value');
+                    if (d && d.set) d.set.call(el, s); else el.value = s;
+                }
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
             }
-            e.dispatchEvent(new Event('input', { bubbles: true }));
-            e.dispatchEvent(new Event('change', { bubbles: true }));
+            if (e.tagName == 'INPUT' && e.maxLength == 1 && v.length > 1) {
+                var box = e.parentElement, boxes = [];
+                while (box && boxes.length < 2) {
+                    boxes = [].filter.call(box.querySelectorAll('input'), function(i){ return i.maxLength == 1 && i.offsetParent; });
+                    box = box.parentElement;
+                }
+            }
+            if (boxes && boxes.length > 1) {
+                var start = Math.max(0, boxes.indexOf(e)), chars = v.replace(/\s/g, '').split('');
+                chars.slice(0, boxes.length - start).forEach(function(c, k){
+                    setTimeout(function(){ var b = boxes[start + k]; b.focus(); put(b, c); }, k * 60);
+                });
+                return;
+            }
+            put(e, v);
         }"""
     }
 
