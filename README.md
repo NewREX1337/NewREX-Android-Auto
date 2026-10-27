@@ -27,6 +27,8 @@ Araba hareket edince video kapanır, ses devam eder.
 **2. Play Protect'i kısa süreliğine kapat**
 Play Store → sağ üstte profil resmin → **Play Protect** → ⚙️ → **"Uygulamaları Play Protect ile tara"** ayarını kapat.
 
+> **Samsung'da kurulum engellendi mi?** Ayarlar → **Güvenlik ve gizlilik** → **Otomatik Engelleyici**'yi kısa süreliğine kapat. Kurulum bitince tekrar açabilirsin.
+
 **3. Kur**
 İndirdiğin dosyaya dokun → **Yükle**.
 
@@ -35,7 +37,7 @@ NewREX'i aç → en alttaki **Yardım** → **Arabada görünür yap** → **Gü
 > İzin isterse **İzin ver**'i aç, geri dön, düğmeye tekrar bas.
 
 **5. Play Protect'i tekrar aç**
-2. adımdaki ayarı geri aç. Bir şey sorarsa **Gönderme** de.
+2. adımdaki ayarı (ve kapattıysan Otomatik Engelleyici'yi) geri aç. Bir şey sorarsa **Gönderme** de.
 
 **6. Arabaya bağlan**
 NewREX menüde çıkar. 🎉
