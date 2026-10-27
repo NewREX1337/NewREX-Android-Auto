@@ -212,6 +212,7 @@ class MainActivity : Activity() {
 
         scope.launch { Board.photos.collect { refreshPhotos() } }
         scope.launch { CarLog.changes.collect { refreshCar() } }
+        scope.launch { Updates.check(this@MainActivity)?.let { Updates.show(this@MainActivity, it) } }
         if (intent?.getBooleanExtra(EXTRA_ASK_LOCATION, false) == true) askLocationNow()
     }
 
