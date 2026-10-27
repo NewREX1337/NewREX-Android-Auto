@@ -4,13 +4,16 @@ Arabanın ekranında **TV, YouTube, radyo ve podcast**. Ücretsiz, reklamsız, h
 
 ## ✨ Özellikler
 
-- 📺 **Canlı TV**: Türk kanalları hazır gelir, kendi listeni de ekleyebilirsin
+- 📺 **Canlı TV**: Türk kanalları hazır gelir, kendi IPTV listeni de ekleyebilirsin
+- 🎬 **TV+ ve Netflix**: kendi hesabınla giriş yap, oturumun kapanmaz
 - ▶️ **YouTube**: tam ekran izleme
 - 📻 **Radyo**: binlerce istasyon, istersen eski radyolar gibi frekansla ara
 - 🎙️ **Podcast**: abone ol, kaldığın yerden devam et
 - 🕰️ **Açılış ekranı**: kendi fotoğrafların, 12 farklı saat tasarımı
 - 📱 **Ekran yansıtma**: telefon ekranını arabaya yansıt
 - 🚗 **Araç takibi**: hız, yolculuk, yakıt ve bakım hatırlatıcı
+- 🔔 **Hız uyarısı**: sınırı geçince arabanın hoparlöründen sesli uyarı
+- 🔋 **Tasarruf modu** ve ayarlanabilir TV görüntü kalitesi
 - 🌤️ **Hava durumu** ve 🅿️ **"Arabam nerede?"**
 - 🎨 **İstediğin renk ve tema**
 
