@@ -6,7 +6,20 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import com.newrex.auto.data.Prefs
+import android.view.Gravity
 import com.newrex.auto.ui.CarUi
+import com.newrex.auto.ui.MATCH
+import com.newrex.auto.ui.Palette
+import com.newrex.auto.ui.WRAP
+import com.newrex.auto.ui.dp
+import com.newrex.auto.ui.dpf
+import com.newrex.auto.ui.flp
+import com.newrex.auto.ui.label
+import com.newrex.auto.ui.lp
+import com.newrex.auto.ui.margins
+import com.newrex.auto.ui.panel
+import com.newrex.auto.ui.pill
+import com.newrex.auto.ui.rounded
 
 /**
  * Android Auto'nun "park halindeyken" uygulama kapısı (Android 15+). Bu kapı Play Store dışından kurulan
@@ -17,6 +30,7 @@ import com.newrex.auto.ui.CarUi
 class CarActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private var ui: CarUi? = null
+    private var guideShown = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,8 +53,39 @@ class CarActivity : Activity() {
             }
         }
         ui = newUi
-        setContentView(newUi.root)
+        val frame = android.widget.FrameLayout(this).apply { addView(newUi.root) }
+        setContentView(frame)
         newUi.setInsets(0, 0, 0, 0)
+        if (!guideShown && !BuildConfig.PARK_ONLY && !CarEntry.trustedInstall(this)) {
+            guideShown = true
+            frame.addView(drivingGuide { v -> frame.removeView(v) })
+        }
+    }
+
+    /**
+     * Park kapısından açıldık: Android Auto sürüşte uygulamayı kapatacak. Kullanıcıya bunu nasıl düzelteceğini
+     * telefondaki birkaç adımla, nazikçe anlatır (her bağlantıda bir kez; dokununca kapanır).
+     */
+    private fun drivingGuide(close: (android.view.View) -> Unit): android.view.View {
+        val box = android.widget.FrameLayout(this)
+        box.setBackgroundColor(0xCC05060C.toInt())
+        box.isClickable = true
+        val card = panel().apply {
+            setPadding(dp(24), dp(20), dp(24), dp(20))
+            background = rounded(0xF2161A2B.toInt(), dpf(22), dp(1), Palette.withAlpha(Palette.accent, 0x99))
+            addView(label("🚗  Sürüşte de kullanmak için küçük bir adım kaldı", 20f, bold = true, lines = 2))
+            addView(label("NewREX şu an \"park modunda\" açıldı: araç hareket edince Android Auto uygulamayı kapatır. " +
+                "Bunu telefondan bir kez düzeltmen yeterli:", 15f, Palette.TEXT_DIM, lines = 3), lp(MATCH, WRAP).margins(t = dp(10)))
+            addView(label("1.  Telefonda Play Protect'i (Samsung'da Otomatik Engelleyici'yi de) kısa süreliğine kapat\n" +
+                "2.  NewREX'i aç → çıkan pencerede \"Şimdi yap\" → \"Güncelle\"\n" +
+                "3.  Kapattıklarını geri aç, telefonu arabadan çıkarıp tekrar bağla",
+                15f, Palette.TEXT, lines = 8).apply { setLineSpacing(dpf(4), 1f) }, lp(MATCH, WRAP).margins(t = dp(12)))
+            addView(pill("Anladım", selected = true) { close(box) }, lp(WRAP, dp(44)).margins(t = dp(16)))
+        }
+        // Küçük araç ekranlarında da sığsın diye kaydırılabilir
+        val scroll = android.widget.ScrollView(this).apply { isFillViewport = false; addView(card) }
+        box.addView(scroll, flp(dp(820).coerceAtMost(resources.displayMetrics.widthPixels - dp(32)), WRAP, Gravity.CENTER))
+        return box
     }
 
     override fun onResume() {

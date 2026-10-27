@@ -214,7 +214,8 @@ class MainActivity : Activity() {
 
         scope.launch { Board.photos.collect { refreshPhotos() } }
         scope.launch { CarLog.changes.collect { refreshCar() } }
-        scope.launch { Updates.check(this@MainActivity)?.let { Updates.show(this@MainActivity, it) } }
+        if (!BuildConfig.PARK_ONLY && !CarEntry.trustedInstall(this)) showDrivingGuide()
+        else scope.launch { Updates.check(this@MainActivity)?.let { Updates.show(this@MainActivity, it) } }
         if (intent?.getBooleanExtra(EXTRA_ASK_LOCATION, false) == true) askLocationNow()
     }
 
@@ -673,6 +674,25 @@ class MainActivity : Activity() {
         box.addView(row, lp(MATCH, WRAP))
         box.addView(info, lp(MATCH, WRAP).margins(t = dp(8)))
         return box
+    }
+
+    /**
+     * Normal APK kurulumunda Android Auto NewREX'i sadece park halindeyken açar. Uygulama her açılışta, bu
+     * düzelene kadar, sürüşte de çalışması için gereken adımları nazikçe anlatır ve tek dokunuşla başlatır.
+     */
+    private fun showDrivingGuide() {
+        AlertDialog.Builder(this)
+            .setTitle("Sürüşte de çalışması için son bir adım")
+            .setMessage("NewREX kuruldu 🎉 Şu an arabada sadece park halindeyken açılıyor. Sürüşte de kullanabilmek için " +
+                "bir kez şunları yapman yeterli:\n\n" +
+                "1. Play Store → sağ üstte profil resmin → Play Protect → ⚙️ → \"Uygulamaları Play Protect ile tara\"yı kısa süreliğine kapat.\n" +
+                "    Samsung'daysan: Ayarlar → Güvenlik ve gizlilik → Otomatik Engelleyici'yi de kapat.\n\n" +
+                "2. Buraya dön ve \"Şimdi yap\"a bas. Açılan ekranda \"Güncelle\"ye bas.\n\n" +
+                "3. Kapattığın ayarları geri aç. Bir şey sorarsa \"Gönderme\" de.\n\n" +
+                "4. Telefonu arabadan çıkarıp tekrar bağla. Hepsi bu!")
+            .setPositiveButton("Şimdi yap") { _, _ -> fixInstall() }
+            .setNegativeButton("Sonra", null)
+            .show()
     }
 
     /** "Arabada görünür yap": King Installer'ın işini uygulamanın içinden yapar. */
