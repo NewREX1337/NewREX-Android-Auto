@@ -98,11 +98,11 @@ object PlayerHub {
     fun init(context: Context) {
         if (exo != null) return
         fun sources(userAgent: String) = DefaultMediaSourceFactory(DefaultDataSource.Factory(context,
-            DefaultHttpDataSource.Factory()
+            TlsFallbackFactory(DefaultHttpDataSource.Factory()
                 .setUserAgent(userAgent)
                 .setAllowCrossProtocolRedirects(true)
                 .setConnectTimeoutMs(10_000)
-                .setReadTimeoutMs(15_000)))
+                .setReadTimeoutMs(15_000))))
             // Mobil veride kısa kopmalarda hemen hata vermesin
             .setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(6))
         tvSources = sources(STREAM_USER_AGENT)

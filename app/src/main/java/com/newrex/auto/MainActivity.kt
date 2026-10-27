@@ -202,7 +202,9 @@ class MainActivity : Activity() {
                 isVerticalScrollBarEnabled = false
                 // Android 15 içeriği durum çubuğunun altına kadar uzatıyor; başlık saatin altına girmesin
                 setOnApplyWindowInsetsListener { v, insets ->
-                    val bars = insets.getInsets(android.view.WindowInsets.Type.systemBars())
+                    // Eski Android'lerde (8–10) yeni insets çağrısı uygulamayı çökertiyordu
+                    val bars = androidx.core.view.WindowInsetsCompat.toWindowInsetsCompat(insets, v)
+                        .getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
                     v.setPadding(0, bars.top, 0, bars.bottom)
                     insets
                 }

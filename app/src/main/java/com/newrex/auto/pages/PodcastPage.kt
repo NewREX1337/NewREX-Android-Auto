@@ -125,7 +125,8 @@ class PodcastPage(ui: CarUi) : Page(ui) {
         setStatus(true, message)
         scope.launch {
             try {
-                showShows(block())
+                // Apple'ın listesi ara sıra bir anlık hata veriyor (502); bir kez daha dene
+                showShows(runCatching { block() }.getOrElse { kotlinx.coroutines.delay(1500); block() })
             } catch (e: Exception) {
                 setStatus(true, "Podcast listesi alınamadı. İnternet bağlantını kontrol et.")
             }

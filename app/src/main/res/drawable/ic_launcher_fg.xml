@@ -1,7 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- "Cam N": siyah zeminde mor-mavi gradyan N, üst yarısında hafif parlaklık -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFFFF" android:pathData="M36,74V34h9l18,24V34h9v40h-9L45,50v24z" />
-    <path android:fillColor="#B3FFFFFF" android:pathData="M36,79h36v4H36z" />
+    android:viewportWidth="1024" android:viewportHeight="1024">
+    <group android:scaleX="0.82" android:scaleY="0.82" android:pivotX="512" android:pivotY="512">
+        <path android:pathData="M290,770V254h118l208,304V254h118v516H616L408,466v304z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="linear" android:startX="290" android:startY="254" android:endX="734" android:endY="770">
+                    <item android:offset="0" android:color="#FFC4B5FD" />
+                    <item android:offset="0.5" android:color="#FF7C5CFF" />
+                    <item android:offset="1" android:color="#FF38BDF8" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path android:pathData="M290,254h118l208,304V254h118v250H290z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="linear" android:startX="0" android:startY="254" android:endX="0" android:endY="504">
+                    <item android:offset="0" android:color="#1FFFFFFF" />
+                    <item android:offset="1" android:color="#00FFFFFF" />
+                </gradient>
+            </aapt:attr>
+        </path>
+    </group>
 </vector>
