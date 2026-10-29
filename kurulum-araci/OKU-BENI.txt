@@ -1,0 +1,43 @@
+﻿NewREX Android Auto - Kurulum Aracı
+===================================
+
+Bu araç ne yapar?
+-----------------
+NewREX Android Auto'yu bilgisayardan telefonuna, arabada SÜRÜŞ SIRASINDA da
+açılacak şekilde kurar. Android Auto'nun istediği "Play Store kurdu" kaydını
+(imzayı) atmaya çalışır ve sonunda "İMZA ATILDI" ya da "İMZA ATILAMADI" diye
+açıkça yazar.
+
+- Uygulamanın en son sürümünü GitHub'dan kendisi indirir.
+- Telefonda zaten NewREX varsa üstüne kurar (ayarların silinmez).
+  Üstüne kurulamazsa silip baştan kurmayı SANA SORAR, kendi başına silmez.
+- Hiçbir veri toplamaz, hiçbir yere göndermez.
+- İlk çalışmada Google'ın resmi sitesinden "ADB" aracı iner (telefonla
+  bilgisayarın konuşması için gerekli).
+
+Neler lazım?
+------------
+- Windows bilgisayar ve internet
+- Telefonu bilgisayara bağlayacak USB kablosu (veri taşıyan bir kablo)
+
+Nasıl kullanılır?
+-----------------
+1. Bu klasördeki BASLAT.bat dosyasına çift tıkla.
+   Mavi "Windows bilgisayarınızı korudu" uyarısı çıkarsa:
+   "Ek bilgi" -> "Yine de çalıştır"
+2. Pencere seni 6 adımda götürür; sadece dediklerini yap:
+   1) Telefonunun markasını seç
+   2) Telefonda geliştirici ayarlarını aç (markana göre nerede olduğunu yazar)
+   3) Gerekli dosyalar kendiliğinden iner
+   4) Telefonu kabloyla tak, telefonda "İzin ver"e bas
+   5) Telefonda "Yükle" / "Güncelle"ye bas
+   6) Sonucu okur: İMZA ATILDI / İMZA ATILAMADI
+3. İmza atıldıysa telefonu arabaya bağla, NewREX sürüşte de açılmalı.
+
+Pencere sen kapatmadıkça kapanmaz. Her şey aynı klasördeki sonuc.txt
+dosyasına da yazılır. Sorun olursa bu dosyayı geliştiriciye gönder.
+
+NewREX'i her güncellediğinde bu aracı bir kez daha çalıştır.
+
+NewREX Android Auto - ücretsiz ve açık kaynak
+https://github.com/NewREX1337/NewREX-Android-Auto

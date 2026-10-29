@@ -2,6 +2,11 @@
 
 Arabanın ekranında **TV, YouTube, radyo ve podcast**. Ücretsiz, reklamsız, hiçbir bilgini toplamaz.
 
+> ### 🚗 NewREX arabada görünmüyor ya da vitese takınca kapanıyor mu?
+> Bilgisayarın varsa **[Kurulum Aracı'nı indir](https://github.com/NewREX1337/NewREX-Android-Auto/raw/main/kurulum-araci/NewREX-Kurulum-Araci.zip)** → zip'i aç → **`BASLAT.bat`**'a çift tıkla.
+> Araç seni adım adım götürür, NewREX'i telefonuna sürüşte de açılacak şekilde kurar ve sonunda **"İMZA ATILDI"** ya da **"İMZA ATILAMADI"** diye yazar.
+> Telefonu USB kablosuyla bilgisayara takman yeterli. Samsung ve Xiaomi'de denendi. Hiçbir veri toplamaz; kaynak kodu [burada](kurulum-araci).
+
 ## ✨ Özellikler
 
 - 📺 **Canlı TV**: Türk kanalları hazır gelir, kendi IPTV listeni de ekleyebilirsin
