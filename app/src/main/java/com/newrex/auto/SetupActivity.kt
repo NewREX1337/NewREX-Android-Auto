@@ -97,7 +97,7 @@ class SetupActivity : Activity() {
             runCatching { startActivity(Intent(Settings.ACTION_DEVICE_INFO_SETTINGS)) }
         },
         Step(t("Eşleştirme (bir kez)"),
-            t("Kablosuz hata ayıklama sayfası açılır: Wi-Fi'de olmalısın. Açık değilse aç, sorarsa “Bu ağda her zaman izin ver”i işaretleyip izin ver. Sonra “Eşleme kodu ile cihaz eşle”ye bas, bildirimi aşağı çek, “Kodu yaz”a basıp 6 haneli kodu yaz."),
+            t("Wi-Fi'de ol. Açılan sayfada “Kablosuz hata ayıklama”ya gir ve “Eşleme kodu ile cihaz eşle”ye bas. Ekranın üstünde NewREX'in kod kutusu kendiliğinden çıkar: gördüğün 6 rakamı yazıp gönder. Telefon başına bir kez."),
             { SelfAdb.paired(this) }, t("Eşleştir"), optional = true) {
             SelfAdb.beginPairing(this)
         },

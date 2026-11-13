@@ -41,6 +41,7 @@ Play Store → sağ üstte profil resmin → **Play Protect** → ⚙️ → **"
 
 **3. Kur**
 İndirdiğin dosyaya dokun → **Yükle**.
+> Chrome "Dosya zararlı olabilir" derse **Yine de indir**'e bas. Telefon "İzin gerekli" derse **Ayarlar** → **İzin ver**'i aç, geri dön.
 
 **4. Arabada görünür yap**
 NewREX'i aç → en alttaki **Yardım** → **Arabada görünür yap** → **Güncelle**.

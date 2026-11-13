@@ -765,7 +765,6 @@
 799|L'assistant tourne. Il reste actif jusqu'à l'extinction du téléphone.
 800|Le plus simple : l'écran Configuration en haut. Sinon : touche « Appairer », sur la page touche « Associer l'appareil avec un code », puis dans la notification « Saisir le code » et tape les 6 chiffres.
 801|En Wi-Fi, touche « Démarrer maintenant » ou attends un peu ; il démarre seul.
-802|Débogage sans fil → « Associer l'appareil avec un code », puis « Saisir le code » dans cette notification et tape les 6 chiffres.
 803|Appairage NewREX
 804|Saisir le code
 805|Code à 6 chiffres
@@ -790,7 +789,6 @@
 824|Nécessaire pour ouvrir les applis du téléphone dans la voiture. Paramètres → À propos du téléphone → Informations sur le logiciel → touche 7 fois Numéro de build.
 825|Ouvrir À propos du téléphone
 826|Appairage (une fois)
-827|La page Débogage sans fil s'ouvre : tu dois être en Wi-Fi. Active-le s'il est éteint ; si demandé, coche « Toujours autoriser sur ce réseau ». Puis « Associer l'appareil avec un code », baisse la notification, « Saisir le code » et tape les 6 chiffres.
 828|Appairer
 829|L'assistant démarre et se donne l'autorisation de démarrer seul. Ensuite il est prêt à chaque redémarrage en Wi-Fi ; Shizuku n'est pas nécessaire.
 830|Démarrer
@@ -800,3 +798,5 @@
 834|Facultatif
 835|Le téléphone n'a pas encore rejoint le Wi-Fi depuis son redémarrage. Ce sera prêt dès qu'il sera en Wi-Fi.
 836|Pour ouvrir les applis du téléphone dans la voiture, fais une fois la Configuration dans NewREX sur le téléphone.
+837|Tape ici le code à 6 chiffres affiché.
+838|Sois en Wi-Fi. Sur la page, entre dans « Débogage sans fil » et touche « Associer l'appareil avec un code ». La case de code NewREX apparaît seule en haut : tape les 6 chiffres et envoie. Une fois par téléphone.

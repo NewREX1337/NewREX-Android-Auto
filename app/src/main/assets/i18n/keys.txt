@@ -765,7 +765,6 @@
 799|Yardımcı çalışıyor. Telefon kapanana kadar açık kalır.
 800|En kolayı en üstteki Kurulum ekranından yapmak. Ya da: “Eşleştir”e bas, açılan sayfada “Eşleme kodu ile cihaz eşle”ye bas, bildirimde “Kodu yaz”a basıp 6 haneli kodu yaz.
 801|Telefon Wi-Fi'ye bağlıyken “Şimdi başlat”a bas ya da biraz bekle; kendiliğinden başlar.
-802|Kablosuz hata ayıklama → “Eşleme kodu ile cihaz eşle”ye bas, sonra bu bildirimde “Kodu yaz”a basıp 6 haneli kodu yaz.
 803|NewREX eşleştirme
 804|Kodu yaz
 805|6 haneli kod
@@ -790,7 +789,6 @@
 824|Telefon uygulamalarını araçta açmak için gerekli. Ayarlar → Telefon hakkında → Yazılım bilgileri → Yapım numarası'na 7 kez dokun.
 825|Telefon hakkında'yı aç
 826|Eşleştirme (bir kez)
-827|Kablosuz hata ayıklama sayfası açılır: Wi-Fi'de olmalısın. Açık değilse aç, sorarsa “Bu ağda her zaman izin ver”i işaretleyip izin ver. Sonra “Eşleme kodu ile cihaz eşle”ye bas, bildirimi aşağı çek, “Kodu yaz”a basıp 6 haneli kodu yaz.
 828|Eşleştir
 829|Yardımcı başlar ve kendine otomatik başlama iznini verir. Sonra telefon her açılıp Wi-Fi'ye bağlandığında kendiliğinden hazırlanır; Shizuku gerekmez.
 830|Başlat
@@ -800,3 +798,5 @@
 834|İsteğe bağlı
 835|Telefon yeniden başladıktan sonra henüz Wi-Fi'ye bağlanmadı. Wi-Fi'ye bağlanınca uygulama açma kendiliğinden hazırlanır.
 836|Telefon uygulamalarını araçta açmak için telefonda NewREX → Kurulum adımlarını bir kez yap.
+837|Ekrandaki 6 haneli kodu buraya yaz.
+838|Wi-Fi'de ol. Açılan sayfada “Kablosuz hata ayıklama”ya gir ve “Eşleme kodu ile cihaz eşle”ye bas. Ekranın üstünde NewREX'in kod kutusu kendiliğinden çıkar: gördüğün 6 rakamı yazıp gönder. Telefon başına bir kez.

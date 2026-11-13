@@ -765,7 +765,6 @@
 799|Helfer läuft. Er bleibt aktiv, bis das Handy ausgeschaltet wird.
 800|Am einfachsten über die Einrichtung ganz oben. Oder: „Koppeln“ tippen, auf der Seite „Gerät mit Kopplungscode koppeln“ tippen, dann in der Benachrichtigung „Code eingeben“ und den 6-stelligen Code tippen.
 801|Tippe im WLAN auf „Jetzt starten“ oder warte kurz; es startet von selbst.
-802|Kabelloses Debugging → „Gerät mit Kopplungscode koppeln“ tippen, dann hier „Code eingeben“ und den 6-stelligen Code tippen.
 803|NewREX-Kopplung
 804|Code eingeben
 805|6-stelliger Code
@@ -790,7 +789,6 @@
 824|Nötig, um Handy-Apps im Auto zu öffnen. Einstellungen → Telefoninfo → Softwareinformationen → 7× auf Buildnummer tippen.
 825|Telefoninfo öffnen
 826|Koppeln (einmal)
-827|Die Seite Kabelloses Debugging öffnet sich: du musst im WLAN sein. Einschalten, falls aus; wenn gefragt, „In diesem Netzwerk immer zulassen“ ankreuzen und erlauben. Dann „Gerät mit Kopplungscode koppeln“, Benachrichtigung herunterziehen, „Code eingeben“ und den 6-stelligen Code tippen.
 828|Koppeln
 829|Der Helfer startet und gibt sich selbst die Erlaubnis zum automatischen Start. Danach ist er nach jedem Neustart im WLAN von selbst bereit; Shizuku ist nicht nötig.
 830|Starten
@@ -800,3 +798,5 @@
 834|Optional
 835|Das Handy war seit dem Neustart noch nicht im WLAN. Sobald es im WLAN ist, wird das Öffnen von Apps vorbereitet.
 836|Um Handy-Apps im Auto zu öffnen, mache einmal die Einrichtung in NewREX auf dem Handy.
+837|Gib hier den 6-stelligen Code vom Bildschirm ein.
+838|Sei im WLAN. Gehe auf der Seite in „Kabelloses Debugging“ und tippe „Gerät mit Kopplungscode koppeln“. Oben erscheint von selbst das Codefeld von NewREX: die 6 Ziffern eingeben und senden. Einmal pro Handy.

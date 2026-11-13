@@ -765,7 +765,6 @@
 799|Helper draait. Hij blijft aan tot de telefoon uitgaat.
 800|Het makkelijkst via het Instellen-scherm bovenaan. Of: tik op “Koppelen”, tik op de pagina op “Apparaat koppelen met koppelingscode”, tik dan in de melding op “Code invoeren” en typ de 6 cijfers.
 801|Tik op wifi op “Nu starten” of wacht even; hij start vanzelf.
-802|Draadloze foutopsporing → tik op “Apparaat koppelen met koppelingscode”, tik dan in deze melding op “Code invoeren” en typ de 6 cijfers.
 803|NewREX koppelen
 804|Code invoeren
 805|Code van 6 cijfers
@@ -790,7 +789,6 @@
 824|Nodig om telefoonapps in de auto te openen. Instellingen → Over de telefoon → Software-informatie → tik 7 keer op Buildnummer.
 825|Over de telefoon openen
 826|Koppelen (eenmalig)
-827|De pagina Draadloze foutopsporing opent: je moet op wifi zitten. Zet hem aan als hij uit is; als het gevraagd wordt, vink “Altijd toestaan op dit netwerk” aan. Tik dan op “Apparaat koppelen met koppelingscode”, trek de melding omlaag, tik op “Code invoeren” en typ de 6 cijfers.
 828|Koppelen
 829|De helper start en geeft zichzelf toestemming om vanzelf te starten. Daarna is hij na elke herstart op wifi vanzelf klaar; Shizuku is niet nodig.
 830|Starten
@@ -800,3 +798,5 @@
 834|Optioneel
 835|De telefoon is sinds de herstart nog niet op wifi geweest. Zodra hij op wifi is, wordt het vanzelf klaargezet.
 836|Doe één keer de Instellen-stappen in NewREX op je telefoon om telefoonapps in de auto te openen.
+837|Typ hier de 6-cijferige code van het scherm.
+838|Zit op wifi. Ga op de pagina naar “Draadloze foutopsporing” en tik op “Apparaat koppelen met koppelingscode”. Bovenaan verschijnt vanzelf het codevak van NewREX: typ de 6 cijfers en verstuur. Eén keer per telefoon.

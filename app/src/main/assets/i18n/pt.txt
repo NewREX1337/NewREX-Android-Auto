@@ -765,7 +765,6 @@
 799|O assistente está a correr. Fica ativo até o telemóvel desligar.
 800|O mais fácil é o ecrã Configuração no topo. Ou: toca em “Emparelhar”, na página toca em “Sincronizar dispositivo com código”, depois na notificação “Escrever código” e escreve os 6 dígitos.
 801|No Wi-Fi toca em “Iniciar agora” ou espera um pouco; inicia sozinho.
-802|Depuração sem fios → toca em “Sincronizar dispositivo com código”, depois em “Escrever código” nesta notificação e escreve os 6 dígitos.
 803|Emparelhamento NewREX
 804|Escrever código
 805|Código de 6 dígitos
@@ -790,7 +789,6 @@
 824|Necessário para abrir apps do telemóvel no carro. Definições → Acerca do telemóvel → Informações de software → toca 7 vezes em Número de compilação.
 825|Abrir Acerca do telemóvel
 826|Emparelhamento (uma vez)
-827|Abre a página Depuração sem fios: tens de estar no Wi-Fi. Liga-a se estiver desligada; se perguntar, marca “Permitir sempre nesta rede”. Depois “Sincronizar dispositivo com código”, puxa a notificação, toca em “Escrever código” e escreve os 6 dígitos.
 828|Emparelhar
 829|O assistente inicia e dá a si próprio permissão para iniciar sozinho. Depois fica pronto a cada reinício no Wi-Fi; o Shizuku não é preciso.
 830|Iniciar
@@ -800,3 +798,5 @@
 834|Opcional
 835|O telemóvel ainda não entrou no Wi-Fi desde que reiniciou. Fica pronto sozinho quando entrar.
 836|Para abrir apps do telemóvel no carro, faz uma vez a Configuração no NewREX no telemóvel.
+837|Escreve aqui o código de 6 dígitos do ecrã.
+838|Liga-te ao Wi-Fi. Na página, entra em “Depuração sem fios” e toca em “Sincronizar dispositivo com código”. No topo aparece sozinha a caixa do NewREX: escreve os 6 dígitos e envia. Uma vez por telemóvel.

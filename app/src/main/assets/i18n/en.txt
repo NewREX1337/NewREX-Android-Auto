@@ -765,7 +765,6 @@
 799|Helper is running. It stays on until the phone turns off.
 800|Easiest is the Setup screen at the top. Or: tap “Pair”, on the page that opens tap “Pair device with pairing code”, then in the notification tap “Enter code” and type the 6-digit code.
 801|While the phone is on Wi-Fi tap “Start now” or wait a bit; it starts by itself.
-802|Wireless debugging → tap “Pair device with pairing code”, then tap “Enter code” in this notification and type the 6-digit code.
 803|NewREX pairing
 804|Enter code
 805|6-digit code
@@ -790,7 +789,6 @@
 824|Needed to open phone apps in the car. Settings → About phone → Software information → tap Build number 7 times.
 825|Open About phone
 826|Pairing (once)
-827|The Wireless debugging page opens: you must be on Wi-Fi. Turn it on if it's off; if asked, tick “Always allow on this network” and allow. Then tap “Pair device with pairing code”, pull down the notification, tap “Enter code” and type the 6-digit code.
 828|Pair
 829|The helper starts and gives itself permission to start automatically. After that it gets ready by itself whenever the phone restarts and joins Wi-Fi; Shizuku isn't needed.
 830|Start
@@ -800,3 +798,5 @@
 834|Optional
 835|The phone hasn't joined Wi-Fi since it restarted. Opening apps gets ready by itself once it's on Wi-Fi.
 836|To open phone apps in the car, do the Setup steps once in NewREX on your phone.
+837|Type the 6-digit code shown on screen here.
+838|Be on Wi-Fi. On the page that opens, go into “Wireless debugging” and tap “Pair device with pairing code”. NewREX's code box pops up at the top by itself: type the 6 digits you see and send. Once per phone.

@@ -765,7 +765,6 @@
 799|Pomocnik działa. Działa do wyłączenia telefonu.
 800|Najłatwiej przez ekran Konfiguracja na górze. Albo: dotknij „Sparuj”, na stronie „Sparuj urządzenie za pomocą kodu”, potem w powiadomieniu „Wpisz kod” i wpisz 6 cyfr.
 801|W Wi-Fi dotknij „Uruchom teraz” lub chwilę poczekaj; uruchomi się sam.
-802|Debugowanie bezprzewodowe → dotknij „Sparuj urządzenie za pomocą kodu”, potem w tym powiadomieniu „Wpisz kod” i wpisz 6 cyfr.
 803|Parowanie NewREX
 804|Wpisz kod
 805|Kod 6-cyfrowy
@@ -790,7 +789,6 @@
 824|Potrzebne do otwierania aplikacji z telefonu w aucie. Ustawienia → Telefon — informacje → Informacje o oprogramowaniu → dotknij 7 razy Numer wersji.
 825|Otwórz Telefon — informacje
 826|Parowanie (raz)
-827|Otworzy się strona Debugowanie bezprzewodowe: musisz być w Wi-Fi. Włącz je, jeśli jest wyłączone; jeśli zapyta, zaznacz „Zawsze zezwalaj w tej sieci”. Potem „Sparuj urządzenie za pomocą kodu”, ściągnij powiadomienie, dotknij „Wpisz kod” i wpisz 6 cyfr.
 828|Sparuj
 829|Pomocnik się uruchamia i sam daje sobie zgodę na automatyczny start. Potem po każdym restarcie w Wi-Fi będzie gotowy sam; Shizuku nie jest potrzebne.
 830|Uruchom
@@ -800,3 +798,5 @@
 834|Opcjonalne
 835|Telefon od restartu nie był jeszcze w Wi-Fi. Gdy połączy się z Wi-Fi, przygotuje się sam.
 836|Aby otwierać aplikacje z telefonu w aucie, wykonaj raz Konfigurację w NewREX na telefonie.
+837|Wpisz tutaj 6-cyfrowy kod z ekranu.
+838|Bądź w Wi-Fi. Na stronie wejdź w „Debugowanie bezprzewodowe” i dotknij „Sparuj urządzenie za pomocą kodu”. U góry sam pojawi się kod NewREX: wpisz 6 cyfr i wyślij. Raz na telefon.

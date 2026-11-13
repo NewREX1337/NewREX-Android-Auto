@@ -765,7 +765,6 @@
 799|L'assistente è attivo. Resta acceso finché il telefono non si spegne.
 800|Il modo più semplice è la schermata Configurazione in alto. Oppure: tocca “Associa”, nella pagina tocca “Associa dispositivo con codice”, poi nella notifica “Inserisci codice” e digita le 6 cifre.
 801|In Wi-Fi tocca “Avvia ora” o aspetta un po'; si avvia da solo.
-802|Debug wireless → tocca “Associa dispositivo con codice”, poi “Inserisci codice” in questa notifica e digita le 6 cifre.
 803|Associazione NewREX
 804|Inserisci codice
 805|Codice a 6 cifre
@@ -790,7 +789,6 @@
 824|Serve per aprire le app del telefono in auto. Impostazioni → Info sul telefono → Informazioni software → tocca 7 volte Numero build.
 825|Apri Info sul telefono
 826|Associazione (una volta)
-827|Si apre Debug wireless: devi essere in Wi-Fi. Attivalo se è spento; se chiede, spunta “Consenti sempre su questa rete”. Poi “Associa dispositivo con codice”, abbassa la notifica, tocca “Inserisci codice” e digita le 6 cifre.
 828|Associa
 829|L'assistente si avvia e si dà il permesso di avviarsi da solo. Poi sarà pronto a ogni riavvio in Wi-Fi; Shizuku non serve.
 830|Avvia
@@ -800,3 +798,5 @@
 834|Facoltativo
 835|Il telefono non si è ancora connesso al Wi-Fi dal riavvio. Si preparerà da solo appena sarà in Wi-Fi.
 836|Per aprire le app del telefono in auto, fai una volta la Configurazione in NewREX sul telefono.
+837|Scrivi qui il codice a 6 cifre sullo schermo.
+838|Sii in Wi-Fi. Nella pagina entra in “Debug wireless” e tocca “Associa dispositivo con codice”. In alto compare da sola la casella di NewREX: scrivi le 6 cifre e invia. Una volta per telefono.

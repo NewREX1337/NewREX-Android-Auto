@@ -765,7 +765,6 @@
 799|El asistente está activo. Sigue así hasta que se apague el teléfono.
 800|Lo más fácil es la pantalla Configuración de arriba. O: toca “Emparejar”, en la página toca “Vincular dispositivo con código”, luego en la notificación “Escribir código” y teclea los 6 dígitos.
 801|Con Wi-Fi toca “Iniciar ahora” o espera un poco; se inicia solo.
-802|Depuración inalámbrica → toca “Vincular dispositivo con código”, luego “Escribir código” en esta notificación y teclea los 6 dígitos.
 803|Emparejamiento NewREX
 804|Escribir código
 805|Código de 6 dígitos
@@ -790,7 +789,6 @@
 824|Necesario para abrir apps del teléfono en el coche. Ajustes → Acerca del teléfono → Información de software → toca 7 veces Número de compilación.
 825|Abrir Acerca del teléfono
 826|Emparejamiento (una vez)
-827|Se abre Depuración inalámbrica: debes estar en Wi-Fi. Actívala si está apagada; si pregunta, marca “Permitir siempre en esta red”. Luego “Vincular dispositivo con código”, baja la notificación, toca “Escribir código” y teclea los 6 dígitos.
 828|Emparejar
 829|El asistente se inicia y se da permiso para iniciarse solo. Después estará listo tras cada reinicio con Wi-Fi; no hace falta Shizuku.
 830|Iniciar
@@ -800,3 +798,5 @@
 834|Opcional
 835|El teléfono aún no se ha conectado al Wi-Fi desde que se reinició. Se preparará solo al conectarse.
 836|Para abrir apps del teléfono en el coche, haz una vez la Configuración en NewREX en el teléfono.
+837|Escribe aquí el código de 6 dígitos de la pantalla.
+838|Conéctate al Wi-Fi. En la página, entra en “Depuración inalámbrica” y toca “Vincular dispositivo con código”. Arriba aparece sola la casilla de NewREX: escribe los 6 dígitos y envía. Una vez por teléfono.

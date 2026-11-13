@@ -133,15 +133,26 @@ object SelfAdb {
     /** Kablosuz hata ayıklama ayarını açar ve kodun yazılacağı bildirimi gösterir. */
     fun beginPairing(c: Context) {
         if (canToggle(c)) runCatching { Settings.Global.putInt(c.contentResolver, "adb_wifi_enabled", 1) }
-        showPairNotification(c, t("Kablosuz hata ayıklama → “Eşleme kodu ile cihaz eşle”ye bas, sonra bu bildirimde “Kodu yaz”a basıp 6 haneli kodu yaz."))
         runCatching {
             c.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
                 .putExtra(":settings:fragment_args_key", "toggle_adb_wireless")
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
+        // Kod penceresi açıldığı an (eşleştirme servisi görününce) kod kutusu ekranın üstünde kendiliğinden çıkar;
+        // bildirim panelini açmaya gerek kalmaz
+        val app = c.applicationContext
+        scope.launch {
+            if (discover(app, AdbMdns.SERVICE_TYPE_TLS_PAIRING, 180_000) == null) return@launch
+            // Üstte çıkan kutu birkaç saniyede kayboluyor: kod yazılmadıysa birkaç kez yeniden çıkar
+            repeat(3) {
+                if (paired(app) || pairing) return@launch
+                showPairNotification(app, t("Ekrandaki 6 haneli kodu buraya yaz."), alert = true)
+                kotlinx.coroutines.delay(15_000)
+            }
+        }
     }
 
-    private fun showPairNotification(c: Context, text: String, input: Boolean = true) {
+    private fun showPairNotification(c: Context, text: String, input: Boolean = true, alert: Boolean = false) {
         val nm = c.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CHANNEL, t("Uygulamaları araçta açma"), NotificationManager.IMPORTANCE_HIGH))
         val b = Notification.Builder(c, CHANNEL)
@@ -149,7 +160,8 @@ object SelfAdb {
             .setContentTitle(t("NewREX eşleştirme"))
             .setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text))
-            .setOnlyAlertOnce(true)
+            .setOnlyAlertOnce(!alert)
+            .setCategory(Notification.CATEGORY_MESSAGE)
             .setAutoCancel(!input)
         if (input) {
             val pi = PendingIntent.getBroadcast(c, 1, Intent(c, PairReplyReceiver::class.java),
@@ -160,9 +172,12 @@ object SelfAdb {
         nm.notify(NOTIF_ID, b.build())
     }
 
+    @Volatile private var pairing = false
+
     /** Eşleştirme penceresindeki kodla eşleşir; olursa yardımcıyı hemen başlatır. */
     fun pair(c: Context, code: String, done: (Boolean) -> Unit = {}) {
         val app = c.applicationContext
+        pairing = true
         scope.launch {
             showPairNotification(app, t("Eşleştiriliyor…"), input = false)
             val ok = runCatching {
@@ -175,6 +190,7 @@ object SelfAdb {
                 showPairNotification(app, if (started) t("Eşleşti. Telefon uygulamaları artık araç ekranında açılabilir.")
                     else t("Eşleşti. Yardımcı birazdan kendiliğinden başlayacak."), input = false)
             } else showPairNotification(app, t("Kod tutmadı. Eşleştirme penceresi açıkken yeni kodu tekrar yaz."))
+            pairing = false
             withContext(Dispatchers.Main) { done(ok) }
         }
     }
