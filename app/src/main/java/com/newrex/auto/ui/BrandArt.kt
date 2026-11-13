@@ -64,5 +64,9 @@ class BrandArt(
             listOf("tv" to Color.WHITE, "+" to 0xFFFFD60A.toInt()), d)
         fun netflix(d: Float) = BrandArt(0xFF1A1A1A.toInt(), 0xFF000000.toInt(),
             listOf("N" to 0xFFE50914.toInt()), d, typeface = condensed, textScale = 0.72f)
+        fun disney(d: Float) = BrandArt(0xFF0C1A5E.toInt(), 0xFF030B2E.toInt(),
+            listOf("D" to 0xFF1CA0D6.toInt(), "+" to 0xFF1CA0D6.toInt()), d, typeface = condensed, textScale = 0.52f)
+        fun prime(d: Float) = BrandArt(0xFF1A242F.toInt(), 0xFF0D1317.toInt(),
+            listOf("prime" to 0xFF00A8E1.toInt()), d, textScale = 0.38f)
     }
 }

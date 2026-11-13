@@ -53,6 +53,13 @@ object DriveState {
         set(v) { field = v; update() }
 
     private var carSpeed: Float? = null
+    /** OBD-II adaptöründen gelen hız (m/s); araç hız vermiyorsa GPS'ten önce bu kullanılır. */
+    @Volatile private var obdSpeed: Float? = null
+    private val mainHandler = android.os.Handler(Looper.getMainLooper())
+
+    fun setObdSpeed(ms: Float?) {
+        mainHandler.post { obdSpeed = ms; update() }
+    }
     private var gpsSpeed: Float? = null
     private var stopListening: (() -> Unit)? = null
     private var gpsCleanup: (() -> Unit)? = null
@@ -96,10 +103,17 @@ object DriveState {
 
         appContext = context.applicationContext
         ensureGps()
+        // Başka uygulama öndeyken de konum gelsin (yoksa Android konumu kısar, km sayılmaz)
+        DriveService.start(context.applicationContext)
+        com.newrex.auto.data.DriveStateActive.active = true
+        com.newrex.auto.data.Obd.start(context.applicationContext)
         stopListening = { cleanups.forEach { runCatching { it() } } }
     }
 
     fun stop() {
+        appContext?.let { DriveService.stop(it) }
+        com.newrex.auto.data.DriveStateActive.active = false
+        com.newrex.auto.data.Obd.stop()
         stopListening?.invoke()
         stopListening = null
         gpsCleanup?.let { runCatching { it() } }
@@ -124,7 +138,9 @@ object DriveState {
                 // Duruyorken GPS sapmaları mesafeye eklenmesin
                 if (prev != null && location.accuracy < 30f && (gpsSpeed ?: 0f) > PARKED_BELOW_MS) {
                     val d = prev.distanceTo(location)
-                    if (d in 3f..500f) tripMeters.value += d
+                    // Konum seyrek geldiyse (ör. kısa kesinti) aradaki yol da sayılsın; saçma sıçramalar (>250 km/s) sayılmaz
+                    val secs = ((location.time - prev.time) / 1000f).coerceAtLeast(1f)
+                    if (d >= 3f && (d <= 500f || d / secs < 70f)) tripMeters.value += d
                 }
                 if (prev == null || location.accuracy < 50f || location.accuracy <= prev.accuracy) lastLocation = location
                 update()
@@ -157,9 +173,9 @@ object DriveState {
     }
 
     private fun update() {
-        val speed0 = carSpeed ?: gpsSpeed
+        val speed0 = carSpeed ?: obdSpeed ?: gpsSpeed
         speedKmh.value = speed0?.let { it * 3.6f }
-        speedFromCar.value = carSpeed != null
+        speedFromCar.value = carSpeed != null || obdSpeed != null
         forced?.let { driving.value = it; return }
         val speed = speed0 ?: return
         com.newrex.auto.data.TripStats.onSpeed(speed, android.os.SystemClock.elapsedRealtime())

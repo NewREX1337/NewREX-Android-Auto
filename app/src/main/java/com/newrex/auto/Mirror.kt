@@ -22,6 +22,8 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
+import android.net.Uri
+import android.provider.Settings
 import android.view.Display
 import android.view.Surface
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,7 +72,23 @@ object Mirror {
         context.startActivity(Intent(context, MirrorPermissionActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
+    private val handler = Handler(Looper.getMainLooper())
+    private var idleStop: Runnable? = null
+
+    /** Yansıtma sayfası kapandıktan 3 dakika sonra paylaşımı bitirir (sayfaya dönülürse iptal). */
+    fun scheduleIdleStop(context: Context) {
+        cancelIdleStop()
+        if (!active.value) return
+        idleStop = Runnable { idleStop = null; stop(context) }.also { handler.postDelayed(it, 3 * 60_000L) }
+    }
+
+    fun cancelIdleStop() {
+        idleStop?.let { handler.removeCallbacks(it) }
+        idleStop = null
+    }
+
     fun stop(context: Context) {
+        cancelIdleStop()
         if (active.value) context.startService(Intent(context, MirrorService::class.java).setAction(MirrorService.ACTION_STOP))
     }
 
@@ -162,6 +180,7 @@ class MirrorService : Service() {
     }
 
     override fun onDestroy() {
+        PhoneRotation.restore(this)
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null
         Mirror.projection?.stop()
@@ -171,15 +190,15 @@ class MirrorService : Service() {
 
     private fun notification(): Notification {
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, "Ekran yansıtma", NotificationManager.IMPORTANCE_LOW))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL, t("Ekran yansıtma"), NotificationManager.IMPORTANCE_LOW))
         val stop = PendingIntent.getService(this, 0, Intent(this, MirrorService::class.java).setAction(ACTION_STOP),
             PendingIntent.FLAG_IMMUTABLE)
         return Notification.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_cast)
-            .setContentTitle("Ekran araca yansıtılıyor")
-            .setContentText("Görüntü sadece araç ekranında gösterilir, kaydedilmez.")
+            .setContentTitle(t("Ekran araca yansıtılıyor"))
+            .setContentText(t("Görüntü sadece araç ekranında gösterilir, kaydedilmez."))
             .setOngoing(true)
-            .addAction(Notification.Action.Builder(null, "Durdur", stop).build())
+            .addAction(Notification.Action.Builder(null, t("Durdur"), stop).build())
             .build()
     }
 
@@ -189,5 +208,66 @@ class MirrorService : Service() {
         const val EXTRA_DATA = "data"
         private const val CHANNEL = "mirror"
         private const val NOTIFICATION_ID = 7
+    }
+}
+
+/**
+ * Yansıtma sırasında telefonu yan çevirir ki görüntü geniş araç ekranını kaplasın.
+ * Telefonun önceki dönme ayarı saklanır ve yansıtma bitince (ya da uygulama kapanmışsa
+ * bir sonraki açılışta) geri yüklenir. "Sistem ayarlarını değiştirme" izni gerekir.
+ */
+object PhoneRotation {
+    private const val FILE = "mirror_rotation"
+
+    private fun sp(c: Context) = c.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+
+    fun canWrite(c: Context) = Settings.System.canWrite(c)
+
+    /** Kullanıcının tercihi: yansıtırken telefon yatay mı dursun (varsayılan evet). */
+    fun wantLandscape(c: Context) = sp(c).getBoolean("landscape", true)
+
+    fun setWantLandscape(c: Context, v: Boolean) { sp(c).edit().putBoolean("landscape", v).apply() }
+
+    /** Yansıtma görünürken çağrılır. */
+    fun apply(c: Context): Boolean {
+        if (!canWrite(c)) return false
+        val cr = c.contentResolver
+        return runCatching {
+            val p = sp(c)
+            if (!p.getBoolean("saved", false)) {
+                p.edit().putBoolean("saved", true)
+                    .putInt("acc", Settings.System.getInt(cr, Settings.System.ACCELEROMETER_ROTATION, 1))
+                    .putInt("rot", Settings.System.getInt(cr, Settings.System.USER_ROTATION, Surface.ROTATION_0))
+                    .commit()
+            }
+            Settings.System.putInt(cr, Settings.System.ACCELEROMETER_ROTATION, 0)
+            Settings.System.putInt(cr, Settings.System.USER_ROTATION,
+                if (wantLandscape(c)) Surface.ROTATION_90 else Surface.ROTATION_0)
+        }.isSuccess
+    }
+
+    /** Telefonun dönme ayarını yansıtmadan önceki haline döndürür. */
+    fun restore(c: Context) {
+        val p = sp(c)
+        if (!p.getBoolean("saved", false)) return
+        if (canWrite(c)) runCatching {
+            val cr = c.contentResolver
+            Settings.System.putInt(cr, Settings.System.USER_ROTATION, p.getInt("rot", Surface.ROTATION_0))
+            Settings.System.putInt(cr, Settings.System.ACCELEROMETER_ROTATION, p.getInt("acc", 1))
+        }
+        p.edit().putBoolean("saved", false).apply()
+    }
+
+    /** Uygulama beklenmedik şekilde kapandıysa telefon yan kalmasın. */
+    fun restoreIfStale(c: Context) {
+        if (!Mirror.active.value) restore(c)
+    }
+
+    /** Telefonda izin ekranını açar. */
+    fun requestPermission(c: Context) {
+        runCatching {
+            c.startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:" + c.packageName))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
     }
 }

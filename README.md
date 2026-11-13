@@ -21,6 +21,11 @@ Arabanın ekranında **TV, YouTube, radyo ve podcast**. Ücretsiz, reklamsız, h
 - 🔋 **Tasarruf modu** ve ayarlanabilir TV görüntü kalitesi
 - 🌤️ **Hava durumu** ve 🅿️ **"Arabam nerede?"**
 - 🎨 **İstediğin renk ve tema**
+- 🧭 **Gösterge paneli ve harita**: hız kadranı, canlı yol tarifi, adres arama; kendi TomTom anahtarınla canlı trafik
+- 🚘 **Kendi aracın**: göstergede kendi araç fotoğrafın; arka planı telefonun içinde otomatik silinir
+- 📲 **Telefon uygulamaları araç ekranında**: Spotify, WhatsApp gibi uygulamalar doğrudan açılır (Shizuku gerekmez)
+- 🔌 **OBD-II**: Bluetooth ELM327 adaptörüyle motor bilgisi ve arıza kodları
+- ✅ **Kurulum ekranı**: gereken bütün izinler ve ayarlar tek ekranda, adım adım
 
 Araba hareket edince video kapanır, ses devam eder.
 
@@ -51,6 +56,7 @@ NewREX menüde çıkar. 🎉
 
 ### Görünmüyor mu?
 
+- NewREX'i aç → en üstteki **Kurulum**'a gir, eksik adımları sırayla yap.
 - NewREX'te **Yardım** bölümüne bak, sebebini orada yazar.
 - Android Auto ayarları → **Başlatıcıyı özelleştir** → NewREX'i işaretle.
 - Android Auto ayarları → **Sürüm**'e 10 kere dokun → **⋮** → **Geliştirici ayarları** → **Bilinmeyen kaynaklar**'ı aç.

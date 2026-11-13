@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.pages
 
+import com.newrex.auto.t
 import android.graphics.SurfaceTexture
 import android.view.Gravity
 import android.view.Surface
@@ -8,6 +9,8 @@ import android.view.TextureView
 import android.view.View
 import android.widget.FrameLayout
 import com.newrex.auto.Mirror
+import com.newrex.auto.PhoneRotation
+import android.widget.LinearLayout
 import com.newrex.auto.R
 import com.newrex.auto.ui.CarUi
 import com.newrex.auto.ui.MATCH
@@ -34,6 +37,7 @@ class MirrorPage(ui: CarUi) : Page(ui) {
     private lateinit var texture: TextureView
     private lateinit var waiting: View
     private var surface: Surface? = null
+    private var hinted = false
 
     override fun build(): View = with(ctx) {
         texture = TextureView(this).apply {
@@ -63,18 +67,51 @@ class MirrorPage(ui: CarUi) : Page(ui) {
             addView(texture, flp(MATCH, MATCH))
             addView(waiting, flp(MATCH, MATCH))
             addView(parkGuard(), flp(MATCH, MATCH))
-            addView(circleButton(R.drawable.ic_close, 48) { ui.back() },
-                flp(dp(48), dp(48), Gravity.END or Gravity.CENTER_VERTICAL).margins(r = dp(10)))
+            // Araç ekranı yalnızca görüntüyü gösterir; dokunulunca nasıl kullanılacağını hatırlat
+            texture.setOnClickListener { ui.toast(t("Uygulamayı telefondan kullan, araç ekranı görüntüyü gösterir.")) }
+            addView(LinearLayout(this@with).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(circleButton(R.drawable.ic_close, 48) { ui.back() }, lp(dp(48), dp(48)))
+                addView(circleButton(R.drawable.ic_screen_rotation, 48) { rotate() }, lp(dp(48), dp(48)).margins(t = dp(12)))
+                addView(circleButton(R.drawable.ic_stop, 48) {
+                    Mirror.stop(ctx.applicationContext)
+                    ui.toast(t("Yansıtma durduruldu"))
+                    ui.back()
+                }, lp(dp(48), dp(48)).margins(t = dp(12)))
+            }, flp(WRAP, WRAP, Gravity.END or Gravity.CENTER_VERTICAL).margins(r = dp(10)))
         }.also {
+            Mirror.cancelIdleStop()
             if (!Mirror.active.value) Mirror.requestStart(ctx.applicationContext)
             scope.launch {
                 Mirror.active.collect { on ->
                     waiting.visibility = if (on) View.GONE else View.VISIBLE
                     texture.visibility = if (on) View.VISIBLE else View.INVISIBLE
+                    if (on && !PhoneRotation.apply(ctx) && !hinted) {
+                        hinted = true
+                        ui.toast(t("Görüntünün araç ekranını kaplaması için sağdaki döndür düğmesine dokun."), long = true)
+                    }
                     if (on && texture.isAvailable) connect(texture.width, texture.height)
                 }
             }
         }
+    }
+
+    override fun onShow() {
+        Mirror.cancelIdleStop()
+        if (Mirror.active.value) PhoneRotation.apply(ctx)
+    }
+
+    /** Telefonu yatay/dikey arasında çevirir; görüntü araç ekranına göre kendini ayarlar. */
+    private fun rotate() {
+        if (!PhoneRotation.canWrite(ctx)) {
+            PhoneRotation.requestPermission(ctx)
+            ui.toast(t("Telefonda NewREX için \"Sistem ayarlarını değiştirme\" iznini aç, sonra tekrar dokun."), long = true)
+            return
+        }
+        val landscape = !PhoneRotation.wantLandscape(ctx)
+        PhoneRotation.setWantLandscape(ctx, landscape)
+        if (Mirror.active.value) PhoneRotation.apply(ctx)
+        ui.toast(if (landscape) t("Telefon yatay") else t("Telefon dikey"))
     }
 
     private fun buildWaiting(): View = with(ctx) {
@@ -82,11 +119,12 @@ class MirrorPage(ui: CarUi) : Page(ui) {
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(dp(24), dp(18), dp(24), dp(18))
             addView(icon(R.drawable.ic_cast, 48, Palette.accent), lp(dp(48), dp(48)))
-            addView(label("Ekran yansıtma", 22f, bold = true).apply { neonText(10) }, lp(WRAP, WRAP).margins(t = dp(10)))
-            addView(label("Telefonunda ekran paylaşımı onayı çıkacak, \"Başlat\"a dokun.\n" +
-                "Çıkmazsa: telefonda NewREX uygulamasını aç → \"Ekranı arabaya yansıt\".",
-                14f, Palette.TEXT_DIM, lines = 4).apply { gravity = Gravity.CENTER }, lp(WRAP, WRAP).margins(t = dp(8)))
-            addView(pill("Telefonda onayı tekrar iste", R.drawable.ic_cast) { Mirror.requestStart(ctx.applicationContext) },
+            addView(label(t("Ekran yansıtma"), 22f, bold = true).apply { neonText(10) }, lp(WRAP, WRAP).margins(t = dp(10)))
+            addView(label(t("Telefonunda \"Ekran paylaşılsın mı?\" sorusu çıkacak:\n") +
+                t("\"Tüm ekranı paylaş\" seçili kalsın, \"Ekranı paylaş\"a dokun.\n") +
+                t("Soru çıkmazsa telefonun kilidini aç ya da NewREX uygulamasını aç → \"Ekranı arabaya yansıt\"."),
+                14f, Palette.TEXT_DIM, lines = 5).apply { gravity = Gravity.CENTER }, lp(WRAP, WRAP).margins(t = dp(8)))
+            addView(pill(t("Telefonda onayı tekrar iste"), R.drawable.ic_cast) { Mirror.requestStart(ctx.applicationContext) },
                 lp(WRAP, dp(44)).margins(t = dp(14)))
         }
         FrameLayout(this).apply {
@@ -98,6 +136,9 @@ class MirrorPage(ui: CarUi) : Page(ui) {
 
     override fun onDestroy() {
         Mirror.detach()
+        PhoneRotation.restore(ctx)
+        // Yansıtma sayfasından çıkılınca bir süre sonra paylaşımı kapat; telefon ekranı ve pil boşuna harcanmasın
+        Mirror.scheduleIdleStop(ctx.applicationContext)
         surface?.release()
         surface = null
     }

@@ -21,7 +21,7 @@ object Saver {
     const val OFF = 0
     const val ON = 1
     const val AUTO = 2
-    val NAMES = listOf("Kapalı", "Açık", "Otomatik")
+    val NAMES = listOf(t("Kapalı"), t("Açık"), t("Otomatik"))
 
     private val _active = MutableStateFlow(false)
     val active: StateFlow<Boolean> = _active
@@ -48,10 +48,10 @@ object Saver {
     fun reason(): String? {
         val c = app ?: return null
         return when (Prefs.saverMode) {
-            ON -> "elle açıldı"
+            ON -> t("elle açıldı")
             AUTO -> when {
-                powerSave(c) -> "telefon pil tasarrufunda"
-                hot(c) -> "telefon ısındı"
+                powerSave(c) -> t("telefon pil tasarrufunda")
+                hot(c) -> t("telefon ısındı")
                 else -> null
             }
             else -> null

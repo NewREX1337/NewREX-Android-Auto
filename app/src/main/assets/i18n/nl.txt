@@ -1,0 +1,802 @@
+1|🚗  Nog één kleine stap om het ook tijdens het rijden te gebruiken
+2|NewREX is geopend in \"parkeermodus\": Android Auto sluit de app zodra de auto rijdt. 
+3|Dit hoef je maar één keer op je telefoon te regelen:
+4|1.  Zet Play Protect op de telefoon even uit (en op Samsung ook Automatische blokkering)\n
+5|2.  Open NewREX → tik in het venster op \"Nu doen\" → \"Bijwerken\"\n
+6|3.  Zet weer aan wat je hebt uitgezet, koppel de telefoon los van de auto en sluit hem opnieuw aan
+7|Begrepen
+8|Goedenacht
+9|Goedemorgen
+10|Goedemiddag
+11|Goedenavond
+12|{0}{1}, welkom bij NewREX! Goede reis!
+13|TV, YouTube, radio en meer voor Android Auto
+14|Taal
+15|Taal wijzigen
+16|Als de auto geen snelheid doorgeeft, merken we beweging met de gps van de telefoon (parkeermodus, parkeerplek, weer).
+17|📍 Locatietoestemming nodig
+18|Locatie toestaan
+19|🎵 Media- en microfoontoestemming
+20|Nodig om muziek en video's van de telefoon op de pagina \"Media\" in de auto te zien en spraakopdrachten te gebruiken. 
+21|Bestanden verlaten de telefoon nooit.
+22|Toestemming geven
+23|Foto's voor het autoscherm
+24|Verschijnen bij het opstarten naast de klok. Op het autoscherm kun je ze met ✎ verplaatsen, vergroten of verwijderen. 
+25|Foto's worden alleen op deze telefoon bewaard.
+26|Foto toevoegen
+27|Thema
+28|TV-beeldkwaliteit
+29|Automatisch: de beste kwaliteit van de stream. Lager houdt de telefoon koeler en verbruikt minder data.
+30|Spaarstand
+31|Uiterlijk klok en radio
+32|Scherm naar de auto spiegelen
+33|Scherm spiegelen
+34|Waar staat mijn auto?
+35|Onderhoudsherinnering
+36|Tik op een datum om te kiezen. 15 dagen vooraf verschijnt een melding in de auto.
+37|Brandstof en kilometers
+38|IPTV-lijsten
+39|Je kunt een M3U / M3U8-link of een lijstbestand van de telefoon toevoegen.
+40|Lijst via link toevoegen
+41|Bestand op telefoon kiezen
+42|Hulp
+43|Kijk hier als het niet in de auto verschijnt
+44|1. Sluit de telefoon aan op de auto en laat Android Auto openen.\n
+45|2. Open het app-menu op het autoscherm.\n
+46|3. Tik op het pictogram \"NewREX Android Auto\".\n\n
+47|Verschijnt het niet: Android Auto-instellingen → Ontwikkelaarsinstellingen → \"Onbekende bronnen\" moet aan staan.
+48|Problemen oplossen
+49|Batterijbeperking opheffen
+50|NewREX Android Auto {0} • Oorspronkelijke ontwikkelaar: {1}\n
+51|Geen reclame, geen tracking, er worden geen gegevens verzameld.\n\n{0}\n{1}
+52|Automatisch (taal van de telefoon): {0}
+53|NewREX start opnieuw na het wijzigen van de taal. Zit je in de auto, open de app dan opnieuw via het autoscherm.
+54|OK
+55|Annuleren
+56|Kilometers, tankbeurten, olieverversing
+57|Als de auto geen kilometers en brandstof deelt, wordt met deze waarden geschat: 
+58|de met gps gereden afstand wordt bij de ingevoerde kilometerstand opgeteld.
+59|Kilometerstand
+60|Laatste olieverversing
+61|Interval olieverversing
+62|🛢️ Olieverversing %,.0f km te laat!
+63|🛢️ Nog %,.0f km tot olieverversing
+64|⛽ Tanklogboek
+65|Gemiddeld: 
+66|minstens 2 tankbeurten nodig
+67|Per km: 
+68|Deze maand: 
+69|Geschatte actieradius: 
+70|Verwijderen
+71|Getankt (volle tank)
+72|Opslaan
+73|Liter (bijv. 38,5)
+74|Bedrag (bijv. 1850)
+75|Voer tankbeurten met volle tank in; zo wordt het verbruik goed berekend. Neem de kilometerstand van het dashboard.
+76|Getankt
+77|Themakleur en achtergrond
+78|Themakleur en eigen achtergrond
+79|Themakleur
+80|Achtergrond
+82|Auto
+83|Klok
+84|Radiofrequentieweergave
+85|Die met ◷ zijn ronde (analoge) klokken. Het gekozen ontwerp zie je meteen in de auto.
+86|Klok: {0} · 
+87|Radio: {0}
+88|Nog geen foto's
+89|{0} foto's
+90|Deze foto verwijderen?
+91|❌ Android Auto herkent deze installatie niet. Tik hieronder op \"Zichtbaar maken in auto\".
+92|❌ Het eigen installatieprogramma van de telefoon is gebruikt ({0}). Tik hieronder op \"Zichtbaar maken in auto\".
+93|⚠️ De parkeertoegang staat open maar is nog niet in de auto gebruikt. Android Auto → Ontwikkelaarsinstellingen → \"Onbekende bronnen\" 
+94|moet aan staan; sluit daarna de telefoon aan en tik geparkeerd op NewREX in de lijst met apps.
+95|✅ De parkeertoegang werkt.
+96|⚠️ De installatie klopt, maar Android Auto heeft NewREX nooit geprobeerd te openen. Android Auto → Ontwikkelaarsinstellingen → 
+97|\"Onbekende bronnen\" moet aan staan; staat het aan, zet het uit en weer aan en herstart de telefoon.
+98| Dit merk ({0}) kan extra beperkingen in Android Auto hebben.
+99|⚠️ Android Auto zag NewREX maar toonde het niet. Vink NewREX aan in Android Auto → \"Launcher aanpassen\".
+100|✅ Installatie en verbinding zien er goed uit.
+101|{0}\n🔋 Batterijbesparing kan NewREX laten slapen; hef de beperking op met de knop hieronder.
+102|Aan ({0})
+103|Als dit aan staat, blijft de achtergrond stil en zijn aanraakeffecten uit. Beeld- en geluidskwaliteit blijven gelijk. 
+104|Automatisch: gaat vanzelf aan als de telefoon in batterijbesparing staat of warm wordt.
+105|Nog één stap om het tijdens het rijden te laten werken
+106|NewREX is geïnstalleerd 🎉 Op dit moment opent het in de auto alleen als je geparkeerd staat. Om het ook tijdens het rijden te gebruiken, 
+107|hoef je dit maar één keer te doen:\n\n
+108|1. Play Store → je profielfoto rechtsboven → Play Protect → ⚙️ → zet \"Apps scannen met Play Protect\" even uit.\n
+109|    Op Samsung: Instellingen → Beveiliging en privacy → zet ook Automatische blokkering uit.\n\n
+110|2. Kom hier terug en tik op \"Nu doen\". Tik in het scherm dat opent op \"Bijwerken\".\n\n
+111|3. Zet de instellingen weer aan. Als er iets gevraagd wordt, kies \"Niet verzenden\".\n\n
+112|4. Koppel de telefoon los van de auto en sluit hem opnieuw aan. Klaar!
+113|Nu doen
+114|Later
+115|De installatie is niet gelukt op deze telefoon
+116|Je tikte op \"Bijwerken\" maar Android Auto herkent NewREX nog steeds niet. Dit gebeurt op sommige telefoons (vooral 
+117|Xiaomi, Redmi en POCO) als het eigen installatieprogramma ertussen komt. Geen zorgen, NewREX blijft in de auto werken 
+118|als je geparkeerd staat.\n\n
+119|Wil je het nog een keer proberen:\n
+120|• Controleer of Play Protect uit staat.\n
+121|• Is het scherm dat opent van de telefoon zelf (beveiligingsscan enz.), kies dan \"Toch installeren\" of \"Doorgaan\".\n\n
+122|Lukt het nog niet, stuur dan een screenshot van dit venster naar de ontwikkelaar:\n
+123|Opnieuw proberen
+124|Zichtbaar maken in auto
+125|Installatieprogramma's:\n
+126|Geef NewREX eerst toestemming om \"onbekende apps te installeren\" en tik dan opnieuw.
+127|Google-installatieprogramma is uitgeschakeld
+128|Het pakketinstallatieprogramma van Google is op deze telefoon uitgeschakeld. Sluit hem aan op een computer, voer dit commando één keer uit en tik dan opnieuw:\n\nadb shell pm enable {0}
+129|Het pakketinstallatieprogramma van Google is niet gevonden op deze telefoon. Stuur een screenshot van deze Hulp-sectie naar de ontwikkelaar.
+130|Tik in het scherm dat opent op \"Bijwerken\" of \"Installeren\". Kijk opnieuw naar deze sectie als NewREX weer opent.
+131|Installatieprogramma kon niet worden geopend. Stuur een screenshot van deze sectie naar de ontwikkelaar.
+132|Dit is de Parkeerversie van NewREX: hij opent in de auto als je geparkeerd staat, King Installer is niet nodig. 
+133|Android Auto → Ontwikkelaarsinstellingen → \"Onbekende bronnen\" moet aan staan.
+134|Automatisch
+135|Normaal
+136|Parkeren
+137|Nu: parkeertoegang. Verschijnt bij elke installatie in de auto, maar opent alleen als je geparkeerd staat.
+138|Nu: normale toegang. Opent ook tijdens het rijden (video uit); om in de auto te verschijnen moet het met King Installer geïnstalleerd zijn.
+139|\nDe parkeertoegang bestaat vanaf Android 15.
+140|\nKoppel na het wijzigen de telefoon los van de auto en sluit hem opnieuw aan.
+141|Toegang in de auto
+142|Er is al geen beperking.
+143|nooit
+144|installateur={0} • starter={1} • bron-app={2}{3}
+145|installateur={0}
+146|niet leesbaar
+147|niet gevonden
+148|Telefoon: {0} {1} • Android {2} (API {3})\n
+149|NewREX {0} • {1}\n
+150|Android Auto: {0}\n
+151|Auto probeerde te verbinden: {0}\n
+152|Autoscherm geopend: {0}\n\n
+153|Verschijnt de app niet in de auto, stuur dan een screenshot van deze sectie naar de ontwikkelaar.
+154|✅ Het scherm wordt naar de auto gespiegeld. Ga in de auto naar NewREX → Spiegelen.
+155|Toon alles van je telefoon (games, sociale media, apps) op het autoscherm. Bij elke start vraagt de telefoon één keer om \"Starten\". 
+156|Beveiligde apps zoals Netflix blijven zwart. Tijdens spiegelen blijft het telefoonscherm aan; je bedient de apps op de telefoon.
+157|Spiegelen stoppen
+158|✅ Wordt gespiegeld
+159|Telefoonscherm in de auto tonen
+160|Als de auto uitgaat (Android Auto verbreekt de verbinding), wordt je locatie automatisch opgeslagen. 
+161|Nog geen parkeerplek opgeslagen.
+162|Nog geen parkeerplek opgeslagen
+163|🅿️ Laatst geparkeerd: {0}\nNauwkeurigheid: ~{1} m
+164|Laatst geparkeerd: {0}
+165|Op kaart tonen
+166|Looproute
+167|Parkeerplek verwijderen
+168|{0} min
+169|geparkeerd
+170|⏰ Je parkeertijd 
+171| loopt af (melding 10 min vooraf)
+172|⏰ Herinnering parkeertijd instellen:
+173|Annuleren
+174| • herinnering aan
+175|Mijn huidige locatie als parkeerplek opslaan
+176|Locatie niet beschikbaar. Geef toestemming en zet locatie aan.
+177|{0} {1} {2} dagen te laat
+178|{0} {1}: nog {2} dagen
+179|APK, verzekering, olieverversing…
+180|Geen datum ingevoerd
+181|{0} • {1} dagen te laat
+182|{0} • nog {1} dagen
+183|Lijstbestand
+184|Geen lijst
+185|Nog geen lijsten.
+186|Lijstnaam (bijv. Lijst thuis)
+187|IPTV-lijst toevoegen
+188|Toevoegen
+189|Lijst {0}
+190|Scherm wordt naar de auto gespiegeld
+191|Het beeld wordt alleen op het autoscherm getoond en niet opgenomen.
+192|Stoppen
+193|Typen voor het autoscherm
+194|Wat je typt, gaat naar het vak op het autoscherm.
+195|Naar auto sturen
+196|{0} foto's aan het autoscherm toegevoegd
+197|Foto kon niet worden toegevoegd
+198|Stream kon niet worden geopend. Probeer een andere zender.
+199|Uit
+200|Aan
+201|handmatig aangezet
+202|telefoon in batterijbesparing
+203|telefoon is warm
+204|klaar
+205|uitgeschakeld op telefoon
+206|Zacht
+207|Ding dong
+208|Drievoudig
+209|Bel
+210|Waarschuwing
+211|Nieuwe versie: {0}
+212|Nieuw:\n{0}\n\n
+213|Jouw versie: {0}
+214|Downloaden
+215|Parkeertijd
+216|Je parkeertijd loopt af over {0} minuten
+217|Je parkeertijd is afgelopen
+218|Waar je auto staat, zie je in NewREX onder \"Waar staat mijn auto?\".
+219|Locatie niet gevonden. Geef NewREX locatietoestemming op de telefoon.
+220|Weer kon niet worden geladen. Controleer je internetverbinding.
+221|Spraakopdrachten hebben de microfoon nodig. Open NewREX op de telefoon en sta de microfoon toe.
+222|Spraakherkenning is niet beschikbaar op dit apparaat
+223|Niet verstaan, probeer opnieuw
+224|Microfoonfout
+225|Spraakopdrachten hebben de microfoon nodig
+226|Internetverbinding nodig
+227|Fout bij spraakherkenning ({0})
+228|Autokeuring (APK)
+229|WA-verzekering
+230|Onderhoudsbeurt / olie
+231|Bandenwissel
+232|Motorrijtuigenbelasting (MTV)
+233|Animatie
+234|Auto
+235|Economie
+236|Klassiek
+237|Komedie
+238|Koken
+239|Cultuur
+240|Documentaire
+241|Educatie
+242|Entertainment
+243|Familie
+244|Algemeen
+245|Kinderen
+246|Parlement
+247|Lifestyle
+248|Films
+249|Muziek
+250|Nieuws
+251|Natuur
+252|Ontspanning
+253|Religieus
+254|Series
+255|Wetenschap
+256|Winkelen
+257|Sport
+258|Reizen
+259|Weer
+260|Overig
+261|bestand niet leesbaar
+262|Aflevering
+263|ma
+264|di
+265|wo
+266|do
+267|vr
+268|za
+269|zo
+270|Vandaag
+271|Licht bewolkt
+272|Half bewolkt
+273|Mist
+274|Motregen
+275|Regen
+276|IJzel
+277|Sneeuw
+278|Buien
+279|Sneeuwbuien
+280|Onweer
+281|Apps
+282|Webbrowser
+283|Snelkoppeling toevoegen
+284|Sites die je vaak bezoekt
+285|Telefoon
+286|Telefoon-apps
+287|Alle apps op je telefoon
+288|Kijken
+289|Zenders, IPTV, TV+
+290|Video's kijken
+291|Media
+292|Video's en muziek op de telefoon
+293|Spiegelen
+294|Telefoonscherm tonen
+295|Luisteren
+296|Radio
+297|Turkse radiozenders
+298|FM-radio
+299|Zoeken op frequentie
+300|Verder waar je was
+301|Favorieten
+302|Je zenders en radio's
+303|Auto en weg
+304|Auto
+305|Snelheid, rit, onderhoud
+306|Per uur en per dag
+307|Spraakopdracht
+308|\"Open TRT 1\", \"weer\", \"instellingen\"
+309|Internet
+310|Instellingen
+311|Thema, geluid, rijden
+312|Equalizer
+313|Geluid aanpassen
+314|Over
+315|Versie en licentie
+316|Vlak
+317|Bas
+318|Hoog
+319|Stem
+320|Voorinstellingen
+321|Herstellen
+322|{0} nu niet gevonden.
+323|— Vrije frequentie —
+324|Frequentie van {0} • sla hier met ☆ een andere zender op
+325|Je opgeslagen zender • verwijder met ☆
+326|Sla \"{0}\" met ☆ op deze frequentie op
+327|Veeg of gebruik ◀◀ ▶▶ om een zender te zoeken. Open een radio uit de lijst en sla hem hier op met ☆.
+328|{0} vrijgemaakt
+329|{0} → {1} MHz opgeslagen
+330|Alles
+331|Snelheid
+332|Rit
+333|Onderhoud
+334|km over
+335|Te laat
+336|dagen
+337|Weer
+338|Verder
+339|Speelt nu
+340|Open TV of radio
+341|Zenders en radio's
+343|Bestanden op de telefoon
+344|{0} te laat!
+345|{0}: {1} dagen
+346|Alle apps
+347|Alle favorieten
+348|Laatst afgespeeld
+349|Je hebt nog niets afgespeeld.
+350|Nog geen favorieten.\nTik tijdens het afspelen op ☆ om toe te voegen.
+351|Uiterlijk
+352|Geluid
+353|Rijden
+354|TV en lijsten
+355|Web-snelkoppelingen
+356|Batterij en warmte
+357|Eigen themakleur
+358|Eigen achtergrond
+359|Taal gewijzigd. NewREX start opnieuw, open het weer via het autoscherm.
+360|Met de regenboogknop kies je elke kleur die je wilt.
+361|Volledig scherm startpagina
+362|Op de startpagina worden de bovenbalk en minispeler verborgen en worden de kaarten groter. Op andere pagina's blijft de balk zichtbaar voor de terugknop.
+363|Volgorde kaarten startpagina
+364|Volgorde van de vier grote kaarten op de startpagina.
+365|5-bands equalizer. Werkt bij radio, tv en podcasts.
+366|Aanpassen
+367|Gesproken begroeting
+368|Zegt \"Goedemorgen, welkom bij NewREX!\" als je met de auto verbindt. Geen microfoon nodig.
+369|Begroetingsinstellingen
+370|Naam
+371|Naam invoeren…
+372|Je naam
+373|Hoe vaak
+374|Bij elke verbinding
+375|Eén keer per dag
+376|Parkeermodus
+377|Als dit aan staat, worden video en web verborgen als de auto rijdt; het geluid gaat door. 
+378|Zet je het uit, dan blijft het beeld ook tijdens het rijden zichtbaar. Voorzichtig gebruiken!
+379|Als de auto geen snelheid doorgeeft, wordt die met de gps van de telefoon gemeten (locatietoestemming nodig). 
+380|Snelheidswaarschuwing en onderhoudsinfo staan op de pagina Auto.
+381|Open de NewREX-app op de telefoon om lijsten toe te voegen of te verwijderen.
+382|Zenders opnieuw downloaden
+383|Lijsten worden vernieuwd…
+384|{0} zenders geladen
+385| ({0} lijsten mislukt)
+386|Automatisch: de beste kwaliteit van de stream. Lager houdt de telefoon koeler en verbruikt minder data. 
+387|De wijziging geldt meteen voor de open zender.
+388|{0} snelkoppelingen opgeslagen
+389|Nog geen snelkoppelingen
+390|Snelkoppelingen bewerken
+391|Voeg sites toe die je vaak bezoekt (max. 6). Ze staan op de startpagina onder \"Alles\" → Internet.
+392|Nu aan ({0}). 
+393|Nu uit. 
+394|Versie {0}
+395|Oorspronkelijke ontwikkelaar: {0}
+396|Geen reclame  •  Geen tracking  •  Geen gegevens verzameld
+397|Details en licentie
+398|Toepassen
+399|Telefoonmedia
+400|Laden…
+401|Geen mediabestanden op de telefoon gevonden.\nMediatoestemming kan nodig zijn.
+402|Geen muziekbestanden gevonden.
+403|Geen videobestanden gevonden.
+404|Onbekend
+405|Bedien de app op je telefoon; het autoscherm toont het beeld.
+406|Spiegelen gestopt
+407|Tik rechts op de draaiknop zodat het beeld het autoscherm vult.
+408|Zet op de telefoon \"Systeeminstellingen wijzigen\" aan voor NewREX en tik dan opnieuw.
+409|Telefoon liggend
+410|Telefoon staand
+411|Je telefoon vraagt \"Scherm delen?\":\n
+412|Laat \"Volledig scherm delen\" geselecteerd en tik op \"Scherm delen\".\n
+413|Verschijnt er niets, ontgrendel de telefoon of open NewREX → \"Scherm naar de auto spiegelen\".
+414|Opnieuw vragen op de telefoon
+415|Apps laden…
+416|Geen apps gevonden die geopend kunnen worden.
+418|{0} kon niet worden geopend
+420|Passend maken
+421|Scherm vullen
+422|Uitrekken
+423|Populair
+424|Mijn abonnementen
+425|Laatst beluisterd
+426|Zoeken
+427|Podcasts zoeken (bijv. geschiedenis, technologie, voetbal)
+428|Zoeken: {0}
+429|Populaire podcasts laden…
+430|Zoeken naar \"{0}\"…
+431|Je hebt nog geen podcasts beluisterd.
+432|Podcasts konden niet worden geladen. Controleer je internetverbinding.
+433|Je bent nog op geen enkele podcast geabonneerd.\nOpen een programma en tik op ☆ Abonneren.
+434|Geen resultaten voor \"{0}\".
+435|Geen podcasts gevonden.
+436|Afleveringen laden…
+437|Dit programma publiceert afleveringen alleen op Apple Podcasts.
+438|Geen afleveringen gevonden voor dit programma.
+439|Afleveringen konden niet worden geladen. Controleer je internetverbinding.
+440|Geabonneerd: {0}
+441|Abonnement opgezegd
+442|  •  Verder bij: {0} min
+443|Kies een zender voor deze frequentie
+444|Radio zoeken (bijv. Kral, Power, nieuws)
+445|Zenders laden…
+446|Zenders konden niet worden geladen. Controleer je internetverbinding.
+447|Nog geen favoriete zenders.\nTik tijdens het luisteren onderaan op ☆.
+448|Je hebt nog geen radio geluisterd.
+449|Zenderlijst nu niet beschikbaar.\nTik op Populair om het opnieuw te proberen.
+450|TV-zenders
+451|Gratis Turkse zenders
+452|Mijn IPTV-lijsten
+453|{0} lijsten
+454|Lijsten toevoegen via telefoon
+455|{0} servers
+456|IPTV-server toevoegen
+457|Met je Turkcell-account
+458|Met je Netflix-account
+459|Met je Disney+-account
+460|Met je Amazon-account
+461|Zender zoeken
+462|Zenders laden…
+463|⭐ Favorieten
+464|Alle zenders
+465|Sommige lijsten konden niet worden geopend:\n
+466|Je hebt nog geen IPTV-lijsten.\nIn de NewREX-app op je telefoon kun je bij \"IPTV-lijsten\" een link of bestand toevoegen.
+467|Geen zenders gevonden. Controleer je internet en tik op vernieuwen.
+468|Geen zenders gevonden voor \"{0}\".
+469|Nog geen favoriete zenders.\nTik tijdens het kijken op ☆ om toe te voegen.
+470|Geen zenders in deze groep.
+475|Hoogte / richting
+476|📍 Geef locatietoestemming op de telefoon
+480|Gemeten met gps
+481|km • van auto
+482|Voer km in op de telefoon
+483|⚠ Weinig brandstof!
+484|nog %.0f km actieradius
+485|tank • van auto
+486|actieradius • van auto
+487|Vul het tanklogboek in
+488|Richting: {0}
+489|Richting: bij beweging
+490|Noord
+491|Noordoost
+492|Oost
+493|Zuidoost
+494|Zuid
+495|Zuidwest
+496|West
+497|Noordwest
+498|Rijscore (deze rit)
+499|Zuinig rijden
+500|Hard optrekken
+501|Hard remmen
+502|Hoogste km/u
+503|Gemiddeld km/u
+504|Hard optrekken en remmen verlagen de score; rustig rijden bespaart brandstof.
+508|Tanklogboek
+509|Als je volgetankt hebt, voer dan liters, bedrag en kilometerstand in bij \"Brandstof en kilometers\" 
+510|in de NewREX-app op je telefoon. Gemiddeld verbruik, kosten per km en actieradius staan hier.
+511|per km
+512|Deze maand
+513|Geschatte actieradius
+514|Voor een gemiddelde zijn minstens twee tankbeurten en 50 km nodig.
+520|{0} dagen te laat
+521|Vandaag!
+522|nog {0} dagen
+523|Ritgeschiedenis
+524|Als de auto uitgaat (Android Auto verbreekt de verbinding), wordt de rit hier opgeslagen.
+525|gem. {0} • max. {1} km/u
+526|‹ Nieuwere ritten
+527|Pagina {0} / {1}  •  {2} ritten
+528|Oudere ritten ›
+529|Je staat stil sinds: {0}
+530|Als de auto uitgaat, wordt je locatie opgeslagen; open hem op de kaart via \"Waar staat mijn auto?\" op de telefoon.
+531| — open hem op de kaart via de telefoon en stel een parkeerherinnering in.
+532|Ik luister… bijv. \"Open TRT 1\", \"weer\", \"zoek Tarkan op YouTube\", \"open Spotify\"
+533|Het is {0}
+534|Regel het volume met de knop van de auto
+535|Zoeken: {0}
+536|{0} openen
+537|Podcasts zoeken: {0}
+538|Niet begrepen: \"{0}\". Zeg \"help\" voor voorbeelden.
+540|Weer vernieuwen…
+541|Weer laden…
+542|Per uur
+543|Nu
+544|Komende dagen
+545|Gevoelstemperatuur
+546|Wind
+547|Luchtvochtigheid
+548|Zoeken op YouTube
+549|Zoeken
+550|Zoek of typ een adres
+551|Wachtwoord
+552|Tekst
+553|Nog geen snelkoppelingen. Voer hieronder een naam en adres in; hij verschijnt op de startpagina.
+554|Nieuwe snelkoppeling
+555|Naam: {0}
+556|Adres: {0}
+557|Naam invoeren
+558|Sitenaam
+559|Adres invoeren
+560|Voer eerst een naam en adres in.
+561|Je kunt maximaal 6 snelkoppelingen toevoegen.
+562|Server {0}
+563|Server toevoegen
+564|URL, gebruikersnaam, wachtwoord
+565|Server: —
+566|Gebruiker: —
+567|Wachtwoord: —
+568|Naam: —
+569|Server: {0}
+570|Gebruiker: {0}
+571|Wachtwoord: {0}
+572|Serveradres invoeren
+573|Gebruikersnaam invoeren
+574|Gebruikersnaam
+575|Wachtwoord invoeren
+576|Naam invoeren (optioneel)
+577|Servernaam
+578|Verbinding testen en opslaan
+579|Server, gebruikersnaam en wachtwoord zijn verplicht.
+580|Verbinden…
+581|Verbonden! Opgeslagen.
+582|Verbinding mislukt. Controleer de gegevens.
+583|Live-tv
+584|Live-zenders
+585|Films
+586|Filmarchief
+587|Series
+588|Seriearchief
+589|Geen categorieën gevonden op deze server.
+590|Laden mislukt: {0}
+591|Geen inhoud in deze categorie.
+592|Geen afleveringen gevonden voor deze serie.
+593|Tik op een item en sleep om het te verplaatsen.  ⤢ grootte  ✕ verwijderen
+594|Bewerken kan alleen als je geparkeerd staat.
+595|Aan scherm toevoegen
+596|Kiezen op\ntelefoon
+597|Een foto kies je als je geparkeerd staat.
+598|De fotokiezer is op je telefoon geopend.
+599|Verwijderde items blijven hier; tik om ze terug te zetten.
+600|Foto's worden alleen op deze telefoon bewaard en nergens heen gestuurd.
+601|⚠️  {0} km/u  •  limiet {1}   ✕
+602|📍 Geef NewREX op de telefoon locatietoestemming voor snelheid, ritten en parkeermodus.
+603|{0} {1} {2} dagen te laat!
+604|{0} {1} vandaag!
+605|{0} {1}: nog {2} dagen
+606|🛢️ Olieverversing {0} km te laat!
+607|🛢️ Nog {0} km tot olieverversing
+608|🌧️ In de komende uren wordt regen verwacht ({0}%). Rij voorzichtig!
+609|Tijdens het rijden kun je niet typen. Probeer het als je geparkeerd staat.
+610|Rijdend
+611|Live-tv • tik voor beeld
+612|Je rijdt
+613|Voor je veiligheid is het beeld verborgen, het geluid gaat door.\nHet beeld komt vanzelf terug als de auto stilstaat.
+614|Dun
+615|Vet
+616|Staand
+617|Kaart
+618|Neon
+619|In woorden
+620|Eenvoudig
+621|Romeins
+622|Ring
+623|Buizen
+624|Schaal
+625|Naald
+626|FM  MHz
+627|Sluiten
+628|📱 Telefoon
+629|spatie
+630|Voorbeelden: \"Open TRT 1\", \"Kral FM\", \"weer\", \"instellingen\", \"equalizer\", \"zoek Tarkan op YouTube\", \"open Spotify\", \"volgende\", \"stop\", \"hoe laat is het\", \"startscherm\".
+631|De app die je aantikt opent direct op dit scherm.
+632|{0} geopend op het autoscherm. Tik op ⌂ om terug te gaan naar NewREX
+633|Shizuku-toestemming wordt gevraagd op je telefoon; als je toestaat, openen apps zonder schermspiegeling.
+636|Shizuku-toestemming is niet gegeven.
+637|{0} kan niet op het autoscherm worden geopend.
+638|YouTube-geschiedenis wissen
+639|YouTube-cookies en kijkgeschiedenis gewist. Aanbevelingen beginnen opnieuw.
+640|Alleen YouTube in NewREX wordt gewist; je aanmeldingen bij TV+, Netflix enz. blijven.
+641|Foto gekozen
+642|Geen foto
+643|Achtergrondfoto
+644|Beste resultaat: liggende foto van minstens 1920×720 (breedbeeld) of 1920×1080. De foto wordt vanuit het midden bijgesneden om het scherm te vullen; houd het belangrijkste in het midden. Donkere, rustige foto's houden tekst goed leesbaar.
+645|Kies van telefoon
+646|Verwijderen
+647|Spraakactivering
+648|Zeg in de auto \"Hey\" en het woord hieronder; NewREX zegt \"Ik luister\" en wacht op je opdracht (bijv. hey newrex, hey maleren).
+649|Achtergrondfoto op het autoscherm gezet
+650|Ik luister
+651|Luister verder waar je was
+652|Activeren met \"Hey {0}\"
+653|Zeg \"Hey {0}\"; het antwoordt \"Ik luister\" en wacht op je opdracht. Je kunt de opdracht ook meteen zeggen: \"Hey {0}, weer\".
+654|Woord wijzigen
+655|Woord na \"Hey\"
+656|Zeg nu \"Hey {0}\"
+657|Wat wil je kijken?
+658|Tik op de zoekbalk bovenaan of zeg het met 🎤.
+659|Achtergrondstijl
+660|✦ Golf is bewegend; de andere zijn stilstaand en sparen de telefoon. Kleuren komen van de themakleur.
+661|Als dit aan staat, luistert de telefoon continu en gebruikt wat meer processorkracht.
+662|Golf
+663|Noorderlicht
+664|Nachtrit
+665|Bokeh
+666|Sterren
+667|Zijde
+668|Bergen
+669|Verloop
+670|Als het telefoonscherm uitgaat, pauzeren apps op het autoscherm; terug naar NewREX.
+671|Rijscore
+674|Wachten op gps
+675|BEREIK
+676|KM TOT OLIE
+677|Hoog risico
+678|Gemiddeld risico
+679|Laag risico
+686|Waarschuwt boven {0} km/u
+687|Waarschuwing uit
+688|LIMIET
+689|WAARSCHUWINGSGELUID
+690|Boven de limiet klinkt een waarschuwing via de autospeakers en verschijnt een rode balk. Gps-snelheid kan enkele km/u afwijken.
+691|Vul APK-, verzekerings-, onderhouds- en banddata in de NewREX-app op je telefoon in. Als ze naderen, verschijnt hier en bij het starten een herinnering.
+692|Noodstop
+694|Rijdend
+695|Stilstand
+696|Autoafbeelding kon niet worden gedownload. Controleer je internetverbinding.
+698|Locatie toestaan
+700|Kaart
+701|RIJDEN
+702|Score {0}
+703|Wachten op locatie…
+704|Geen locatie gevonden in deze deling.
+705|Locatie naar de kaart op het autoscherm gestuurd: {0}
+706|Bestemming
+707|Ritregistratie
+708|Gereden afstand wordt geteld. De locatie blijft op de telefoon en wordt nergens heen gestuurd.
+709|OBD-II-adapter
+710|Met een Bluetooth ELM327-adapter in de OBD-poort van de auto (meestal onder het stuur) verschijnen toerental, motortemperatuur, accuspanning, brandstof en foutcodes op de Voertuig-pagina van het autoscherm. Koppel de adapter eerst in de Bluetooth-instellingen van de telefoon (pincode meestal 1234 of 0000) en kies hem dan hier. De gegevens blijven op de telefoon.
+711|Adapter kiezen
+712|Niet gekozen
+713|Geen gekoppelde Bluetooth-apparaten. Steek de adapter in de auto, zet het contact aan, koppel hem in de Bluetooth-instellingen van de telefoon (pincode meestal 1234 of 0000) en probeer het opnieuw.
+714|Bluetooth-instellingen
+715|Kies de OBD-II-adapter
+716|Laag
+717|Gemiddeld
+718|Hoog
+719|Volume op snelheid
+720|Bij optrekken wordt het volume van tv, radio en podcasts iets verhoogd tegen weg- en windgeluid, en bij afremmen weer teruggezet. Geen verandering onder 30 km/u.
+721|Motor · OBD-II
+722|Geen OBD-II-adapter gekozen
+723|Steek een Bluetooth ELM327-adapter in de OBD-poort, koppel hem in de Bluetooth-instellingen van de telefoon, open dan NewREX op de telefoon en kies hem bij \"OBD-II-adapter\". Toerental, motortemperatuur, accuspanning, brandstof en foutcodes verschijnen hier.
+724|Toerental
+725|Motortemperatuur
+726|Accu
+727|Brandstof
+728|Motorbelasting
+729|Foutcodes
+730|Lezen
+731|Zeker? Tik nogmaals
+732|Verbonden: {0}
+733|Verbinden met adapter…
+734|Adapter verbonden maar de auto reageert niet. Staat het contact aan?
+735|Kan niet verbinden met de adapter. Zit hij erin en is hij gekoppeld met de telefoon? Opnieuw proberen…
+736|Geef NewREX Bluetooth-toestemming op de telefoon.
+737|Tik op \"Lezen\". Wissen dooft het motorlampje maar lost het probleem niet op.
+738|Geen opgeslagen foutcodes.
+739|Je kunt de betekenis van de codes online opzoeken (bijv. \"{0} betekenis\").
+740|De adapter moet eerst verbonden zijn
+741|Foutcodes lezen…
+742|Lezen mislukt, probeer opnieuw
+743|Foutcodes gewist
+744|Wissen mislukt. Probeer opnieuw met contact aan en motor uit.
+745|Verkeer aan
+746|Geen sleutel (zonder verkeer)
+747|Plak hier je TomTom-sleutel
+748|Kaart · Verkeer
+749|Optioneel. Met je eigen gratis TomTom-sleutel toont de kaart op het autoscherm live verkeerskleuren, routes op basis van verkeer en echte aankomsttijden. Zonder sleutel werken kaart en routes ook, alleen zonder verkeer. De sleutel blijft alleen op deze telefoon; voor de route worden start en bestemming naar TomTom gestuurd.
+750|Zo krijg je er een (3-5 minuten, gratis, geen creditcard):\n1. \"Gratis sleutel halen\" : tik erop en registreer met je e-mail.\n2. Klik op de bevestigingslink in de e-mail.\n3. Kopieer na het inloggen de kant-en-klare sleutel onder \"Keys\".\n4. Plak hem hieronder en tik op \"Opslaan en testen\".
+751|Gratis sleutel halen
+752|Opslaan en testen
+753|De sleutel is te kort, heb je hem helemaal gekopieerd?
+754|Testen…
+755|Werkt ✓ Open de kaart op het autoscherm opnieuw om het verkeer te zien.
+756|Verkeerde of nog niet actieve sleutel. Heb je de e-mail bevestigd?
+757|Geen internetverbinding, probeer opnieuw.
+758|Mijn auto
+759|Afbeelding downloaden…
+760|Veeg opzij om te draaien
+761|verkeer +{0} min
+762|Zoeken…
+763|Geen resultaten gevonden.
+764|Iets anders zoeken
+765|Zoek een adres of plaats
+766|Meters
+767|Autoafbeelding op het autoscherm gezet
+768|Afbeelding van telefoon uploaden
+769|Terug naar standaardauto
+770|Je eigen autoafbeelding. Beste resultaat: PNG met transparante achtergrond.
+771|Op autoscherm zetten
+772|Autoafbeelding
+773|Zo ziet het eruit op het dashboard.
+774|Andere afbeelding kiezen
+775|Afbeelding openen…
+776|Achtergrond verwijderen…
+777|Hulpmiddel downloaden (alleen de eerste keer)…
+778|Geen auto gevonden; je kunt hem zo gebruiken.
+779|Achtergrond kon niet worden verwijderd. Gebruik de afbeelding zo of kies een transparante PNG.
+781|Afbeelding ongewijzigd.
+782|Achtergrond verwijderen
+783|Ongewijzigd
+784|Afbeeldingskiezer geopend op je telefoon. Je kunt de achtergrond verwijderen en bekijken.
+785|Achtergrond verwijderd. Zijn de randen slordig, kies dan “Ongewijzigd”.
+786|Met de + aan het eind kies je elke kleur. De achtergrond mag niet te licht zijn zodat tekst leesbaar blijft. Wijzigingen gelden meteen.
+787|Instellen
+788|Doe de nodige rechten en instellingen stap voor stap
+789|Apps in de auto openen
+790|Telefoonapps zoals Spotify of WhatsApp openen direct op het autoscherm, ook als de telefoon vergrendeld is. Eén keer koppelen is genoeg; daarna regelt NewREX het zelf telkens als de telefoon opnieuw start en op wifi komt. De verbinding blijft in de telefoon; er wordt niets verstuurd.
+791|Koppelen (eenmalig)
+792|Nu starten
+793|Starten…
+794|Niet gestart. Controleer of de telefoon op wifi zit en gekoppeld is.
+795|Klaar
+796|Klaar met Shizuku
+797|Gekoppeld · start vanzelf op wifi
+798|Instellen nodig
+799|Helper draait. Hij blijft aan tot de telefoon uitgaat.
+800|Het makkelijkst via het Instellen-scherm bovenaan. Of: tik op “Koppelen”, tik op de pagina op “Apparaat koppelen met koppelingscode”, tik dan in de melding op “Code invoeren” en typ de 6 cijfers.
+801|Tik op wifi op “Nu starten” of wacht even; hij start vanzelf.
+802|Draadloze foutopsporing → tik op “Apparaat koppelen met koppelingscode”, tik dan in deze melding op “Code invoeren” en typ de 6 cijfers.
+803|NewREX koppelen
+804|Code invoeren
+805|Code van 6 cijfers
+806|Koppelen…
+807|Gekoppeld. Telefoonapps kunnen nu in de auto openen.
+808|Gekoppeld. De helper start zo vanzelf.
+809|Code klopt niet. Typ de nieuwe code terwijl het koppelvenster open is.
+810|Meldingen
+811|De koppelingscode en ritregistratie worden als melding getoond.
+812|Toestaan
+813|Locatie
+814|Voor snelheid, ritten, parkeerplek en kaart.
+815|Media en microfoon
+816|Voor muziek en video's op de telefoon en spraakopdrachten. Bestanden verlaten de telefoon niet.
+817|Zodat de telefoon NewREX niet op de achtergrond sluit en ritten en kilometers blijven tellen.
+818|Zodat Android Auto NewREX herkent en het ook tijdens het rijden opent.
+819|Doen
+820|Android Auto: onbekende bronnen
+821|Als NewREX niet in de auto verschijnt: Android Auto-instellingen → tik 10 keer op Versie onderaan → ⋮ rechtsboven → Ontwikkelaarsinstellingen → zet Onbekende bronnen aan.
+822|Android Auto-instellingen openen
+823|Ontwikkelaarsopties
+824|Nodig om telefoonapps in de auto te openen. Instellingen → Over de telefoon → Software-informatie → tik 7 keer op Buildnummer.
+825|Over de telefoon openen
+826|Koppelen (eenmalig)
+827|De pagina Draadloze foutopsporing opent: je moet op wifi zitten. Zet hem aan als hij uit is; als het gevraagd wordt, vink “Altijd toestaan op dit netwerk” aan. Tik dan op “Apparaat koppelen met koppelingscode”, trek de melding omlaag, tik op “Code invoeren” en typ de 6 cijfers.
+828|Koppelen
+829|De helper start en geeft zichzelf toestemming om vanzelf te starten. Daarna is hij na elke herstart op wifi vanzelf klaar; Shizuku is niet nodig.
+830|Starten
+831|Klaar.
+832|Niet gestart. Zit je op wifi en is er gekoppeld?
+833|{0} / {1} verplichte stappen klaar. Optionele stappen zijn om telefoonapps in de auto te openen.
+834|Optioneel
+835|De telefoon is sinds de herstart nog niet op wifi geweest. Zodra hij op wifi is, wordt het vanzelf klaargezet.
+836|Doe één keer de Instellen-stappen in NewREX op je telefoon om telefoonapps in de auto te openen.

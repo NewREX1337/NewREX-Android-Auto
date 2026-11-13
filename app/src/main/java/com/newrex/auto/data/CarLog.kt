@@ -18,15 +18,35 @@ data class TripRecord(
     val harshAccel: Int,
     val harshBrake: Int,
     val score: Int,
+    /** Çok sert (panik) fren sayısı: kaza riskine işaret. -1: eski kayıt, bilinmiyor. */
+    val panicBrake: Int = -1,
+    /** Hız sınırının üstünde geçen dakika. -1: bilinmiyor. */
+    val overLimitMinutes: Int = -1,
 ) {
     val avgKmh: Int get() = if (movingMinutes > 0) (km / movingMinutes * 60).roundToInt() else 0
 
+    /** Duraklama (trafik, ışık, mola) dakikası. */
+    val idleMinutes: Int get() = (((end - start) / 60_000).toInt() - movingMinutes).coerceAtLeast(0)
+
+    /** Kaza riski: 0 düşük, 1 orta, 2 yüksek (panik fren, ani hareket yoğunluğu, hız aşımı). */
+    val risk: Int get() {
+        val per10 = (harshAccel + harshBrake) / (km / 10f).coerceAtLeast(1f)
+        val overShare = if (movingMinutes > 0 && overLimitMinutes > 0) overLimitMinutes.toFloat() / movingMinutes else 0f
+        return when {
+            panicBrake > 0 || per10 >= 3f || overShare >= 0.3f -> 2
+            per10 >= 1f || overShare >= 0.1f || maxKmh >= 150 -> 1
+            else -> 0
+        }
+    }
+
     fun toJson(): JSONObject = JSONObject().put("s", start).put("e", end).put("km", km.toDouble()).put("mm", movingMinutes)
         .put("max", maxKmh).put("ha", harshAccel).put("hb", harshBrake).put("sc", score)
+        .put("pb", panicBrake).put("ol", overLimitMinutes)
 
     companion object {
         fun fromJson(o: JSONObject) = TripRecord(o.optLong("s"), o.optLong("e"), o.optDouble("km").toFloat(),
-            o.optInt("mm"), o.optInt("max"), o.optInt("ha"), o.optInt("hb"), o.optInt("sc", 100))
+            o.optInt("mm"), o.optInt("max"), o.optInt("ha"), o.optInt("hb"), o.optInt("sc", 100),
+            o.optInt("pb", -1), o.optInt("ol", -1))
     }
 }
 
@@ -61,8 +81,9 @@ object CarLog {
     // ---- Ayarlar ----
 
     /** Hız uyarısı sınırı (km/s); 0 = kapalı. */
+    /** Hız uyarısı kullanıcı isteğiyle kaldırıldı (2026-11-13): sınır hep kapalı. */
     var speedLimit: Int
-        get() = sp.getInt("speedLimit", 0)
+        get() = 0
         set(v) { sp.edit().putInt("speedLimit", v).apply(); bump() }
 
     /** Hız uyarısının sesi (SpeedAlert.SOUNDS sırası). */
@@ -192,11 +213,17 @@ object CarLog {
 object TripStats {
     private const val HARSH_ACCEL = 3.0f   // m/s² (~11 km/s her saniye)
     private const val HARSH_BRAKE = -3.5f  // m/s²
+    /** Panik fren: aracın neredeyse en sert fren gücü (~0,6 g); kaza riskine işaret. */
+    private const val PANIC_BRAKE = -6.0f
 
     val maxKmh = MutableStateFlow(0f)
     val harshAccel = MutableStateFlow(0)
     val harshBrake = MutableStateFlow(0)
+    val panicBrake = MutableStateFlow(0)
     var movingMs = 0L
+        private set
+    /** Hız sınırı seçiliyken sınırın üstünde geçen süre. */
+    var overLimitMs = 0L
         private set
 
     private var lastSpeed = -1f
@@ -204,8 +231,8 @@ object TripStats {
     private var lastHarsh = 0L
 
     fun reset() {
-        maxKmh.value = 0f; harshAccel.value = 0; harshBrake.value = 0
-        movingMs = 0; lastSpeed = -1f; lastTime = 0; lastHarsh = 0
+        maxKmh.value = 0f; harshAccel.value = 0; harshBrake.value = 0; panicBrake.value = 0
+        movingMs = 0; overLimitMs = 0; lastSpeed = -1f; lastTime = 0; lastHarsh = 0
     }
 
     /** Hız örneği (m/s). */
@@ -215,11 +242,14 @@ object TripStats {
         if (lastTime > 0) {
             val dt = (time - lastTime) / 1000f
             if (dt in 0.2f..5f && lastSpeed > 1f) movingMs += (dt * 1000).toLong()
+            val limit = CarLog.speedLimit
+            if (dt in 0.2f..5f && limit > 0 && kmh > limit + 1f) overLimitMs += (dt * 1000).toLong()
             // Örnekler arası 0,7–3 sn ise ivme anlamlı; aynı olay iki kez sayılmasın diye 3 sn bekle
             if (dt in 0.7f..3f && lastSpeed >= 0f && time - lastHarsh > 3000) {
                 val a = (mps - lastSpeed) / dt
                 if (a > HARSH_ACCEL) { harshAccel.value++; lastHarsh = time }
                 if (a < HARSH_BRAKE) { harshBrake.value++; lastHarsh = time }
+                if (a < PANIC_BRAKE) panicBrake.value++
             }
         }
         lastSpeed = mps

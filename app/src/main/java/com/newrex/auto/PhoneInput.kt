@@ -83,12 +83,12 @@ class PhoneInputActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(Palette.BG_TOP)
             setPadding(dp(20), dp(40), dp(20), dp(40))
-            addView(label("Araç ekranına yaz", 22f, bold = true))
-            addView(label("Yazdığın, araç ekranındaki kutuya aktarılır.", 14f, Palette.TEXT_DIM, lines = 2),
+            addView(label(t("Araç ekranına yaz"), 22f, bold = true))
+            addView(label(t("Yazdığın, araç ekranındaki kutuya aktarılır."), 14f, Palette.TEXT_DIM, lines = 2),
                 lp(MATCH, WRAP).margins(t = dp(6), b = dp(18)))
             addView(field, lp(MATCH, WRAP))
-            addView(button("Araca gönder", Palette.accents[0]) { send(field.text.toString()) }, lp(MATCH, WRAP).margins(t = dp(16)))
-            addView(button("Vazgeç", 0x22FFFFFF) { finish() }, lp(MATCH, WRAP).margins(t = dp(10)))
+            addView(button(t("Araca gönder"), Palette.accents[0]) { send(field.text.toString()) }, lp(MATCH, WRAP).margins(t = dp(16)))
+            addView(button(t("Vazgeç"), 0x22FFFFFF) { finish() }, lp(MATCH, WRAP).margins(t = dp(10)))
         })
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
         field.requestFocus()

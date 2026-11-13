@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.ui
 
+import com.newrex.auto.t
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
@@ -74,6 +75,7 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
 
     private val content = FrameLayout(ctx)
     private lateinit var topBar: LinearLayout
+    private lateinit var topLine: View
     private lateinit var backButton: View
     private lateinit var titleView: TextView
     private lateinit var actionsBox: LinearLayout
@@ -116,16 +118,29 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         }
     }
 
+    /** Telefondan seçilmiş özel arka plan fotoğrafı var mı (değişince arayüz baştan kurulur). */
+    private val photoBg = com.newrex.auto.data.Background.has(ctx)
+
+    /** Hazır sabit arka plan (dalga dışındaki stiller) ya da fotoğraf: ikisinde de dalga animasyonu çizilmez. */
+    private val customBg = photoBg || Prefs.bgStyle != 0
+
     init {
         Palette.load()
         Board.init(ctx)
+        // Uygulama yansıtma sırasında kapandıysa telefon yan kalmasın
+        com.newrex.auto.PhoneRotation.restoreIfStale(ctx)
         com.newrex.auto.data.CarLog.init(ctx)
         com.newrex.auto.data.FmPresets.init(ctx)
         val bg = Palette.safeBackground(Prefs.bgColor)
         root.setBackgroundColor(if (bg != 0) bg else Palette.BG_TOP)
 
         val column = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
-        column.addView(buildTopBar(), lp(MATCH, ctx.dp(60)))
+        // Özel arka plan fotoğrafı varsa sayfalar onun üstünde yarı saydam koyu bir katmanla durur (yazılar okunsun)
+        column.background = if (customBg) android.graphics.drawable.ColorDrawable(if (photoBg) 0xA6000000.toInt() else 0x73000000)
+            else StreakBackground(bg, Palette.accent, ctx.resources.displayMetrics.density)
+        column.addView(buildTopBar(), lp(MATCH, ctx.dp(68)))
+        topLine = View(ctx).apply { setBackgroundColor(0x14FFFFFF) }
+        column.addView(topLine, lp(MATCH, 1))
         column.addView(content, lp(MATCH, 0, 1f))
         column.addView(buildMiniPlayer(), lp(MATCH, ctx.dp(66)).margins(ctx.dp(12), ctx.dp(4), ctx.dp(12), ctx.dp(10)))
 
@@ -142,11 +157,39 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         // Uygulamalar sayfasının en altından aşağı kaydırınca "Hakkında" gelir
         aboutPage = com.newrex.auto.pages.AboutPage(this)
         pager.addView(aboutPage.build().also { aboutPage.view = it }, flp(MATCH, MATCH))
-        pager.onPosition = { wave.mix = it.coerceIn(0f, 1f) }
+        pager.onPosition = {
+            wave.mix = it.coerceIn(0f, 1f)
+            // Uygulamalar sayfası ekranı tamamen kapatıyor: arkadaki dalga katmanı boşuna çizilmesin
+            wave.visibility = if (it == 1f || customBg) View.INVISIBLE else View.VISIBLE
+        }
         pager.onPage = {
             if (it == 1) board.exitEdit()
-            // Uygulamalar sayfasında arka plan daha seyrek çizilir (telefonu yormasın)
-            wave.frameMs = if (it == 0) 40L else 66L
+            // Şeritler çok yavaş hareket ediyor: saniyede 15 kare göze aynı görünür, işlemciyi ve görüntü aktarımını yarıya indirir
+            wave.frameMs = 100L
+            refreshWave()
+        }
+        if (customBg) {
+            // Fotoğraf ekranı dolduracak şekilde ortadan kırpılır; dalga animasyonu çizilmez (telefonu yormaz)
+            root.addView(android.widget.ImageView(ctx).apply {
+                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                val dm = ctx.resources.displayMetrics
+                if (photoBg) {
+                    setImageBitmap(com.newrex.auto.data.Background.load(ctx, dm.widthPixels, dm.heightPixels))
+                    foreground = android.graphics.drawable.ColorDrawable(0x33000000)
+                } else {
+                    // Hazır stil bir kez, arka planda çizilir
+                    val iv = this
+                    val style = Prefs.bgStyle
+                    val accent = Palette.accent
+                    scope.launch {
+                        val bmp = kotlinx.coroutines.withContext(Dispatchers.Default) {
+                            Backdrop.render(style, dm.widthPixels, dm.heightPixels, accent)
+                        }
+                        iv.setImageBitmap(bmp)
+                    }
+                }
+            }, flp(MATCH, MATCH))
+            wave.visibility = View.GONE
         }
         root.addView(wave, flp(MATCH, MATCH))
         root.addView(pager, flp(MATCH, MATCH))
@@ -157,14 +200,15 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         }
 
         scope.launch { DriveState.driving.collect { updateDriveChip(it) } }
+        scope.launch { com.newrex.auto.DirectApps.active.collect { showAppMode(it != null) } }
         scope.launch { com.newrex.auto.Saver.active.collect { wave.invalidate() } }
         scope.launch { DriveState.speedKmh.collect { checkSpeedLimit(it) } }
         scope.launch {
             combine(compact, WeatherHub.report) { c, w -> c to w }.collect { (c, w) ->
                 titleView.visibility = if (c) View.INVISIBLE else View.VISIBLE
                 driveText.visibility = if (c) View.GONE else View.VISIBLE
-                weatherChip.visibility = if (c || w == null) View.GONE else View.VISIBLE
-                if (w != null) weatherChip.text = "${WeatherApi.emoji(w.code, w.isDay)} ${w.temp}°"
+                if (w != null) weatherChip.text = "${WeatherApi.emoji(w.code, w.isDay)} ${w.temp}°" + (w.place?.let { "   |   $it" } ?: "")
+                refreshWeatherChip()
             }
         }
         scope.launch {
@@ -186,6 +230,11 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         }
         handler.post(tick)
         push(HomePage(this))
+        // "Hey <kelime>" ile uyandırma: söz duyulunca komut dinlenir ya da aynı cümledeki komut hemen yapılır
+        com.newrex.auto.WakeWord.start(ctx) { rest ->
+            if (rest.isBlank()) com.newrex.auto.pages.startVoice(this, greeted = true)
+            else { com.newrex.auto.pages.VoiceActions.handle(this, listOf(rest)); com.newrex.auto.WakeWord.resume() }
+        }
     }
 
     // ---- Sayfa yönetimi ----
@@ -212,13 +261,48 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
     }
 
     /** Android Auto'daki ev tuşu: alt sayfalardan uygulamalara, uygulamalardan karşılama ekranına. */
+    // ---- Araç ekranında açık telefon uygulaması (Shizuku) ----
+
+    private var appBar: View? = null
+    private var savedRootBg: android.graphics.drawable.Drawable? = null
+
+    /** Araç ekranında bir telefon uygulaması açık mı (NewREX arayüzü gizli, sadece küçük düğmeler var)? */
+    val appMode get() = appBar != null
+
+    private fun showAppMode(on: Boolean) {
+        if (on == appMode) return
+        if (on) {
+            hideKeyboard()
+            savedRootBg = root.background
+            root.background = null
+            wave.visibility = View.INVISIBLE
+            pager.visibility = View.INVISIBLE
+            // Pencere gizlenir (SurfaceScreen); geri/ev düğmeleri Android Auto'nun şeridinde
+            appBar = View(ctx)
+        } else {
+            appBar = null
+            root.background = savedRootBg
+            pager.visibility = View.VISIBLE
+            wave.visibility = if (pager.page == 1 || customBg) View.INVISIBLE else View.VISIBLE
+            refreshWave()
+        }
+    }
+
+    /** Ev tuşuna en son ne zaman basıldı (aynı dokunuş yüzeye de gelip sayfa geçişini kesmesin diye). */
+    var lastHomeAt = 0L
+        private set
+
     fun home() {
+        lastHomeAt = android.os.SystemClock.uptimeMillis()
+        // Araç ekranında telefon uygulaması açıksa önce o telefona geri gönderilir, NewREX geri gelir
+        if (appMode) { scope.launch { com.newrex.auto.DirectApps.close() }; return }
         hideKeyboard()
         if (stack.size > 1) while (stack.size > 1) pop()
         else pager.goTo(if (pager.page == 1) 0 else 1)
     }
 
     fun back() {
+        if (appMode) { com.newrex.auto.DirectApps.back(); return }
         if (keyboard != null) { hideKeyboard(); return }
         if (!stack.last().onBack()) pop()
     }
@@ -226,7 +310,10 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
     /** Sayfanın üst bar butonları değiştiğinde çağrılır. */
     fun refreshChrome() {
         val top = stack.last()
-        topBar.visibility = if (top.fullscreen) View.GONE else View.VISIBLE
+        // Tam ekran modu sadece ana ekranda: alt sayfalarda geri tuşu kaybolmasın
+        val hideChrome = top.fullscreen || (Prefs.immersiveMode && stack.size == 1)
+        topBar.visibility = if (hideChrome) View.GONE else View.VISIBLE
+        topLine.visibility = topBar.visibility
         backButton.visibility = if (stack.size > 1) View.VISIBLE else View.GONE
         titleView.text = top.title
         actionsBox.removeAllViews()
@@ -234,14 +321,30 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         top.actions().forEach { actionsBox.addView(it, lp(if (it.tag == "wide") WRAP else ctx.dp(44), ctx.dp(44)).margins(l = ctx.dp(8))) }
         refreshMini()
         refreshPagerLock()
-        // Animasyon sadece ana sayfalarda; alt sayfalarda ve videoda durur, telefonu yormaz
-        wave.running = surfaceVisible && stack.size == 1
+        refreshWave()
+        refreshWeatherChip()
+    }
+
+    /** Ana ekranda hava kartı zaten var; üst bardaki hava yazısı sadece alt sayfalarda görünür. */
+    private fun refreshWeatherChip() {
+        if (!::weatherChip.isInitialized || stack.isEmpty()) return
+        // Dar ekranda sayfa düğmeleri varken başlık sıkışmasın
+        // (8 inç ekranda Android Auto yanına müzik kartı koyunca da saat kesilmesin)
+        val avail = (if (visibleWidth > 0) visibleWidth else root.width) - topRightReserve
+        val narrow = avail in 1 until ctx.dp(if (actionsBox.childCount > 0) 1000 else 860)
+        val hide = compact.value || WeatherHub.report.value == null || stack.size == 1 || narrow
+        weatherChip.visibility = if (hide) View.GONE else View.VISIBLE
     }
 
     /** Araç ekranı başka bir şey gösterirken (geri görüş kamerası vb.) animasyon boşuna çizilmesin. */
     fun setSurfaceVisible(visible: Boolean) {
         surfaceVisible = visible
-        wave.running = visible && stack.size == 1
+        refreshWave()
+    }
+
+    /** Dalga animasyonu sadece karşılama ve Hakkında'da görünür; uygulamalar sayfasının kendi zemini var, telefonu yormaz. */
+    private fun refreshWave() {
+        wave.running = !customBg && surfaceVisible && stack.size == 1 && pager.page != 1
     }
 
     private fun refreshPagerLock() {
@@ -251,6 +354,7 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
 
     fun destroy() {
         wave.running = false
+        com.newrex.auto.WakeWord.stop()
         handler.removeCallbacksAndMessages(null)
         stack.forEach { it.destroy() }
         stack.clear()
@@ -268,8 +372,14 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         topBar.setPadding(ctx.dp(14), ctx.dp(8), maxOf(ctx.dp(14), topRightReserve), 0)
         board.setTopRightReserve(topRightReserve)
         val visibleWidth = ctx.resources.displayMetrics.widthPixels - left - right
+        this.visibleWidth = visibleWidth
         compact.value = visibleWidth < ctx.dp(600)
+        // Android Auto yanına müzik/arama kartı açınca üst çubuk yeniden hesaplansın (saat kesilmesin)
+        refreshWeatherChip()
     }
+
+    /** Android Auto'nun bize bıraktığı görünür genişlik (yanında kart açıkken daralır). */
+    private var visibleWidth = 0
 
     private var overLimit = false
     private var lastSpeedAlert = 0L
@@ -312,23 +422,23 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
             speedBanner = this
             root.addView(this, flp(WRAP, WRAP, Gravity.TOP or Gravity.CENTER_HORIZONTAL).margins(t = ctx.dp(64)))
         }
-        b.text = "⚠️  $kmh km/s  •  sınır $limit   ✕"
+        b.text = t("⚠️  {0} km/s  •  sınır {1}   ✕", kmh, limit)
     }
 
     /** Oturum başında bir kez: yaklaşan bakım ve yağmur uyarısı. */
     private fun showStartupAlerts() {
         if (!SessionAlerts.locationShown && !com.newrex.auto.DriveState.hasLocationPermission(ctx)) {
             SessionAlerts.locationShown = true
-            toast("📍 Hız, yolculuk ve park modu için telefonda NewREX'e konum izni ver.", long = true)
+            toast(t("📍 Hız, yolculuk ve park modu için telefonda NewREX'e konum izni ver."), long = true)
             return
         }
         if (!SessionAlerts.maintenanceShown) {
             SessionAlerts.maintenanceShown = true
             Prefs.maintenanceDue().firstOrNull { it.second <= 15 }?.let { (m, days) ->
                 toast(when {
-                    days < 0 -> "${m.emoji} ${m.title} ${-days} gün gecikti!"
-                    days == 0L -> "${m.emoji} ${m.title} bugün!"
-                    else -> "${m.emoji} ${m.title} için $days gün kaldı"
+                    days < 0 -> t("{0} {1} {2} gün gecikti!", m.emoji, m.title, -days)
+                    days == 0L -> t("{0} {1} bugün!", m.emoji, m.title)
+                    else -> t("{0} {1} için {2} gün kaldı", m.emoji, m.title, days)
                 }, long = true)
             }
         }
@@ -337,7 +447,7 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
             val km = com.newrex.auto.VehicleData.odometerKm.value ?: com.newrex.auto.data.CarLog.estimatedOdometer()
             com.newrex.auto.data.CarLog.oilKmLeft(km)?.takeIf { it <= 500 }?.let { left ->
                 handler.postDelayed({
-                    toast(if (left < 0) "🛢️ Yağ değişimi ${(-left).toInt()} km gecikti!" else "🛢️ Yağ değişimine ${left.toInt()} km kaldı", long = true)
+                    toast(if (left < 0) t("🛢️ Yağ değişimi {0} km gecikti!", (-left).toInt()) else t("🛢️ Yağ değişimine {0} km kaldı", left.toInt()), long = true)
                 }, 6500)
             }
         }
@@ -346,7 +456,7 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
             val w = WeatherHub.report.value ?: return@launch
             if (!SessionAlerts.rainShown && w.rainSoon >= 60) {
                 SessionAlerts.rainShown = true
-                toast("🌧️ Önümüzdeki saatlerde yağmur bekleniyor (%${w.rainSoon}). Dikkatli sür!", long = true)
+                toast(t("🌧️ Önümüzdeki saatlerde yağmur bekleniyor (%{0}). Dikkatli sür!", w.rainSoon), long = true)
             }
         }
     }
@@ -357,12 +467,12 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         hint: String,
         initial: String = "",
         secret: Boolean = false,
-        doneLabel: String = "Ara",
+        doneLabel: String = t("Ara"),
         allowEmpty: Boolean = false,
         onDone: (String) -> Unit,
     ) {
         if (DriveState.driving.value) {
-            toast("Sürüş sırasında yazı yazılamaz. Lütfen park halindeyken deneyin.")
+            toast(t("Sürüş sırasında yazı yazılamaz. Lütfen park halindeyken deneyin."))
             return
         }
         hideKeyboard()
@@ -411,9 +521,11 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         val logo = SpannableStringBuilder("NewREX").apply {
             setSpan(ForegroundColorSpan(Palette.accent), 3, 6, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
-        topBar.addView(label(logo, 22f, bold = true).apply { neonText(8) })
-        titleView = label("", 17f, Palette.TEXT_DIM)
-        topBar.addView(titleView, lp(0, WRAP, 1f).margins(l = dp(14)))
+        topBar.addView(label(logo, 28f, bold = true))
+        // Sesli komut her sayfada aynı yerde, sürücü tarafında (solda) ve küçük; dinlerken parlar
+        topBar.addView(micButton(this@CarUi, 38), lp(dp(38), dp(38)).margins(l = dp(14)))
+        titleView = label("", 19f, Palette.TEXT_DIM)
+        topBar.addView(titleView, lp(0, WRAP, 1f).margins(l = dp(12)))
 
         actionsBox = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -421,37 +533,37 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         }
         topBar.addView(actionsBox)
 
-        weatherChip = label("", 15f, bold = true).apply {
+        weatherChip = label("", 17f, bold = true).apply {
             gravity = Gravity.CENTER
-            setPadding(dp(10), 0, dp(10), 0)
-            val r = dpf(16)
-            background = pressable(rounded(Palette.SURFACE_STRONG, r), r)
+            setPadding(dp(16), 0, dp(16), 0)
+            val r = dpf(21)
+            background = pressable(rounded(0xFF14161C.toInt(), r, 1, 0x1FFFFFFF), r)
             visibility = View.GONE
             onTap { if (stack.last() !is WeatherPage) push(WeatherPage(this@CarUi)) }
         }
-        topBar.addView(weatherChip, lp(WRAP, dp(32)).margins(l = dp(10)))
+        topBar.addView(weatherChip, lp(WRAP, dp(42)).margins(l = dp(10)))
 
-        driveIcon = icon(R.drawable.ic_parking, 18)
-        driveText = label("Park", 13f, bold = true)
+        driveIcon = icon(R.drawable.ic_parking, 22)
+        driveText = label(t("Park"), 17f, bold = true)
         driveChip = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(10), 0, dp(12), 0)
-            addView(driveIcon, lp(dp(18), dp(18)).margins(r = dp(6)))
+            setPadding(dp(16), 0, dp(20), 0)
+            addView(driveIcon, lp(dp(22), dp(22)).margins(r = dp(10)))
             addView(driveText)
         }
-        topBar.addView(driveChip, lp(WRAP, dp(32)).margins(l = dp(12)))
+        topBar.addView(driveChip, lp(WRAP, dp(42)).margins(l = dp(12)))
 
-        clock = label("", 20f, bold = true)
-        topBar.addView(clock, lp(WRAP, WRAP).margins(l = dp(12)))
+        clock = label("", 26f, bold = true)
+        topBar.addView(clock, lp(WRAP, WRAP).margins(l = dp(16)))
         topBar
     }
 
     private fun updateDriveChip(driving: Boolean) {
         val color = if (driving) Palette.ORANGE else Palette.GREEN
-        driveChip.background = rounded(Palette.withAlpha(color, 0x40), ctx.dpf(16))
+        driveChip.background = rounded(Palette.withAlpha(color, 0x40), ctx.dpf(21))
         driveIcon.setImageResource(if (driving) R.drawable.ic_car else R.drawable.ic_parking)
-        driveText.text = if (driving) "Sürüşte" else "Park"
+        driveText.text = if (driving) t("Sürüşte") else t("Park")
     }
 
     // ---- Mini oynatıcı ----
@@ -474,7 +586,7 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(10), 0, dp(10), 0)
-            background = pressable(rounded(0xFF1D2033.toInt(), dpf(18)), dpf(18))
+            background = pressable(rounded(0xFF14161C.toInt(), dpf(18), 1, 0x1FFFFFFF), dpf(18))
             addView(miniImage, lp(dp(46), dp(46)).margins(r = dp(12)))
             addView(texts, lp(0, WRAP, 1f))
             addView(miniFav, lp(dp(44), dp(44)).margins(l = dp(6)))
@@ -500,28 +612,36 @@ class CarUi(val ctx: Context, startOnApps: Boolean = false, private val onRebuil
         }
     }
 
+    private var miniImageKey: String? = null
+
     private fun refreshMini() {
         if (!::mini.isInitialized || stack.isEmpty()) return
         val e = PlayerHub.now.value
         val top = stack.last()
-        val hide = e == null || top.fullscreen || top is PlayerPage
+        val hide = e == null || top.fullscreen || top is PlayerPage || (Prefs.immersiveMode && stack.size == 1)
         (mini.parent as View).visibility = if (hide) View.GONE else View.VISIBLE
         miniProgress.visibility = if (e?.kind == Kind.PODCAST) View.VISIBLE else View.GONE
         if (e == null) return
         miniTitle.text = e.title
         miniSub.text = when (e.kind) {
-            Kind.TV -> "Canlı TV • görüntü için dokun"
-            Kind.RADIO -> "Radyo" + if (e.group.isNotBlank()) " • ${e.group}" else ""
+            Kind.TV -> t("Canlı TV • görüntü için dokun")
+            Kind.RADIO -> t("Radyo") + if (e.group.isNotBlank()) " • ${e.group}" else ""
             Kind.PODCAST -> "Podcast" + if (e.group.isNotBlank()) " • ${e.group}" else ""
         }
         val pod = e.kind == Kind.PODCAST
         (miniPrev.getChildAt(0) as ImageView).setImageResource(if (pod) R.drawable.ic_replay else R.drawable.ic_prev)
         (miniNext.getChildAt(0) as ImageView).setImageResource(if (pod) R.drawable.ic_forward else R.drawable.ic_next)
-        val fallback = if (e.kind == Kind.RADIO) LetterArt(e.title, ctx.resources.displayMetrics.density)
-        else androidx.core.content.ContextCompat.getDrawable(ctx, kindIcon(e.kind))
-        miniImage.load(com.newrex.auto.data.Logos.best(e)) {
-            placeholder(fallback); error(fallback); fallback(fallback)
-            transformations(RoundedCornersTransformation(ctx.dpf(8)))
+        // Logo sadece çalan şey değişince yeniden yüklenir (her ayar değişikliğinde değil)
+        val logo = com.newrex.auto.data.Logos.best(e)
+        val imageKey = e.key + "|" + logo
+        if (imageKey != miniImageKey) {
+            miniImageKey = imageKey
+            val fallback = if (e.kind == Kind.RADIO) LetterArt(e.title, ctx.resources.displayMetrics.density)
+            else androidx.core.content.ContextCompat.getDrawable(ctx, kindIcon(e.kind))
+            miniImage.load(logo) {
+                placeholder(fallback); error(fallback); fallback(fallback)
+                transformations(RoundedCornersTransformation(ctx.dpf(8)))
+            }
         }
         (miniPlay.getChildAt(0) as ImageView).setImageResource(
             if (PlayerHub.playing.value) R.drawable.ic_pause else R.drawable.ic_play
@@ -557,9 +677,9 @@ fun Page.parkGuard(): View = with(ctx) {
         setBackgroundColor(0xFA080A12.toInt())
         isClickable = true
         addView(icon(R.drawable.ic_car, 64, Palette.ORANGE), lp(dp(64), dp(64)))
-        addView(label("Sürüş halindesin", 24f, bold = true).apply { gravity = Gravity.CENTER },
+        addView(label(t("Sürüş halindesin"), 24f, bold = true).apply { gravity = Gravity.CENTER },
             lp(WRAP, WRAP).margins(t = dp(14)))
-        addView(label("Güvenliğin için görüntü gizlendi, ses devam ediyor.\nAraç durunca görüntü otomatik geri gelir.",
+        addView(label(t("Güvenliğin için görüntü gizlendi, ses devam ediyor.\nAraç durunca görüntü otomatik geri gelir."),
             15f, Palette.TEXT_DIM, lines = 3).apply { gravity = Gravity.CENTER },
             lp(WRAP, WRAP).margins(t = dp(8)))
         visibility = View.GONE
@@ -570,4 +690,22 @@ fun Page.parkGuard(): View = with(ctx) {
             .collect { block -> box.visibility = if (block) View.VISIBLE else View.GONE }
     }
     box
+}
+
+/** Her sayfada ve karşılama ekranında aynı görünen sesli komut düğmesi; dinlerken tema renginde parlar. */
+fun micButton(ui: CarUi, sizeDp: Int = 44, idleBg: Int = Palette.withAlpha(Palette.accent, 0x40)): FrameLayout = with(ui.ctx) {
+    val b = circleButton(R.drawable.ic_mic, sizeDp, bg = idleBg) { com.newrex.auto.pages.startVoice(ui) }
+    val r = dpf(sizeDp / 2f)
+    b.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+        private var job: kotlinx.coroutines.Job? = null
+        override fun onViewAttachedToWindow(v: View) {
+            job = CoroutineScope(Dispatchers.Main).launch {
+                com.newrex.auto.VoiceCommand.listening.collect { on ->
+                    b.background = pressable(rounded(if (on) Palette.accent else idleBg, r), r)
+                }
+            }
+        }
+        override fun onViewDetachedFromWindow(v: View) { job?.cancel(); job = null }
+    })
+    b
 }

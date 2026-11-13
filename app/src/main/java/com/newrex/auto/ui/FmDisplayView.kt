@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.ui
 
+import com.newrex.auto.t
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.LinearGradient
@@ -31,14 +32,14 @@ class FmDisplayView(context: Context, style: Int = 0) : View(context) {
 
         /** pointer = 0: tema rengi. */
         val STYLES = listOf(
-            Style("Lambalı", ORANGE),
+            Style(t("Lambalı"), ORANGE),
             Style("LCD", AMBER),
             Style("VFD", CYAN),
-            Style("Neon", 0),
-            Style("Kadran", RED),
-            Style("İbreli", ORANGE),
+            Style(t("Neon"), 0),
+            Style(t("Kadran"), RED),
+            Style(t("İbreli"), ORANGE),
             Style("LED", RED),
-            Style("Sade", 0),
+            Style(t("Sade"), 0),
         )
 
         // 5x7 noktalı yazı tipi (her satır 5 bit)
@@ -268,7 +269,7 @@ class FmDisplayView(context: Context, style: Int = 0) : View(context) {
         }
         line.strokeWidth = inner.height() * 0.015f
         c.drawLine(left, base, right, base, line)
-        txt(c, "FM  MHz", inner.left + inner.width() * 0.02f, inner.bottom - inner.height() * 0.1f, inner.height() * 0.12f, ink, medium, Paint.Align.LEFT, spacing = 0.2f)
+        txt(c, t("FM  MHz"), inner.left + inner.width() * 0.02f, inner.bottom - inner.height() * 0.1f, inner.height() * 0.12f, ink, medium, Paint.Align.LEFT, spacing = 0.2f)
         txt(c, label, inner.right - inner.width() * 0.02f, inner.bottom - inner.height() * 0.08f, inner.height() * 0.2f, ink, condensed, Paint.Align.RIGHT)
         val nx = xOf(freq)
         line.strokeWidth = inner.height() * 0.035f

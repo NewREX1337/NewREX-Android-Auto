@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.pages
 
+import com.newrex.auto.t
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -41,13 +42,16 @@ import com.newrex.auto.ui.pressable
 import com.newrex.auto.ui.rounded
 import com.newrex.auto.ui.tileGrid
 import com.newrex.auto.ui.verticalList
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
 /** Podcast programları: popüler listesi, abonelikler, son dinlenenler ve arama. */
+@OptIn(FlowPreview::class)
 class PodcastPage(ui: CarUi) : Page(ui) {
     override val title = "Podcast"
 
-    private enum class Tab(val label: String) { POPULAR("Popüler"), SUBS("Aboneliklerim"), RECENT("Son dinlenen"), SEARCH("Arama") }
+    private enum class Tab(val label: String) { POPULAR(t("Popüler")), SUBS(t("Aboneliklerim")), RECENT(t("Son dinlenen")), SEARCH(t("Arama")) }
 
     private companion object {
         var topCache: List<PodcastShow> = emptyList()
@@ -77,14 +81,14 @@ class PodcastPage(ui: CarUi) : Page(ui) {
         }.also {
             refreshTabs()
             show()
-            scope.launch { Prefs.changes.collect { if (tab == Tab.SUBS || tab == Tab.RECENT) show() } }
+            scope.launch { Prefs.changes.debounce(150).collect { if (tab == Tab.SUBS || tab == Tab.RECENT) show() } }
             scope.launch { PlayerHub.now.collect { tiles.highlightKey = it?.key } }
         }
     }
 
     override fun actions(): List<View> = listOf(
         ctx.circleButton(R.drawable.ic_search) {
-            ui.showKeyboard("Podcast ara (ör. tarih, teknoloji, futbol)") { q ->
+            ui.showKeyboard(t("Podcast ara (ör. tarih, teknoloji, futbol)")) { q ->
                 query = q
                 tab = Tab.SEARCH
                 refreshTabs()
@@ -96,7 +100,7 @@ class PodcastPage(ui: CarUi) : Page(ui) {
     private fun refreshTabs(): Unit = with(ctx) {
         tabs.removeAllViews()
         Tab.values().filter { it != Tab.SEARCH || query.isNotEmpty() }.forEach { t ->
-            val text = if (t == Tab.SEARCH) "Arama: $query" else t.label
+            val text = if (t == Tab.SEARCH) t("Arama: {0}", query) else t.label
             tabs.addView(pill(text, selected = t == tab) { tab = t; refreshTabs(); show() }, lp(WRAP, dp(40)).margins(r = dp(8)))
         }
     }
@@ -104,18 +108,18 @@ class PodcastPage(ui: CarUi) : Page(ui) {
     private fun show() {
         when (tab) {
             Tab.POPULAR -> if (topCache.isEmpty()) {
-                load("Popüler podcast'ler yükleniyor…") { PodcastApi.top().also { topCache = it } }
+                load(t("Popüler podcast'ler yükleniyor…")) { PodcastApi.top().also { topCache = it } }
             } else showShows(topCache)
             Tab.SUBS -> showShows(Prefs.podcastSubs)
             Tab.SEARCH -> if (query != lastSearched) {
-                load("\"$query\" aranıyor…") { PodcastApi.search(query).also { results = it; lastSearched = query } }
+                load(t("\"{0}\" aranıyor…", query)) { PodcastApi.search(query).also { results = it; lastSearched = query } }
             } else showShows(results)
             Tab.RECENT -> {
                 val eps = Prefs.recents().filter { it.kind == Kind.PODCAST }
                 tiles.items = eps.mapIndexed { i, e ->
                     Tile(e.key, e.title, e.group, e.image, R.drawable.ic_podcast) { PlayerHub.play(eps, i) }
                 }
-                setStatus(eps.isEmpty(), "Henüz podcast dinlemedin.")
+                setStatus(eps.isEmpty(), t("Henüz podcast dinlemedin."))
             }
         }
     }
@@ -123,12 +127,15 @@ class PodcastPage(ui: CarUi) : Page(ui) {
     private fun load(message: String, block: suspend () -> List<PodcastShow>) {
         tiles.items = emptyList()
         setStatus(true, message)
+        val forTab = tab
         scope.launch {
             try {
                 // Apple'ın listesi ara sıra bir anlık hata veriyor (502); bir kez daha dene
-                showShows(runCatching { block() }.getOrElse { kotlinx.coroutines.delay(1500); block() })
+                val list = runCatching { block() }.getOrElse { kotlinx.coroutines.delay(1500); block() }
+                // Yüklenirken başka sekmeye geçildiyse o sekmenin üstüne yazma
+                if (tab == forTab) showShows(list)
             } catch (e: Exception) {
-                setStatus(true, "Podcast listesi alınamadı. İnternet bağlantını kontrol et.")
+                if (tab == forTab) setStatus(true, t("Podcast listesi alınamadı. İnternet bağlantını kontrol et."))
             }
         }
     }
@@ -141,9 +148,9 @@ class PodcastPage(ui: CarUi) : Page(ui) {
             }
         }
         setStatus(list.isEmpty(), when (tab) {
-            Tab.SUBS -> "Henüz abone olduğun podcast yok.\nBir programı açıp ☆ Abone ol'a dokun."
-            Tab.SEARCH -> "\"$query\" için sonuç bulunamadı."
-            else -> "Podcast bulunamadı."
+            Tab.SUBS -> t("Henüz abone olduğun podcast yok.\nBir programı açıp ☆ Abone ol'a dokun.")
+            Tab.SEARCH -> t("\"{0}\" için sonuç bulunamadı.", query)
+            else -> t("Podcast bulunamadı.")
         })
     }
 
@@ -164,7 +171,7 @@ class PodcastShowPage(ui: CarUi, private val show: PodcastShow) : Page(ui) {
 
     override fun build(): View = with(ctx) {
         adapter = EpisodeAdapter()
-        status = label("Bölümler yükleniyor…", 16f, Palette.TEXT_DIM, lines = 3).apply { gravity = Gravity.CENTER }
+        status = label(t("Bölümler yükleniyor…"), 16f, Palette.TEXT_DIM, lines = 3).apply { gravity = Gravity.CENTER }
 
         val cover = ImageView(this).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
@@ -193,7 +200,7 @@ class PodcastShowPage(ui: CarUi, private val show: PodcastShow) : Page(ui) {
             scope.launch {
                 try {
                     val feed = PodcastApi.feedUrl(show) ?: run {
-                        status.text = "Bu program bölümlerini yalnızca Apple Podcasts'te yayınlıyor."
+                        status.text = t("Bu program bölümlerini yalnızca Apple Podcasts'te yayınlıyor.")
                         return@launch
                     }
                     val eps = PodcastApi.episodes(feed)
@@ -201,9 +208,9 @@ class PodcastShowPage(ui: CarUi, private val show: PodcastShow) : Page(ui) {
                     episodes = eps.map { MediaEntry(Kind.PODCAST, it.title, it.url, it.image ?: show.image, show.name) }
                     adapter.notifyDataSetChanged()
                     status.visibility = if (episodes.isEmpty()) View.VISIBLE else View.GONE
-                    status.text = "Bu programda bölüm bulunamadı."
+                    status.text = t("Bu programda bölüm bulunamadı.")
                 } catch (e: Exception) {
-                    status.text = "Bölümler alınamadı. İnternet bağlantını kontrol et."
+                    status.text = t("Bölümler alınamadı. İnternet bağlantını kontrol et.")
                 }
             }
             scope.launch {
@@ -216,7 +223,7 @@ class PodcastShowPage(ui: CarUi, private val show: PodcastShow) : Page(ui) {
         subButton = ctx.circleButton(if (Prefs.isSubscribed(show.id)) R.drawable.ic_star else R.drawable.ic_star_border) {
             val now = Prefs.toggleSubscription(show)
             (subButton.getChildAt(0) as ImageView).setImageResource(if (now) R.drawable.ic_star else R.drawable.ic_star_border)
-            ui.toast(if (now) "Abone olundu: ${show.name}" else "Abonelikten çıkıldı")
+            ui.toast(if (now) t("Abone olundu: {0}", show.name) else t("Abonelikten çıkıldı"))
         }
         return listOf(subButton)
     }
@@ -259,7 +266,7 @@ class PodcastShowPage(ui: CarUi, private val show: PodcastShow) : Page(ui) {
             h.root.neonGlow(playing, 8)
             h.title.text = e.title
             val pos = Prefs.position(e.url)
-            val resume = if (pos > 60_000) "  •  Kaldığın yer: ${pos / 60_000} dk" else ""
+            val resume = if (pos > 60_000) t("  •  Kaldığın yer: {0} dk", pos / 60_000) else ""
             h.sub.text = (meta[e.url].orEmpty() + resume).trim().ifBlank { show.name }
             h.icon.setImageResource(if (playing && PlayerHub.playing.value) R.drawable.ic_pause else R.drawable.ic_play)
             h.root.onTap {

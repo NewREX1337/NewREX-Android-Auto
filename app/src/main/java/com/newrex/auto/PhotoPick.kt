@@ -27,9 +27,10 @@ class PhotoPickActivity : Activity() {
         super.onCreate(savedInstanceState)
         Board.init(this)
         if (savedInstanceState != null) return
-        val picker = if (Build.VERSION.SDK_INT >= 33)
-            Intent(MediaStore.ACTION_PICK_IMAGES).setType("image/*").putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MAX)
-        else Intent(Intent.ACTION_GET_CONTENT).setType("image/*").putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        val bg = intent.getBooleanExtra(EXTRA_BACKGROUND, false)
+        val picker = if (Build.VERSION.SDK_INT >= 33) Intent(MediaStore.ACTION_PICK_IMAGES).setType("image/*").apply {
+            if (!bg) putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MAX)
+        } else Intent(Intent.ACTION_GET_CONTENT).setType("image/*").putExtra(Intent.EXTRA_ALLOW_MULTIPLE, !bg)
         @Suppress("DEPRECATION")
         runCatching { startActivityForResult(picker, REQUEST) }.onFailure { finish() }
     }
@@ -41,10 +42,20 @@ class PhotoPickActivity : Activity() {
         val uris = ArrayList<Uri>()
         data.clipData?.let { c -> for (i in 0 until c.itemCount) uris += c.getItemAt(i).uri }
         if (uris.isEmpty()) data.data?.let { uris += it }
+        if (intent.getBooleanExtra(EXTRA_BACKGROUND, false)) {
+            val u = uris.firstOrNull() ?: run { finish(); return }
+            scope.launch {
+                val ok = com.newrex.auto.data.Background.import(this@PhotoPickActivity, u)
+                Toast.makeText(applicationContext, if (ok) t("Arka plan fotoğrafı araç ekranına kondu") else t("Fotoğraf eklenemedi"),
+                    Toast.LENGTH_SHORT).show()
+                finish()
+            }
+            return
+        }
         scope.launch {
             val n = Board.import(this@PhotoPickActivity, uris.take(MAX))
             Toast.makeText(applicationContext,
-                if (n > 0) "$n fotoğraf araç ekranına eklendi" else "Fotoğraf eklenemedi", Toast.LENGTH_SHORT).show()
+                if (n > 0) t("{0} fotoğraf araç ekranına eklendi", n) else t("Fotoğraf eklenemedi"), Toast.LENGTH_SHORT).show()
             finish()
         }
     }
@@ -57,6 +68,13 @@ class PhotoPickActivity : Activity() {
     companion object {
         private const val REQUEST = 51
         private const val MAX = 10
+        private const val EXTRA_BACKGROUND = "background"
+
+        /** Araç ekranının arka planı için tek fotoğraf seçtirir. */
+        fun startBackground(context: Context) {
+            context.startActivity(Intent(context, PhotoPickActivity::class.java).putExtra(EXTRA_BACKGROUND, true)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
 
         fun start(context: Context) {
             context.startActivity(Intent(context, PhotoPickActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

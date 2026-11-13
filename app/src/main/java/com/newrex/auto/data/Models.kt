@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.data
 
+import com.newrex.auto.t
 import org.json.JSONObject
 
 enum class Kind { TV, RADIO, PODCAST }
@@ -44,6 +45,10 @@ fun String.normName(): String = lowercase(java.util.Locale("tr", "TR"))
 
 data class Playlist(val name: String, val url: String)
 
+data class WebShortcut(val name: String, val url: String)
+
+data class XtreamServer(val name: String, val url: String, val user: String, val pass: String)
+
 /** Abone olunan / listelenen podcast programı. */
 data class PodcastShow(val id: String, val name: String, val author: String, val image: String?, val feedUrl: String?) {
     fun toJson(): JSONObject = JSONObject().put("id", id).put("name", name).put("author", author)
@@ -60,10 +65,10 @@ data class ParkedSpot(val lat: Double, val lon: Double, val time: Long, val accu
 
 /** Bakım hatırlatıcı kalemleri. [months] bir sonraki tarihi önermek için kullanılır. */
 enum class Maintenance(val title: String, val emoji: String, val months: Int) {
-    MUAYENE("Araç muayenesi", "🔍", 24),
-    TRAFIK("Trafik sigortası", "📄", 12),
+    MUAYENE(t("Araç muayenesi"), "🔍", 24),
+    TRAFIK(t("Trafik sigortası"), "📄", 12),
     KASKO("Kasko", "🛡️", 12),
-    SERVIS("Periyodik bakım / yağ", "🛢️", 12),
-    LASTIK("Lastik değişimi", "🛞", 6),
-    MTV("MTV ödemesi", "💳", 6),
+    SERVIS(t("Periyodik bakım / yağ"), "🛢️", 12),
+    LASTIK(t("Lastik değişimi"), "🛞", 6),
+    MTV(t("MTV ödemesi"), "💳", 6),
 }

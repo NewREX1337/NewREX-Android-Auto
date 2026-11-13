@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.pages
 
+import com.newrex.auto.t
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
@@ -30,13 +31,16 @@ import com.newrex.auto.ui.lp
 import com.newrex.auto.ui.margins
 import com.newrex.auto.ui.pill
 import com.newrex.auto.ui.tileGrid
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
 /** Radyo listesi. [onPick] verilirse (FM ekranından) dokunulan istasyon çalınmaz, seçilip geri dönülür. */
+@OptIn(FlowPreview::class)
 class RadioPage(ui: CarUi, private val onPick: ((MediaEntry) -> Unit)? = null) : Page(ui) {
-    override val title = if (onPick != null) "Bu frekansa istasyon seç" else "Radyo"
+    override val title = if (onPick != null) t("Bu frekansa istasyon seç") else t("Radyo")
 
-    private enum class Tab(val label: String) { POPULAR("Popüler"), FAVORITES("Favoriler"), RECENT("Son dinlenen"), SEARCH("Arama") }
+    private enum class Tab(val label: String) { POPULAR(t("Popüler")), FAVORITES(t("Favoriler")), RECENT(t("Son dinlenen")), SEARCH(t("Arama")) }
 
     private companion object {
         // Sayfa her açıldığında tekrar indirmemek için
@@ -69,14 +73,14 @@ class RadioPage(ui: CarUi, private val onPick: ((MediaEntry) -> Unit)? = null) :
         }.also {
             refreshTabs()
             show()
-            scope.launch { Prefs.changes.collect { if (tab != Tab.POPULAR && tab != Tab.SEARCH) show() else refreshTiles(currentList()) } }
+            scope.launch { Prefs.changes.debounce(150).collect { if (tab != Tab.POPULAR && tab != Tab.SEARCH) show() else refreshTiles(currentList()) } }
             scope.launch { PlayerHub.now.collect { tiles.highlightKey = it?.key } }
         }
     }
 
     override fun actions(): List<View> = listOf(
         ctx.circleButton(R.drawable.ic_search) {
-            ui.showKeyboard("Radyo ara (ör. Kral, Power, haber)") { q ->
+            ui.showKeyboard(t("Radyo ara (ör. Kral, Power, haber)")) { q ->
                 searchQuery = q
                 tab = Tab.SEARCH
                 refreshTabs()
@@ -88,11 +92,11 @@ class RadioPage(ui: CarUi, private val onPick: ((MediaEntry) -> Unit)? = null) :
     private fun refreshTabs(): Unit = with(ctx) {
         tabs.removeAllViews()
         // Klasik FM radyo ekranı (frekansla arama) ayrı bir sayfada
-        if (onPick == null) tabs.addView(pill("Frekansla ara", R.drawable.ic_radio, selected = false) { ui.push(FmTunerPage(ui)) }
+        if (onPick == null) tabs.addView(pill(t("Frekansla ara"), R.drawable.ic_radio, selected = false) { ui.push(FmTunerPage(ui)) }
             .apply { background = com.newrex.auto.ui.rounded(Palette.withAlpha(0xFFFF7A1A.toInt(), 0x55), dpf(20), dp(1), 0xFFFF7A1A.toInt()) },
             lp(WRAP, dp(40)).margins(r = dp(14)))
         Tab.values().filter { it != Tab.SEARCH || searchQuery.isNotEmpty() }.forEach { t ->
-            val text = if (t == Tab.SEARCH) "Arama: $searchQuery" else t.label
+            val text = if (t == Tab.SEARCH) t("Arama: {0}", searchQuery) else t.label
             tabs.addView(pill(text, selected = t == tab) { tab = t; refreshTabs(); show() },
                 lp(WRAP, dp(40)).margins(r = dp(8)))
         }
@@ -108,11 +112,11 @@ class RadioPage(ui: CarUi, private val onPick: ((MediaEntry) -> Unit)? = null) :
     private fun show() {
         when (tab) {
             Tab.POPULAR -> if (popularCache.isEmpty()) {
-                fetch("Radyolar yükleniyor…") { RadioApi.popular().also { popularCache = it } }
+                fetch(t("Radyolar yükleniyor…")) { RadioApi.popular().also { popularCache = it } }
                 return
             }
             Tab.SEARCH -> if (searchResults.isEmpty() || searchQuery != lastSearched) {
-                fetch("\"$searchQuery\" aranıyor…") { RadioApi.search(searchQuery).also { searchResults = it; lastSearched = searchQuery } }
+                fetch(t("\"{0}\" aranıyor…", searchQuery)) { RadioApi.search(searchQuery).also { searchResults = it; lastSearched = searchQuery } }
                 return
             }
             else -> Unit
@@ -126,11 +130,14 @@ class RadioPage(ui: CarUi, private val onPick: ((MediaEntry) -> Unit)? = null) :
         tiles.items = emptyList()
         status.text = message
         status.visibility = View.VISIBLE
+        val forTab = tab
         scope.launch {
             try {
-                refreshTiles(block())
+                val list = block()
+                // Yüklenirken başka sekmeye geçildiyse o sekmenin listesinin üstüne yazma
+                if (tab == forTab) refreshTiles(list)
             } catch (e: Exception) {
-                status.text = "Radyo listesi alınamadı. İnternet bağlantını kontrol et."
+                if (tab == forTab) status.text = t("Radyo listesi alınamadı. İnternet bağlantını kontrol et.")
             }
         }
     }
@@ -165,10 +172,10 @@ class RadioPage(ui: CarUi, private val onPick: ((MediaEntry) -> Unit)? = null) :
         checkLogos(list)
         status.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         status.text = when (tab) {
-            Tab.FAVORITES -> "Henüz favori radyo yok.\nÇalarken alttaki ☆ simgesine dokun."
-            Tab.RECENT -> "Henüz radyo dinlemedin."
-            Tab.SEARCH -> "\"$searchQuery\" için sonuç bulunamadı."
-            Tab.POPULAR -> "Radyo listesi şu an alınamadı.\nTekrar denemek için Popüler'e dokun."
+            Tab.FAVORITES -> t("Henüz favori radyo yok.\nÇalarken alttaki ☆ simgesine dokun.")
+            Tab.RECENT -> t("Henüz radyo dinlemedin.")
+            Tab.SEARCH -> t("\"{0}\" için sonuç bulunamadı.", searchQuery)
+            Tab.POPULAR -> t("Radyo listesi şu an alınamadı.\nTekrar denemek için Popüler'e dokun.")
         }
     }
 }

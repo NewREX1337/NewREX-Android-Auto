@@ -49,13 +49,13 @@ object Updates {
         val notes = r.notes.lines().map { it.trim().removePrefix("-").removePrefix("*").trim() }
             .filter { it.isNotEmpty() }.joinToString("\n") { "• $it" }
         AlertDialog.Builder(activity)
-            .setTitle("Yeni sürüm: ${r.version}")
-            .setMessage((if (notes.isNotEmpty()) "Yenilikler:\n$notes\n\n" else "") +
-                "Şu an kullandığın: ${BuildConfig.VERSION_NAME}")
-            .setPositiveButton("İndir") { _, _ ->
+            .setTitle(t("Yeni sürüm: {0}", r.version))
+            .setMessage((if (notes.isNotEmpty()) t("Yenilikler:\n{0}\n\n", notes) else "") +
+                t("Şu an kullandığın: {0}", BuildConfig.VERSION_NAME))
+            .setPositiveButton(t("İndir")) { _, _ ->
                 runCatching { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(r.url))) }
             }
-            .setNegativeButton("Sonra", null)
+            .setNegativeButton(t("Sonra"), null)
             .show()
     }
 

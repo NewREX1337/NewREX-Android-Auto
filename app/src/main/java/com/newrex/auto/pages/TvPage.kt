@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.pages
 
+import com.newrex.auto.t
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
@@ -31,13 +32,16 @@ import com.newrex.auto.ui.panel
 import com.newrex.auto.ui.pill
 import com.newrex.auto.ui.tileGrid
 import com.newrex.auto.ui.verticalList
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
+@OptIn(FlowPreview::class)
 class TvPage(ui: CarUi, private val source: Source = Source.FREE) : Page(ui) {
     /** FREE: uygulamanın hazır ücretsiz kanal listesi. MINE: kullanıcının telefondan eklediği IPTV listeleri. */
     enum class Source { FREE, MINE }
 
-    override val title = if (source == Source.FREE) "TV Kanalları" else "IPTV Listelerim"
+    override val title = if (source == Source.FREE) t("TV Kanalları") else t("IPTV Listelerim")
 
     private fun lists() = if (source == Source.FREE) listOf(Playlist(Prefs.DEFAULT_PLAYLIST_NAME, Prefs.DEFAULT_PLAYLIST_URL))
         else Prefs.playlists.filter { it.url != Prefs.DEFAULT_PLAYLIST_URL }
@@ -79,30 +83,30 @@ class TvPage(ui: CarUi, private val source: Source = Source.FREE) : Page(ui) {
                 }
             }
             load(false)
-            scope.launch { Prefs.changes.collect { if (::tiles.isInitialized) showGroup() } }
+            scope.launch { Prefs.changes.debounce(150).collect { if (::tiles.isInitialized) showGroup() } }
             scope.launch { PlayerHub.now.collect { tiles.highlightKey = it?.key } }
         }
     }
 
     override fun actions(): List<View> = listOf(
         ctx.circleButton(R.drawable.ic_search) {
-            ui.showKeyboard("Kanal ara") { q -> query = q; showGroup() }
+            ui.showKeyboard(t("Kanal ara")) { q -> query = q; showGroup() }
         },
         ctx.circleButton(R.drawable.ic_refresh) { load(true) },
     )
 
     private fun load(force: Boolean) {
-        status.text = "Kanallar yükleniyor…"
+        status.text = t("Kanallar yükleniyor…")
         status.visibility = View.VISIBLE
         tiles.items = emptyList()
         scope.launch {
             val result = Playlists.loadAll(ctx, force, lists())
             channels = result.channels
             val names = channels.map { it.group }.filter { it.isNotBlank() }.distinct().sortedBy { it.lowercase() }
-            groups.items = listOf(FAV to "⭐ Favoriler", ALL to "Tüm kanallar") + names.map { it to it }
+            groups.items = listOf(FAV to t("⭐ Favoriler"), ALL to t("Tüm kanallar")) + names.map { it to it }
             if (lastGroup != FAV && lastGroup != ALL && lastGroup !in names) lastGroup = ALL
             showGroup()
-            if (result.errors.isNotEmpty()) ui.toast("Bazı listeler açılamadı:\n" + result.errors.first())
+            if (result.errors.isNotEmpty()) ui.toast(t("Bazı listeler açılamadı:\n") + result.errors.first())
         }
     }
 
@@ -126,11 +130,11 @@ class TvPage(ui: CarUi, private val source: Source = Source.FREE) : Page(ui) {
         status.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         status.text = when {
             channels.isEmpty() && lists().isEmpty() ->
-                "Henüz IPTV listen yok.\nTelefondaki NewREX uygulamasında \"IPTV listeleri\" bölümünden bağlantı ya da dosya ekleyebilirsin."
-            channels.isEmpty() -> "Kanal bulunamadı. İnternet bağlantını kontrol edip yenile butonuna bas."
-            query != null -> "\"$query\" için kanal bulunamadı."
-            lastGroup == FAV -> "Henüz favori kanal yok.\nİzlerken ☆ simgesine dokunarak ekleyebilirsin."
-            else -> "Bu grupta kanal yok."
+                t("Henüz IPTV listen yok.\nTelefondaki NewREX uygulamasında \"IPTV listeleri\" bölümünden bağlantı ya da dosya ekleyebilirsin.")
+            channels.isEmpty() -> t("Kanal bulunamadı. İnternet bağlantını kontrol edip yenile butonuna bas.")
+            query != null -> t("\"{0}\" için kanal bulunamadı.", query)
+            lastGroup == FAV -> t("Henüz favori kanal yok.\nİzlerken ☆ simgesine dokunarak ekleyebilirsin.")
+            else -> t("Bu grupta kanal yok.")
         }
     }
 }

@@ -17,3 +17,6 @@ keystore.properties
 # Telefon hata raporları (kişisel veri içerir)
 dumpstate-*.zip
 bugreport-*.zip
+
+# Kişisel 360° araç sistemi (ayrı gizli depoda: NewREX1337/myself)
+app/src/myself/

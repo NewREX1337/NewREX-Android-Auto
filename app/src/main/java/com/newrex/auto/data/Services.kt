@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.data
 
+import com.newrex.auto.t
 import android.util.Xml
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -65,7 +66,7 @@ object PodcastApi {
                 }
                 XmlPullParser.END_TAG -> if (p.name == "item") {
                     inItem = false
-                    if (url.isNotBlank()) out += Episode(title.ifBlank { "Bölüm" }, url, image ?: showImage, date, duration)
+                    if (url.isNotBlank()) out += Episode(title.ifBlank { t("Bölüm") }, url, image ?: showImage, date, duration)
                 }
             }
         }
@@ -74,7 +75,7 @@ object PodcastApi {
 
     private fun formatDate(rfc: String): String = runCatching {
         val d = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH).parse(rfc)!!
-        SimpleDateFormat("d MMMM yyyy", Locale("tr", "TR")).format(d)
+        SimpleDateFormat("d MMMM yyyy", com.newrex.auto.I18n.locale()).format(d)
     }.getOrDefault("")
 
     private fun formatDuration(raw: String): String {
@@ -121,10 +122,10 @@ object WeatherApi {
                 h.getJSONArray("is_day").optInt(it, 1) == 1)
         }
         val d = o.getJSONObject("daily")
-        val dayNames = arrayOf("Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz")
+        val dayNames = arrayOf(t("Pzt"), t("Sal"), t("Çar"), t("Per"), t("Cum"), t("Cmt"), t("Paz"))
         val days = (0 until d.getJSONArray("time").length()).map {
             val date = java.time.LocalDate.parse(d.getJSONArray("time").getString(it))
-            Day(if (it == 0) "Bugün" else dayNames[date.dayOfWeek.value - 1],
+            Day(if (it == 0) t("Bugün") else dayNames[date.dayOfWeek.value - 1],
                 d.getJSONArray("weather_code").optInt(it),
                 d.getJSONArray("temperature_2m_max").optDouble(it).toInt(),
                 d.getJSONArray("temperature_2m_min").optDouble(it).toInt(),
@@ -149,18 +150,18 @@ object WeatherApi {
     }
 
     fun describe(code: Int): String = when (code) {
-        0 -> "Açık"
-        1 -> "Az bulutlu"
-        2 -> "Parçalı bulutlu"
-        3 -> "Kapalı"
-        45, 48 -> "Sisli"
-        in 51..57 -> "Çiseleme"
-        in 61..65 -> "Yağmurlu"
-        66, 67 -> "Dondurucu yağmur"
-        in 71..77 -> "Karlı"
-        in 80..82 -> "Sağanak yağış"
-        85, 86 -> "Kar sağanağı"
-        in 95..99 -> "Gök gürültülü fırtına"
+        0 -> t("Açık")
+        1 -> t("Az bulutlu")
+        2 -> t("Parçalı bulutlu")
+        3 -> t("Kapalı")
+        45, 48 -> t("Sisli")
+        in 51..57 -> t("Çiseleme")
+        in 61..65 -> t("Yağmurlu")
+        66, 67 -> t("Dondurucu yağmur")
+        in 71..77 -> t("Karlı")
+        in 80..82 -> t("Sağanak yağış")
+        85, 86 -> t("Kar sağanağı")
+        in 95..99 -> t("Gök gürültülü fırtına")
         else -> "—"
     }
 }

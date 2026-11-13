@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.ui
 
+import com.newrex.auto.t
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.LinearGradient
@@ -27,18 +28,18 @@ class ClockView(context: Context, style: Int = 0) : View(context) {
 
     companion object {
         val STYLES = listOf(
-            Style("İnce", 2.3f, false, false, 125),
-            Style("Kalın", 2.3f, false, false, 125),
-            Style("Dikey", 0.82f, false, false, 230),
+            Style(t("İnce"), 2.3f, false, false, 125),
+            Style(t("Kalın"), 2.3f, false, false, 125),
+            Style(t("Dikey"), 0.82f, false, false, 230),
             Style("LCD", 2.7f, false, true, 110),
-            Style("Kart", 2.2f, false, false, 120),
-            Style("Neon", 2.4f, false, false, 120),
-            Style("Yazıyla", 1.75f, false, false, 165),
-            Style("Klasik", 1f, true, true, 230),
-            Style("Sade", 1f, true, false, 220),
-            Style("Roma", 1f, true, true, 230),
-            Style("Spor", 1f, true, true, 230),
-            Style("Halka", 1f, true, true, 220),
+            Style(t("Kart"), 2.2f, false, false, 120),
+            Style(t("Neon"), 2.4f, false, false, 120),
+            Style(t("Yazıyla"), 1.75f, false, false, 165),
+            Style(t("Klasik"), 1f, true, true, 230),
+            Style(t("Sade"), 1f, true, false, 220),
+            Style(t("Roma"), 1f, true, true, 230),
+            Style(t("Spor"), 1f, true, true, 230),
+            Style(t("Halka"), 1f, true, true, 220),
         )
 
         /** Karşılama ekranındaki boyut (küçük/orta/büyük) için piksel ölçüsü. */
@@ -57,8 +58,32 @@ class ClockView(context: Context, style: Int = 0) : View(context) {
         private fun minuteWords(m: Int) = if (m == 15) "çeyrek"
         else listOf(arrayOf("", "on", "yirmi")[m / 10], ONES[m % 10]).filter { it.isNotEmpty() }.joinToString(" ")
 
+        private val EN = arrayOf("twelve", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+            "twelve", "thirteen", "fourteen", "quarter", "sixteen", "seventeen", "eighteen", "nineteen")
+        private val DE = arrayOf("zwölf", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn", "elf",
+            "zwölf", "dreizehn", "vierzehn", "viertel", "sechzehn", "siebzehn", "achtzehn", "neunzehn")
+
+        private fun enMin(m: Int) = if (m < 20) EN[m] else listOf("twenty", EN[m - 20].takeIf { m > 20 }).filterNotNull().joinToString("-")
+        private fun deMin(m: Int) = if (m < 20) DE[m] else if (m == 20) "zwanzig" else "${DE[m - 20].replace("eins", "ein")}undzwanzig"
+
+        /** Saatin söyleyişi, satır satır (Türkçe, İngilizce, Almanca; diğer dillerde rakamla). */
+        fun words(h24: Int, m: Int): List<String> = when (com.newrex.auto.I18n.code) {
+            "tr" -> wordsTr(h24, m)
+            "en" -> {
+                val h = h24 % 12; val next = EN[(h + 1) % 12]
+                when { m == 0 -> listOf(EN[h], "o'clock"); m == 30 -> listOf("half", "past", EN[h])
+                    m < 30 -> listOf(enMin(m), "past", EN[h]); else -> listOf(enMin(60 - m), "to", next) }
+            }
+            "de" -> {
+                val h = h24 % 12; val next = DE[(h + 1) % 12]
+                when { m == 0 -> listOf(if (h == 1) "ein" else DE[h], "Uhr"); m == 30 -> listOf("halb", next)
+                    m < 30 -> listOf(deMin(m), "nach", DE[h]); else -> listOf(deMin(60 - m), "vor", next) }
+            }
+            else -> listOf("%02d:%02d".format(h24, m))
+        }
+
         /** "Üçü yirmi geçiyor" gibi Türkçe saat söyleyişi, satır satır. */
-        fun words(h24: Int, m: Int): List<String> {
+        private fun wordsTr(h24: Int, m: Int): List<String> {
             val h = h24 % 12
             return when {
                 m == 0 -> listOf("saat", HOURS[h])
@@ -76,7 +101,7 @@ class ClockView(context: Context, style: Int = 0) : View(context) {
     var accent = Palette.accent
         set(v) { field = v; invalidate() }
 
-    private val tr = Locale("tr", "TR")
+    private val tr = com.newrex.auto.I18n.locale()
     private val cal = Calendar.getInstance()
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)

@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.pages
 
+import com.newrex.auto.t
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.LinearGradient
@@ -73,7 +74,6 @@ class FmTunerPage(ui: CarUi) : Page(ui) {
             addView(circleButton(R.drawable.ic_next, 56) { seek(1) }, lp(dp(56), dp(56)).margins(l = dp(12)))
             saveButton = circleButton(R.drawable.ic_star_border, 56) { saveOrRemove() }
             addView(saveButton, lp(dp(56), dp(56)).margins(l = dp(24)))
-            addView(pill("İstasyon listesi", R.drawable.ic_radio) { ui.pop() }, lp(WRAP, dp(48)).margins(l = dp(12)))
         }
 
         cities = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
@@ -81,7 +81,10 @@ class FmTunerPage(ui: CarUi) : Page(ui) {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(dp(12), dp(4), dp(12), dp(8))
-            addView(cities, lp(MATCH, WRAP).margins(b = dp(4)))
+            addView(android.widget.HorizontalScrollView(this@with).apply {
+                isHorizontalScrollBarEnabled = false
+                addView(cities)
+            }, lp(WRAP, WRAP).margins(b = dp(4)))
             addView(nixie, lp(MATCH, 0, 1.2f))
             addView(stationName, lp(MATCH, WRAP).margins(t = dp(4)))
             addView(stationInfo, lp(MATCH, WRAP).margins(t = dp(2)))
@@ -172,7 +175,7 @@ class FmTunerPage(ui: CarUi) : Page(ui) {
         }
         scope.launch {
             val entry = FmPresets.resolve(preset)
-            if (entry == null) { stationInfo.text = "${preset.title} şu an bulunamadı."; return@launch }
+            if (entry == null) { stationInfo.text = t("{0} şu an bulunamadı.", preset.title); return@launch }
             if (freq != preset.freq) return@launch
             if (PlayerHub.now.value?.url == entry.url) return@launch
             val list = FmPresets.all().mapNotNull { FmPresets.cached(it) }
@@ -184,13 +187,13 @@ class FmTunerPage(ui: CarUi) : Page(ui) {
     private fun refreshInfo() {
         val preset = FmPresets.at(freq)
         val playing = PlayerHub.now.value?.takeIf { it.kind == Kind.RADIO }
-        stationName.text = preset?.title ?: "— Boş frekans —"
+        stationName.text = preset?.title ?: t("— Boş frekans —")
         stationName.setTextColor(if (preset != null) Palette.TEXT else Palette.TEXT_FAINT)
         stationInfo.text = when {
-            preset != null && preset.builtIn -> "${FmPresets.city} frekansı • ☆ ile bu frekansa başka istasyon kaydedebilirsin"
-            preset != null -> "Kaydettiğin istasyon • ☆ ile kaldırabilirsin"
-            playing != null -> "☆ ile \"${playing.title}\" istasyonunu bu frekansa kaydet"
-            else -> "Kaydırarak ya da ◀◀ ▶▶ ile istasyon ara. Listeden bir radyo açıp ☆ ile buraya kaydedebilirsin."
+            preset != null && preset.builtIn -> t("{0} frekansı • ☆ ile bu frekansa başka istasyon kaydedebilirsin", FmPresets.city)
+            preset != null -> t("Kaydettiğin istasyon • ☆ ile kaldırabilirsin")
+            playing != null -> t("☆ ile \"{0}\" istasyonunu bu frekansa kaydet", playing.title)
+            else -> t("Kaydırarak ya da ◀◀ ▶▶ ile istasyon ara. Listeden bir radyo açıp ☆ ile buraya kaydedebilirsin.")
         }
         val icon = (saveButton as FrameLayout).getChildAt(0) as android.widget.ImageView
         icon.setImageResource(if (preset != null && !preset.builtIn) R.drawable.ic_star else R.drawable.ic_star_border)
@@ -204,17 +207,17 @@ class FmTunerPage(ui: CarUi) : Page(ui) {
         when {
             preset != null && !preset.builtIn && (playing == null || playing.url == FmPresets.cached(preset)?.url) -> {
                 FmPresets.remove(freq)
-                ui.toast("${FmPresets.format(freq)} boşaltıldı")
+                ui.toast(t("{0} boşaltıldı", FmPresets.format(freq)))
             }
             playing != null -> {
                 FmPresets.save(freq, playing)
-                ui.toast("${playing.title} → ${FmPresets.format(freq)} MHz kaydedildi")
+                ui.toast(t("{0} → {1} MHz kaydedildi", playing.title, FmPresets.format(freq)))
             }
             else -> {
                 // Çalan radyo yok: listeden seçilen istasyon bu frekansa kaydedilir
                 ui.push(RadioPage(ui) { e: MediaEntry ->
                     FmPresets.save(freq, e)
-                    ui.toast("${e.title} → ${FmPresets.format(freq)} MHz kaydedildi")
+                    ui.toast(t("{0} → {1} MHz kaydedildi", e.title, FmPresets.format(freq)))
                 })
             }
         }

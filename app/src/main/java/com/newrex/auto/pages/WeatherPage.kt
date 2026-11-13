@@ -1,11 +1,15 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.pages
 
+import com.newrex.auto.t
+import android.text.TextUtils
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import com.newrex.auto.R
 import com.newrex.auto.WeatherHub
@@ -22,22 +26,42 @@ import com.newrex.auto.ui.flp
 import com.newrex.auto.ui.label
 import com.newrex.auto.ui.lp
 import com.newrex.auto.ui.margins
-import com.newrex.auto.ui.neonText
-import com.newrex.auto.ui.panel
 import com.newrex.auto.ui.rounded
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
+/**
+ * Yukarı aşağı kaydırılan hava durumu. Ölçüler ekranın gerçek yüksekliğinden hesaplanır;
+ * böylece küçük ve düşük çözünürlüklü araç ekranlarında da yazılar büyük kalır.
+ */
 class WeatherPage(ui: CarUi) : Page(ui) {
-    override val title = "Hava durumu"
+    override val title = t("Hava durumu")
 
     private lateinit var body: FrameLayout
+    private var report: WeatherApi.Report? = null
+    private var error: String? = null
+    private var scrollY = 0
+    private var scroller: ScrollView? = null
+    private var lastW = 0
+    private var lastH = 0
+    private var scale = 1f
 
     override fun build(): View = with(ctx) {
-        body = FrameLayout(this).apply { setPadding(dp(12), dp(6), dp(12), dp(6)) }
+        body = FrameLayout(this).apply {
+            addOnLayoutChangeListener { v, l, t, r, b, _, _, _, _ ->
+                val w = r - l
+                val h = b - t
+                if (w > 0 && h > 0 && (w != lastW || h != lastH)) {
+                    lastW = w; lastH = h
+                    v.post { render() }
+                }
+            }
+        }
         scope.launch {
-            combine(WeatherHub.report, WeatherHub.error, ui.compact) { r, e, c -> Triple(r, e, c) }
-                .collect { (r, e, c) -> render(r, e, c) }
+            combine(WeatherHub.report, WeatherHub.error) { r, e -> r to e }.collect { (r, e) ->
+                report = r; error = e
+                render()
+            }
         }
         scope.launch { WeatherHub.refresh(ctx) }
         body
@@ -45,64 +69,145 @@ class WeatherPage(ui: CarUi) : Page(ui) {
 
     override fun actions(): List<View> = listOf(
         ctx.circleButton(R.drawable.ic_refresh) {
-            ui.toast("Hava durumu yenileniyor…")
+            ui.toast(t("Hava durumu yenileniyor…"))
             scope.launch { WeatherHub.refresh(ctx, force = true) }
         },
     )
 
-    private fun render(r: WeatherApi.Report?, error: String?, compact: Boolean): Unit = with(ctx) {
+    private fun u(v: Float) = (v * scale).toInt().coerceAtLeast(1)
+
+    private fun text(s: CharSequence, size: Float, color: Int = Palette.TEXT, bold: Boolean = false, center: Boolean = false): TextView =
+        ctx.label(s, size, color, bold).apply {
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, size * scale)
+            if (center) gravity = Gravity.CENTER
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+        }
+
+    private fun render(): Unit = with(ctx) {
+        if (lastH == 0) return
+        scale = maxOf(lastH / DESIGN_H, dpf(1f))
+        scroller?.let { scrollY = it.scrollY }
         body.removeAllViews()
+        scroller = null
+        val r = report
         if (r == null) {
-            body.addView(label(error ?: "Hava durumu yükleniyor…", 17f, Palette.TEXT_DIM, lines = 3).apply {
-                gravity = Gravity.CENTER
-            }, flp(MATCH, WRAP, Gravity.CENTER))
+            body.addView(text(error ?: t("Hava durumu yükleniyor…"), 24f, Palette.TEXT_DIM, center = true).apply { maxLines = 3 }, flp(MATCH, WRAP, Gravity.CENTER))
             return
         }
-        val now = panel().apply {
-            gravity = Gravity.CENTER
-            setPadding(dp(14), dp(10), dp(14), dp(10))
-            addView(label(WeatherApi.emoji(r.code, r.isDay), if (compact) 40f else 56f).apply { gravity = Gravity.CENTER }, lp(WRAP, WRAP))
-            addView(label("${r.temp}°", if (compact) 40f else 52f, bold = true).apply { neonText(14) }, lp(WRAP, WRAP).margins(t = dp(2)))
-            addView(label(WeatherApi.describe(r.code), 16f, bold = true), lp(WRAP, WRAP).margins(t = dp(2)))
-            r.place?.let { addView(label("📍 $it", 13f, Palette.TEXT_DIM), lp(WRAP, WRAP).margins(t = dp(4))) }
-            addView(label("Hissedilen ${r.feels}°  •  💨 ${r.wind} km/s  •  💧 %${r.humidity}", 12f, Palette.TEXT_DIM, lines = 2)
-                .apply { gravity = Gravity.CENTER }, lp(MATCH, WRAP).margins(t = dp(6)))
-        }
-
-        val hours = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        r.hours.forEachIndexed { i, h ->
-            hours.addView(cell(if (i == 0) "Şimdi" else h.label, WeatherApi.emoji(h.code, h.isDay), "${h.temp}°",
-                if (h.rain >= 20) "💧%${h.rain}" else " ", h.rain >= 60), lp(dp(66), MATCH).margins(r = dp(6)))
-        }
-        val days = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        r.days.forEachIndexed { i, d ->
-            days.addView(cell(d.label, WeatherApi.emoji(d.code), "${d.max}° / ${d.min}°",
-                if (d.rain >= 20) "💧%${d.rain}" else " ", d.rain >= 60), lp(0, MATCH, 1f).margins(r = if (i < r.days.lastIndex) dp(6) else 0))
-        }
-        val right = LinearLayout(this).apply {
+        val narrow = lastW / scale < NARROW_W
+        val list = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            addView(label("Saatlik", 14f, Palette.TEXT_DIM, bold = true), lp(MATCH, WRAP).margins(b = dp(4)))
-            addView(HorizontalScrollView(this@with).apply { isHorizontalScrollBarEnabled = false; addView(hours, lp(WRAP, MATCH)) }, lp(MATCH, 0, 1f))
-            addView(label("Önümüzdeki günler", 14f, Palette.TEXT_DIM, bold = true), lp(MATCH, WRAP).margins(t = dp(8), b = dp(4)))
-            addView(days, lp(MATCH, 0, 1f))
+            setPadding(u(12f), u(10f), u(12f), u(28f))
+            addView(nowCard(r, narrow), lp(MATCH, WRAP))
+            addView(heading(t("Saatlik")), lp(MATCH, WRAP).margins(t = u(18f), b = u(8f)))
+            addView(HorizontalScrollView(this@with).apply {
+                isHorizontalScrollBarEnabled = false
+                addView(LinearLayout(this@with).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    r.hours.forEachIndexed { i, h ->
+                        addView(hourCell(if (i == 0) t("Şimdi") else h.label, WeatherApi.emoji(h.code, h.isDay), "${h.temp}°", h.rain),
+                            lp(u(112f), WRAP).margins(r = if (i < r.hours.lastIndex) u(8f) else 0))
+                    }
+                }, lp(WRAP, WRAP))
+            }, lp(MATCH, WRAP))
+            addView(heading(t("Önümüzdeki günler")), lp(MATCH, WRAP).margins(t = u(18f), b = u(8f)))
+            r.days.forEachIndexed { i, d ->
+                addView(dayRow(d, narrow), lp(MATCH, u(78f)).margins(b = if (i < r.days.lastIndex) u(8f) else 0))
+            }
         }
-        body.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(now, lp(dp(if (compact) 150 else 220), MATCH).margins(r = dp(10)))
-            addView(right, lp(0, MATCH, 1f))
-        }, flp(MATCH, MATCH))
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            overScrollMode = View.OVER_SCROLL_NEVER
+            addView(list, flp(MATCH, WRAP))
+        }
+        body.addView(scroll, flp(MATCH, MATCH))
+        scroller = scroll
+        val keep = scrollY
+        scroll.post { scroll.scrollTo(0, keep) }
     }
 
-    private fun cell(top: String, emoji: String, main: String, sub: String, warn: Boolean): View = with(ctx) {
+    private fun heading(s: String) = text(s, 24f, Palette.TEXT, bold = true)
+
+    private fun nowCard(r: WeatherApi.Report, narrow: Boolean): View = with(ctx) {
+        val main = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(text(WeatherApi.emoji(r.code, r.isDay), 78f), lp(WRAP, WRAP))
+            addView(text("${r.temp}°", 84f, bold = true), lp(WRAP, WRAP).margins(l = u(12f)))
+        }
+        val info = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(text(WeatherApi.describe(r.code), 30f, bold = true).apply { maxLines = 2 }, lp(MATCH, WRAP))
+            r.place?.let { addView(text("📍 $it", 24f, Palette.TEXT_DIM), lp(MATCH, WRAP).margins(t = u(6f))) }
+        }
+        // Bölünmüş ekranda yer adı sıkışmasın diye sıcaklığın altına iner
+        val tiny = lastW / scale < TINY_W
+        if (!tiny) main.addView(info, lp(0, WRAP, 1f).margins(l = u(20f)))
+        val stats = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(stat(t("Hissedilen"), "${r.feels}°"), lp(if (narrow) 0 else u(150f), WRAP, if (narrow) 1f else 0f))
+            addView(stat(t("Rüzgâr"), "${r.wind} km/s"), lp(if (narrow) 0 else u(170f), WRAP, if (narrow) 1f else 0f))
+            addView(stat(t("Nem"), "%${r.humidity}"), lp(if (narrow) 0 else u(110f), WRAP, if (narrow) 1f else 0f))
+        }
+        LinearLayout(this).apply {
+            orientation = if (narrow) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(u(20f), u(14f), u(20f), u(14f))
+            background = rounded(Palette.SURFACE, u(18f).toFloat())
+            if (narrow) {
+                addView(main, lp(MATCH, WRAP))
+                if (tiny) addView(info, lp(MATCH, WRAP).margins(t = u(6f)))
+                addView(stats, lp(MATCH, WRAP).margins(t = u(12f)))
+            } else {
+                addView(main, lp(0, WRAP, 1f))
+                addView(stats, lp(WRAP, WRAP).margins(l = u(12f)))
+            }
+        }
+    }
+
+    private fun stat(name: String, value: String): View = with(ctx) {
         LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            val c = if (warn) Palette.withAlpha(0xFF2F80ED.toInt(), 0x40) else Palette.SURFACE
-            background = rounded(c, dpf(14))
-            addView(label(top, 12f, Palette.TEXT_DIM).apply { gravity = Gravity.CENTER }, lp(MATCH, WRAP))
-            addView(label(emoji, 20f).apply { gravity = Gravity.CENTER }, lp(MATCH, WRAP).margins(t = dp(2)))
-            addView(label(main, 13f, bold = true).apply { gravity = Gravity.CENTER }, lp(MATCH, WRAP).margins(t = dp(2)))
-            addView(label(sub, 11f, 0xFF7DB8FF.toInt()).apply { gravity = Gravity.CENTER }, lp(MATCH, WRAP).margins(t = dp(1)))
+            addView(text(name, 20f, Palette.TEXT_DIM, center = true), lp(MATCH, WRAP))
+            addView(text(value, 28f, bold = true, center = true), lp(MATCH, WRAP).margins(t = u(4f)))
         }
+    }
+
+    private fun hourCell(top: String, emoji: String, temp: String, rain: Int): View = with(ctx) {
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(u(6f), u(12f), u(6f), u(12f))
+            background = rounded(rainColor(rain), u(16f).toFloat())
+            addView(text(top, 22f, Palette.TEXT_DIM, center = true), lp(MATCH, WRAP))
+            addView(text(emoji, 42f, center = true), lp(MATCH, WRAP).margins(t = u(6f)))
+            addView(text(temp, 32f, bold = true, center = true), lp(MATCH, WRAP).margins(t = u(6f)))
+            addView(text(if (rain >= 20) "💧%$rain" else " ", 20f, RAIN_TEXT, center = true), lp(MATCH, WRAP).margins(t = u(4f)))
+        }
+    }
+
+    private fun dayRow(d: WeatherApi.Day, narrow: Boolean): View = with(ctx) {
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(u(20f), 0, u(20f), 0)
+            background = rounded(rainColor(d.rain), u(16f).toFloat())
+            addView(text(d.label, 28f, bold = true), lp(0, WRAP, 1f))
+            addView(text(WeatherApi.emoji(d.code), 42f, center = true), lp(u(if (narrow) 64f else 90f), WRAP))
+            addView(text(if (d.rain >= 20) "💧%${d.rain}" else " ", 22f, RAIN_TEXT, center = true), lp(u(if (narrow) 96f else 130f), WRAP))
+            addView(text("${d.max}°", 32f, bold = true).apply { gravity = Gravity.END }, lp(u(70f), WRAP))
+            addView(text("${d.min}°", 28f, Palette.TEXT_DIM).apply { gravity = Gravity.END }, lp(u(64f), WRAP))
+        }
+    }
+
+    private fun rainColor(rain: Int) = if (rain >= 60) Palette.withAlpha(0xFF2F80ED.toInt(), 0x40) else Palette.SURFACE
+
+    private companion object {
+        const val DESIGN_H = 430f
+        const val NARROW_W = 760f
+        const val TINY_W = 520f
+        const val RAIN_TEXT = 0xFF7DB8FF.toInt()
     }
 }

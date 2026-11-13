@@ -101,7 +101,9 @@ object Logos {
     private fun looksLikeSite(url: String) = !Regex("m3u8|\\.mp3|\\.aac|stream|:\\d{4}", RegexOption.IGNORE_CASE).containsMatchIn(url)
 
     private fun fromSite(site: String): String? {
-        val req = Request.Builder().url(site).header("User-Agent", UA).build()
+        // Radyo listesindeki site adresi bozuk olabilir (".site.com" gibi)
+        val url = site.toHttpUrlOrNull() ?: return null
+        val req = Request.Builder().url(url).header("User-Agent", UA).build()
         val (base, html) = runCatching {
             Net.client.newCall(req).execute().use { r ->
                 if (!r.isSuccessful) return null

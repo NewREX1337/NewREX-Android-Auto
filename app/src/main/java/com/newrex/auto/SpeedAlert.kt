@@ -21,7 +21,7 @@ import kotlin.math.sin
  */
 object SpeedAlert {
     /** Seçilebilir sesler (Araç → Hız uyarısı). Masaüstündeki örnek dosyalarla aynı formüller. */
-    val SOUNDS = listOf("Nazik", "Ding dong", "Üçlü", "Çan", "Uyarı")
+    val SOUNDS = listOf(t("Nazik"), t("Ding dong"), t("Üçlü"), t("Çan"), t("Uyarı"))
 
     private const val RATE = 44100
 

@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.data
 
+import com.newrex.auto.t
 import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
@@ -36,13 +37,13 @@ object Playlists {
 
     // iptv-org gibi listeler grupları İngilizce veriyor
     private val GROUP_NAMES = mapOf(
-        "animation" to "Animasyon", "auto" to "Otomobil", "business" to "Ekonomi", "classic" to "Klasik",
-        "comedy" to "Komedi", "cooking" to "Yemek", "culture" to "Kültür", "documentary" to "Belgesel",
-        "education" to "Eğitim", "entertainment" to "Eğlence", "family" to "Aile", "general" to "Genel",
-        "kids" to "Çocuk", "legislative" to "Meclis", "lifestyle" to "Yaşam", "movies" to "Film",
-        "music" to "Müzik", "news" to "Haber", "outdoor" to "Doğa", "relax" to "Rahatlama",
-        "religious" to "Dini", "series" to "Dizi", "science" to "Bilim", "shop" to "Alışveriş",
-        "sports" to "Spor", "travel" to "Gezi", "weather" to "Hava durumu", "undefined" to "Diğer",
+        "animation" to t("Animasyon"), "auto" to t("Otomobil"), "business" to t("Ekonomi"), "classic" to t("Klasik"),
+        "comedy" to t("Komedi"), "cooking" to t("Yemek"), "culture" to t("Kültür"), "documentary" to t("Belgesel"),
+        "education" to t("Eğitim"), "entertainment" to t("Eğlence"), "family" to t("Aile"), "general" to t("Genel"),
+        "kids" to t("Çocuk"), "legislative" to t("Meclis"), "lifestyle" to t("Yaşam"), "movies" to t("Film"),
+        "music" to t("Müzik"), "news" to t("Haber"), "outdoor" to t("Doğa"), "relax" to t("Rahatlama"),
+        "religious" to t("Dini"), "series" to t("Dizi"), "science" to t("Bilim"), "shop" to t("Alışveriş"),
+        "sports" to t("Spor"), "travel" to t("Gezi"), "weather" to t("Hava durumu"), "undefined" to t("Diğer"),
     )
 
     /** Listede gösterilmeyen dini kanallar (grubu "Religious" olanlar zaten çıkarılır). */
@@ -75,7 +76,7 @@ object Playlists {
         if (pl.url.startsWith("content://")) {
             return context.contentResolver.openInputStream(Uri.parse(pl.url))
                 ?.bufferedReader()?.use { it.readText() }
-                ?: throw IOException("dosya okunamadı")
+                ?: throw IOException(t("dosya okunamadı"))
         }
         val cache = File(context.cacheDir, "pl_${pl.url.hashCode()}.m3u")
         val fresh = cache.exists() &&

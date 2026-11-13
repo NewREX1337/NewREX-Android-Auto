@@ -42,6 +42,7 @@ gibi, IP adresini görebilir. NewREX bu bağlantılara aracılık etmez ve içer
 - Podcast programlarının kendi sunucuları: bölüm listesi ve ses dosyaları
 - **Open-Meteo** (open-meteo.com): hava durumu. Konumun yaklaşık **1 km'ye yuvarlanarak** gönderilir, tam yerin gönderilmez.
 - Telefonun yer adı servisi (Android Geocoder): hava durumunda il/ilçe adını göstermek için
+- **Blogger / Google** (blogger.googleusercontent.com): ana ekrandaki araç fotoğrafı, bir kez indirilip telefonda saklanır
 - **iptv-org** (github.io): varsayılan TV listesi
 - Eklediğin IPTV listesinin ve kanalların sunucuları
 - Radyo, kanal ve podcast görsellerinin barındırıldığı siteler

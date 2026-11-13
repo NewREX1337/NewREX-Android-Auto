@@ -40,10 +40,10 @@ object Palette {
         0xFFFF8A00.toInt(), // turuncu
         0xFFE040FB.toInt(), // pembe
     )
-    val BG_TOP = 0xFF0B0E1A.toInt()
-    val BG_BOTTOM = 0xFF17102B.toInt()
+    val BG_TOP = 0xFF08090D.toInt()
+    val BG_BOTTOM = 0xFF0D0E13.toInt()
     /** Kartların zemini: koyu, yarı saydam cam. Arkada açık renkli bir şey olsa da yazılar okunur. */
-    val SURFACE = 0xA6161A2A.toInt()
+    val SURFACE = 0xCC14161C.toInt()
     const val SURFACE_STRONG = 0x2EFFFFFF
     val TEXT = Color.WHITE
     const val TEXT_DIM = 0xB3FFFFFF.toInt()
@@ -127,7 +127,7 @@ fun View.onTap(immediate: Boolean, action: () -> Unit) = setOnClickListener { v 
     if (immediate) { action(); return@setOnClickListener }
     if (v.getTag(com.newrex.auto.R.id.neon_pending) == true) return@setOnClickListener
     v.setTag(com.newrex.auto.R.id.neon_pending, true)
-    v.postDelayed({ v.setTag(com.newrex.auto.R.id.neon_pending, null); action() }, 110)
+    v.postDelayed({ v.setTag(com.newrex.auto.R.id.neon_pending, null); action() }, 40)
 }
 
 /**
@@ -245,6 +245,7 @@ fun Context.label(
     color: Int = Palette.TEXT,
     bold: Boolean = false,
     lines: Int = 1,
+    shadow: Boolean = false,
 ) = TextView(this).apply {
     this.text = text
     // Telefonun yazı boyutu ayarı araç ekranını bozmasın diye sp yerine dp
@@ -254,8 +255,9 @@ fun Context.label(
     maxLines = lines
     ellipsize = TextUtils.TruncateAt.END
     includeFontPadding = false
-    // Açık renkli bir zemine denk gelse de okunabilsin diye hafif gölge
-    setShadowLayer(dpf(3), 0f, dpf(1), 0x99000000.toInt())
+    // Bulanık gölge her karede yeniden hesaplanıyor ve araç ekranını yavaşlatıyordu: sadece fotoğraf gibi
+    // açık renkli zeminlerin üstündeki yazılarda kullanılır, koyu kartlarda gerek yok
+    if (shadow) setShadowLayer(dpf(3), 0f, dpf(1), 0x99000000.toInt())
 }
 
 fun Context.icon(res: Int, sizeDp: Int, tint: Int = Palette.TEXT) = ImageView(this).apply {

@@ -6,12 +6,14 @@ import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.newrex.auto.I18n
 import com.newrex.auto.PhoneInput
+import com.newrex.auto.t
 import com.newrex.auto.R
 import java.util.Locale
 
 /**
- * Araç ekranı için Türkçe Q klavye. Telefonun klavyesi araç ekranında açılamadığı için
+ * Araç ekranı için dile göre harf düzeni olan klavye. Telefonun klavyesi araç ekranında açılamadığı için
  * arama, adres ve web sayfalarındaki giriş kutuları için kendi klavyemizi çiziyoruz.
  */
 class KeyboardView(
@@ -26,9 +28,28 @@ class KeyboardView(
 
     private enum class Layout { LETTERS, SYMBOLS }
 
-    private val letterRows = listOf("1234567890", "qwertyuıopğü", "asdfghjklşi", "zxcvbnmöç.")
+    // Seçili dile göre harf düzeni; Kiril alfabeli dillerde 🌐 ile Latin harflere geçilir (web adresi için)
+    private val nativeRows = when (I18n.code) {
+        "tr" -> listOf("1234567890", "qwertyuıopğü", "asdfghjklşi", "zxcvbnmöç.")
+        "de" -> listOf("1234567890", "qwertzuiopü", "asdfghjklöä", "yxcvbnmß.")
+        "fr" -> listOf("1234567890", "azertyuiopé", "qsdfghjklmè", "wxcvbnçàù.")
+        "es" -> listOf("1234567890", "qwertyuiopá", "asdfghjklñé", "zxcvbnmíóú.")
+        "it" -> listOf("1234567890", "qwertyuiopè", "asdfghjklòà", "zxcvbnmìù.")
+        "pt" -> listOf("1234567890", "qwertyuiopá", "asdfghjklçã", "zxcvbnméêõ.")
+        "pl" -> listOf("1234567890", "qwertyuiopęó", "asdfghjklłą", "zxcvbnmśżźćń")
+        "ru" -> listOf("1234567890", "йцукенгшщзхъ", "фывапролджэ", "ячсмитьбю.")
+        "uk" -> listOf("1234567890", "йцукенгшщзхї", "фівапролджє", "ячсмитьбюґ")
+        else -> LATIN
+    }
+    private val cyrillic = I18n.code == "ru" || I18n.code == "uk"
+    private var latin = false
+    private val letterRows get() = if (latin) LATIN else nativeRows
     private val symbolRows = listOf("1234567890", "@#₺%&*-_+=", "!?/\\:;'\"()", ".,<>[]{}~^|")
-    private val trLocale = Locale("tr", "TR")
+    private val trLocale = I18n.locale()
+
+    private companion object {
+        val LATIN = listOf("1234567890", "qwertyuiop", "asdfghjkl", "zxcvbnm.")
+    }
 
     private val text = StringBuilder(initial)
     private val hintText = hint
@@ -56,9 +77,9 @@ class KeyboardView(
         panel.addView(keyRows, lp(MATCH, WRAP))
 
         val bottom = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        bottom.addView(key("Kapat") { onClose() }, keyLp(1.4f))
+        bottom.addView(key(t("Kapat")) { onClose() }, keyLp(1.4f))
         // Hızlı yazmak için telefonun kendi klavyesi (araçta hızlı dokunmalar birleşebiliyor)
-        bottom.addView(key("📱 Telefon") {
+        bottom.addView(key(t("📱 Telefon")) {
             PhoneInput.request(context.applicationContext, text.toString(), hintText, secret) { typed ->
                 text.setLength(0)
                 text.append(typed.take(200))
@@ -71,7 +92,8 @@ class KeyboardView(
             layout = if (layout == Layout.LETTERS) Layout.SYMBOLS else Layout.LETTERS
             renderKeys()
         }.also { modeKey = it }, keyLp(1.2f))
-        bottom.addView(key("boşluk") { type(" ") }, keyLp(3.4f))
+        if (cyrillic) bottom.addView(key("🌐") { latin = !latin; layout = Layout.LETTERS; renderKeys() }, keyLp(1f))
+        bottom.addView(key(t("boşluk")) { type(" ") }, keyLp(if (cyrillic) 2.4f else 3.4f))
         bottom.addView(iconKey(R.drawable.ic_backspace) {
             if (text.isNotEmpty()) text.deleteCharAt(text.length - 1)
             refresh()

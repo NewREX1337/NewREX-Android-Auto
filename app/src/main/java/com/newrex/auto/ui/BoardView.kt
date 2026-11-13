@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.ui
 
+import com.newrex.auto.t
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.Context
@@ -42,7 +43,7 @@ import kotlin.math.abs
 class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : FrameLayout(ui.ctx) {
     private val ctx = ui.ctx
     private val handler = Handler(Looper.getMainLooper())
-    private val tr = Locale("tr", "TR")
+    private val tr = com.newrex.auto.I18n.locale()
     private val layer = Layer()
     private val holders = LinkedHashMap<String, Holder>()
     private val buttons = LinearLayout(ctx)
@@ -71,6 +72,8 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
         buttons.addView(ctx.circleButton(R.drawable.ic_add, 48, bg = 0x33FFFFFF) { showMenu() },
             lp(ctx.dp(48), ctx.dp(48)).margins(l = ctx.dp(10)))
         addView(buttons, flp(WRAP, WRAP, Gravity.TOP or Gravity.END).margins(t = ctx.dp(14), r = ctx.dp(16)))
+        // Sesli komut sürücü tarafında (sol üst), küçük
+        addView(micButton(ui, 44), flp(ctx.dp(44), ctx.dp(44), Gravity.TOP or Gravity.START).margins(t = ctx.dp(16), l = ctx.dp(16)))
 
         bottomHint = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -80,7 +83,7 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
             background = pressable(rounded(0, r), r)
             val arrow = ctx.icon(R.drawable.ic_up, 26, Palette.TEXT_DIM)
             addView(arrow, lp(ctx.dp(26), ctx.dp(26)))
-            addView(ctx.label("Uygulamalar", 13f, Palette.TEXT_DIM), lp(WRAP, WRAP))
+            addView(ctx.label(t("Uygulamalar"), 13f, Palette.TEXT_DIM, shadow = true), lp(WRAP, WRAP))
             // Yukarı kaydırılabileceğini belli eden hafif zıplama. Sonsuz döngü bütün araç ekranını saniyede 60 kez
             // yeniden çizdiriyordu (ölçüldü); 3 kez zıplayıp durur.
             if (!com.newrex.auto.Saver.on) ObjectAnimator.ofFloat(arrow, View.TRANSLATION_Y, 0f, -ctx.dpf(5), 0f).apply {
@@ -93,7 +96,7 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
         }
         addView(bottomHint, flp(WRAP, WRAP, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).margins(b = ctx.dp(8)))
 
-        editHint = ctx.label("Bir öğeye dokun, sonra sürükleyerek taşı.  ⤢ boyut  ✕ kaldır", 14f, Palette.TEXT_DIM).apply {
+        editHint = ctx.label(t("Bir öğeye dokun, sonra sürükleyerek taşı.  ⤢ boyut  ✕ kaldır"), 14f, Palette.TEXT_DIM).apply {
             gravity = Gravity.CENTER
             setPadding(ctx.dp(16), ctx.dp(8), ctx.dp(16), ctx.dp(8))
             background = rounded(0x66000000, ctx.dpf(16))
@@ -248,7 +251,7 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
 
     private fun toggleEdit() {
         if (!editing && DriveState.driving.value) {
-            ui.toast("Düzenleme park halindeyken yapılabilir.")
+            ui.toast(t("Düzenleme park halindeyken yapılabilir."))
             return
         }
         editing = !editing
@@ -273,7 +276,7 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
         val head = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            addView(ctx.label("Ekrana ekle", 20f, bold = true), lp(0, WRAP, 1f))
+            addView(ctx.label(t("Ekrana ekle"), 20f, bold = true), lp(0, WRAP, 1f))
             addView(ctx.circleButton(R.drawable.ic_close, 40) { closeMenu() }, lp(ctx.dp(40), ctx.dp(40)))
         }
         panel.addView(head, lp(MATCH, WRAP))
@@ -284,10 +287,10 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
             v.onTap { closeMenu(); action() }
             row.addView(v, lp(tile, tile).margins(r = ctx.dp(12)))
         }
-        addTile(textTile(R.drawable.ic_add, "Telefondan\nseç", Palette.accent)) {
-            if (DriveState.driving.value) { ui.toast("Fotoğrafı park halindeyken seçebilirsin."); return@addTile }
+        addTile(textTile(R.drawable.ic_add, t("Telefondan\nseç"), Palette.accent)) {
+            if (DriveState.driving.value) { ui.toast(t("Fotoğrafı park halindeyken seçebilirsin.")); return@addTile }
             PhotoPickActivity.start(ctx.applicationContext)
-            ui.toast("Telefonunda fotoğraf seçme ekranı açıldı.", long = true)
+            ui.toast(t("Telefonunda fotoğraf seçme ekranı açıldı."), long = true)
         }
         if (!Board.hasClock()) addTile(textTile(null, "Saat", 0x33FFFFFF, big = SimpleDateFormat("HH:mm", tr).format(Date()))) {
             Board.addClock()
@@ -310,8 +313,8 @@ class BoardView(private val ui: CarUi, private val scope: CoroutineScope) : Fram
             addView(row)
         }, lp(MATCH, WRAP).margins(t = ctx.dp(14)))
         panel.addView(ctx.label(
-            if (onBoard.size < Board.photos.value.size || !Board.hasClock()) "Kaldırdığın öğeler burada durur, dokununca geri gelir."
-            else "Fotoğraflar sadece bu telefonda saklanır, hiçbir yere gönderilmez.",
+            if (onBoard.size < Board.photos.value.size || !Board.hasClock()) t("Kaldırdığın öğeler burada durur, dokununca geri gelir.")
+            else t("Fotoğraflar sadece bu telefonda saklanır, hiçbir yere gönderilmez."),
             13f, Palette.TEXT_FAINT, lines = 2), lp(MATCH, WRAP).margins(t = ctx.dp(12)))
 
         val overlay = FrameLayout(ctx).apply {

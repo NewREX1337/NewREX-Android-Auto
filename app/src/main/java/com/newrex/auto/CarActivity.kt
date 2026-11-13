@@ -74,14 +74,14 @@ class CarActivity : Activity() {
         val card = panel().apply {
             setPadding(dp(24), dp(20), dp(24), dp(20))
             background = rounded(0xF2161A2B.toInt(), dpf(22), dp(1), Palette.withAlpha(Palette.accent, 0x99))
-            addView(label("🚗  Sürüşte de kullanmak için küçük bir adım kaldı", 20f, bold = true, lines = 2))
-            addView(label("NewREX şu an \"park modunda\" açıldı: araç hareket edince Android Auto uygulamayı kapatır. " +
-                "Bunu telefondan bir kez düzeltmen yeterli:", 15f, Palette.TEXT_DIM, lines = 3), lp(MATCH, WRAP).margins(t = dp(10)))
-            addView(label("1.  Telefonda Play Protect'i (Samsung'da Otomatik Engelleyici'yi de) kısa süreliğine kapat\n" +
-                "2.  NewREX'i aç → çıkan pencerede \"Şimdi yap\" → \"Güncelle\"\n" +
-                "3.  Kapattıklarını geri aç, telefonu arabadan çıkarıp tekrar bağla",
+            addView(label(t("🚗  Sürüşte de kullanmak için küçük bir adım kaldı"), 20f, bold = true, lines = 2))
+            addView(label(t("NewREX şu an \"park modunda\" açıldı: araç hareket edince Android Auto uygulamayı kapatır. ") +
+                t("Bunu telefondan bir kez düzeltmen yeterli:"), 15f, Palette.TEXT_DIM, lines = 3), lp(MATCH, WRAP).margins(t = dp(10)))
+            addView(label(t("1.  Telefonda Play Protect'i (Samsung'da Otomatik Engelleyici'yi de) kısa süreliğine kapat\n") +
+                t("2.  NewREX'i aç → çıkan pencerede \"Şimdi yap\" → \"Güncelle\"\n") +
+                t("3.  Kapattıklarını geri aç, telefonu arabadan çıkarıp tekrar bağla"),
                 15f, Palette.TEXT, lines = 8).apply { setLineSpacing(dpf(4), 1f) }, lp(MATCH, WRAP).margins(t = dp(12)))
-            addView(pill("Anladım", selected = true) { close(box) }, lp(WRAP, dp(44)).margins(t = dp(16)))
+            addView(pill(t("Anladım"), selected = true) { close(box) }, lp(WRAP, dp(44)).margins(t = dp(16)))
         }
         // Küçük araç ekranlarında da sığsın diye kaydırılabilir
         val scroll = android.widget.ScrollView(this).apply { isFillViewport = false; addView(card) }
@@ -112,6 +112,8 @@ class CarActivity : Activity() {
         if (isFinishing) {
             TripSaver.save()
             ParkSaver.save(this)
+            Mirror.stop(this)
+            VoiceCommand.stop()
             DriveState.stop()
             PlayerHub.release()
         }

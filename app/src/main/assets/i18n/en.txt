@@ -1,0 +1,802 @@
+1|🚗  One small step to use it while driving too
+2|NewREX opened in \"park mode\": Android Auto closes the app when the car moves. 
+3|You only need to fix this once from your phone:
+4|1.  Briefly turn off Play Protect on your phone (and Auto Blocker on Samsung)\n
+5|2.  Open NewREX → in the window that appears tap \"Do it now\" → \"Update\"\n
+6|3.  Turn back on what you turned off, unplug the phone from the car and reconnect
+7|Got it
+8|Good night
+9|Good morning
+10|Good afternoon
+11|Good evening
+12|{0}{1}, welcome to NewREX! Have a safe trip!
+13|TV, YouTube, radio and more for Android Auto
+14|Language
+15|Change language
+16|If the car doesn't share its speed, we detect movement with the phone's GPS (park mode, parking spot, weather).
+17|📍 Location permission needed
+18|Grant location permission
+19|🎵 Media and microphone permission
+20|Needed to see your phone's music and videos on the \"Media\" page in the car and to use voice commands. 
+21|Files never leave your phone.
+22|Grant permissions
+23|Car screen photos
+24|Shown next to the clock on the car's start screen. On the car screen you can move, resize or remove them with ✎. 
+25|Photos are stored only on this phone.
+26|Add photo
+27|Theme
+28|TV picture quality
+29|Automatic: the best quality of the stream. Choosing lower keeps the phone cooler and uses less data.
+30|Saver mode
+31|Clock and radio look
+32|Mirror screen to car
+33|Screen mirroring
+34|Where's my car?
+35|Maintenance reminder
+36|Tap a date to choose it. A warning appears on the car screen 15 days before.
+37|Fuel and mileage
+38|IPTV lists
+39|You can add an M3U / M3U8 link or a playlist file from your phone.
+40|Add list by link
+41|Choose file from phone
+42|Help
+43|Look here if it doesn't show up in the car
+44|1. Connect the phone to the car and let Android Auto open.\n
+45|2. Open the apps menu on the car screen.\n
+46|3. Tap the \"NewREX Android Auto\" icon.\n\n
+47|If it doesn't appear: Android Auto settings → Developer settings → \"Unknown sources\" must be on.
+48|Troubleshooting
+49|Remove battery restriction
+50|NewREX Android Auto {0} • Original developer: {1}\n
+51|No ads, no tracking, no data collected.\n\n{0}\n{1}
+52|Automatic (phone language): {0}
+53|NewREX restarts when the language changes. If you're in the car, open the app again from the car screen.
+54|OK
+55|Cancel
+56|Mileage, fuel purchases, oil change
+57|If the car doesn't share mileage and fuel data, these values are used for estimates: 
+58|distance driven with GPS is added to the mileage you entered.
+59|Odometer
+60|Last oil change
+61|Oil change interval
+62|🛢️ Oil change overdue by %,.0f km!
+63|🛢️ %,.0f km until oil change
+64|⛽ Fuel log
+65|Average: 
+66|at least 2 fill-ups needed
+67|Per km: 
+68|This month: 
+69|Estimated range: 
+70|Delete
+71|I filled up (full tank)
+72|Save
+73|Liters (e.g. 38.5)
+74|Amount (e.g. 1850)
+75|Enter fill-ups where you filled the tank; that's how consumption is calculated correctly. Take the mileage from the car's dashboard.
+76|I filled up
+77|Theme color and background
+78|Theme color and custom background
+79|Theme color
+80|Background
+82|Auto
+83|Clock
+84|Radio frequency display
+85|Those with ◷ are round (analog) clocks. The design you pick shows on the car screen right away.
+86|Clock: {0} · 
+87|Radio: {0}
+88|No photos yet
+89|{0} photos
+90|Delete this photo?
+91|❌ Android Auto doesn't recognize this installation. Tap the \"Make visible in car\" button below.
+92|❌ The phone's own installer was used ({0}). Tap the \"Make visible in car\" button below.
+93|⚠️ The park gate is open but it hasn't opened in the car yet. Android Auto → Developer settings → \"Unknown sources\" 
+94|must be on; then connect the phone to the car and, while parked, tap NewREX in the apps list.
+95|✅ The park gate works.
+96|⚠️ The installation is correct but Android Auto never tried to open NewREX. Android Auto → Developer settings → 
+97|\"Unknown sources\" must be on; if it is, turn it off and on again and restart the phone.
+98| This brand ({0}) may add extra restrictions in Android Auto.
+99|⚠️ Android Auto saw NewREX but didn't show it. Check NewREX in Android Auto → \"Customize launcher\".
+100|✅ Installation and connection look fine.
+101|{0}\n🔋 Battery saving may put NewREX to sleep; remove the restriction with the button below.
+102|On ({0})
+103|When on, the background stays still and touch effects are turned off. Picture and sound quality don't change. 
+104|Automatic: turns on by itself when the phone is in battery saver or gets hot.
+105|One last step to make it work while driving
+106|NewREX is installed 🎉 Right now it only opens in the car while parked. To use it while driving too, 
+107|you just need to do this once:\n\n
+108|1. Play Store → your profile picture at top right → Play Protect → ⚙️ → briefly turn off \"Scan apps with Play Protect\".\n
+109|    On Samsung: Settings → Security and privacy → also turn off Auto Blocker.\n\n
+110|2. Come back here and tap \"Do it now\". On the screen that opens tap \"Update\".\n\n
+111|3. Turn the settings back on. If anything asks, choose \"Don't send\".\n\n
+112|4. Unplug the phone from the car and reconnect. That's it!
+113|Do it now
+114|Later
+115|The installation didn't stick on this phone
+116|You tapped \"Update\" but Android Auto still doesn't recognize NewREX. This happens on some phones (especially 
+117|Xiaomi, Redmi and POCO) when the phone's own installer steps in. Don't worry, NewREX keeps working in the car 
+118|while parked.\n\n
+119|If you want to try once more:\n
+120|• Make sure Play Protect is off.\n
+121|• If the screen that opens is the phone's own (security scan etc.), choose \"Install anyway\" or \"Continue\".\n\n
+122|If it still fails, send a screenshot of this window to the developer:\n
+123|Try again
+124|Make visible in car
+125|Installers:\n
+126|First allow NewREX to \"install unknown apps\", then tap again.
+127|Google installer is disabled
+128|Google's package installer is disabled on this phone. Connect it to a computer and run this command once, then tap again:\n\nadb shell pm enable {0}
+129|Google's package installer wasn't found on this phone. Send a screenshot of this Help section to the developer.
+130|On the screen that opens tap \"Update\" or \"Install\". Check this section again when NewREX reopens.
+131|The installer couldn't be opened. Send a screenshot of this section to the developer.
+132|This is the Park version of NewREX: it opens in the car while parked, no King Installer needed. 
+133|Android Auto → Developer settings → \"Unknown sources\" must be on.
+134|Automatic
+135|Normal
+136|Park
+137|Now: Park gate. Shows up in the car with any installation but only opens while parked.
+138|Now: Normal gate. Also opens while driving (video turns off); to show in the car it must be installed with King Installer.
+139|\nThe park gate is available on Android 15 and later.
+140|\nAfter changing, unplug the phone from the car and reconnect.
+141|Car entry gate
+142|No restriction already.
+143|never
+144|installer={0} • initiator={1} • source app={2}{3}
+145|installer={0}
+146|couldn't read
+147|not found
+148|Phone: {0} {1} • Android {2} (API {3})\n
+149|NewREX {0} • {1}\n
+150|Android Auto: {0}\n
+151|Car tried to connect: {0}\n
+152|Car screen opened: {0}\n\n
+153|If the app doesn't show in the car, send a screenshot of this section to the developer.
+154|✅ Screen is being mirrored to the car. In the car go to NewREX → Mirror.
+155|Show everything on your phone (games, social media, apps) on the car screen. Each start asks once for \"Start\" approval on the phone. 
+156|Protected apps like Netflix appear black. While mirroring the phone screen stays on; you use the apps on the phone's own screen.
+157|Stop mirroring
+158|✅ Mirroring
+159|Show phone screen in car
+160|When the car turns off (Android Auto disconnects), your location is saved automatically. 
+161|No saved parking spot yet.
+162|No saved parking spot yet
+163|🅿️ Last parked: {0}\nLocation accuracy: ~{1} m
+164|Last parked: {0}
+165|Show on map
+166|Walking directions
+167|Delete parking spot
+168|{0} min
+169|parked
+170|⏰ Your parking time 
+171| runs out (you'll be notified 10 min before)
+172|⏰ Set a parking time reminder:
+173|Cancel
+174| • reminder on
+175|Save my current location as parking spot
+176|Couldn't get location. Grant location permission and turn on location.
+177|{0} {1} {2} days overdue
+178|{0} {1}: {2} days left
+179|Inspection, insurance, oil change…
+180|No date entered
+181|{0} • {1} days overdue
+182|{0} • {1} days left
+183|Playlist file
+184|No list
+185|No lists yet.
+186|List name (e.g. Home list)
+187|Add IPTV list
+188|Add
+189|List {0}
+190|Screen is being mirrored to the car
+191|The picture is only shown on the car screen and is not recorded.
+192|Stop
+193|Type for the car screen
+194|What you type is sent to the box on the car screen.
+195|Send to car
+196|{0} photos added to the car screen
+197|Couldn't add photo
+198|Couldn't open the stream. Try another channel/station.
+199|Off
+200|On
+201|turned on manually
+202|phone in battery saver
+203|phone is hot
+204|ready
+205|disabled on phone
+206|Gentle
+207|Ding dong
+208|Triple
+209|Bell
+210|Alert
+211|New version: {0}
+212|What's new:\n{0}\n\n
+213|You're using: {0}
+214|Download
+215|Parking time
+216|Your parking time runs out in {0} minutes
+217|Your parking time is up
+218|You can see where your car is in NewREX under \"Where's my car?\".
+219|Location not found. Give NewREX location permission on the phone.
+220|Couldn't get the weather. Check your internet connection.
+221|Voice commands need microphone permission. Open NewREX on the phone and allow the microphone.
+222|Speech recognition isn't available on this device
+223|Didn't catch that, try again
+224|Microphone error
+225|Voice commands need microphone permission
+226|Internet connection needed
+227|Speech recognition error ({0})
+228|Vehicle inspection
+229|Traffic insurance
+230|Periodic service / oil
+231|Tire change
+232|Vehicle tax (MTV)
+233|Animation
+234|Automotive
+235|Business
+236|Classic
+237|Comedy
+238|Cooking
+239|Culture
+240|Documentary
+241|Education
+242|Entertainment
+243|Family
+244|General
+245|Kids
+246|Parliament
+247|Lifestyle
+248|Movies
+249|Music
+250|News
+251|Outdoor
+252|Relax
+253|Religious
+254|Series
+255|Science
+256|Shopping
+257|Sports
+258|Travel
+259|Weather
+260|Other
+261|couldn't read file
+262|Episode
+263|Mon
+264|Tue
+265|Wed
+266|Thu
+267|Fri
+268|Sat
+269|Sun
+270|Today
+271|Mostly clear
+272|Partly cloudy
+273|Foggy
+274|Drizzle
+275|Rainy
+276|Freezing rain
+277|Snowy
+278|Showers
+279|Snow showers
+280|Thunderstorm
+281|Apps
+282|Web browser
+283|Add shortcut
+284|Sites you visit often
+285|Phone
+286|Phone apps
+287|All apps on your phone
+288|Watch
+289|Channels, IPTV, TV+
+290|Watch videos
+291|Media
+292|Videos and music on the phone
+293|Mirror
+294|Show phone screen
+295|Listen
+296|Radio
+297|Turkish radio stations
+298|FM radio
+299|Tune by frequency
+300|Continue where you left off
+301|Favorites
+302|Your channels and stations
+303|Car and road
+304|Car
+305|Speed, trip, maintenance
+306|Hourly and daily
+307|Voice command
+308|\"Open TRT 1\", \"weather\", \"settings\"
+309|Internet
+310|Settings
+311|Theme, sound, driving
+312|Equalizer
+313|Adjust the sound
+314|About
+315|Version and license
+316|Flat
+317|Bass
+318|Treble
+319|Vocal
+320|Presets
+321|Reset
+322|{0} not found right now.
+323|— Empty frequency —
+324|{0} frequency • save another station here with ☆
+325|Your saved station • remove it with ☆
+326|Save \"{0}\" to this frequency with ☆
+327|Swipe or use ◀◀ ▶▶ to find a station. Open a radio from the list and save it here with ☆.
+328|{0} cleared
+329|{0} → {1} MHz saved
+330|All
+331|Speed
+332|Trip
+333|Service
+334|km over
+335|Overdue
+336|days
+337|Weather
+338|Continue
+339|Now playing
+340|Open TV or radio
+341|Channels and stations
+343|Files on the phone
+344|{0} overdue!
+345|{0}: {1} days
+346|All apps
+347|All favorites
+348|Recently played
+349|You haven't played anything yet.
+350|No favorites yet.\nTap ☆ while playing to add one.
+351|Appearance
+352|Sound
+353|Driving
+354|TV and lists
+355|Web shortcuts
+356|Battery and heat
+357|Custom theme color
+358|Custom background
+359|Language changed. NewREX is restarting, open it again from the car screen.
+360|Use the rainbow button to pick any color you like.
+361|Full-screen home
+362|On the home screen the top bar and mini player are hidden and the cards get bigger. On other pages the top bar stays visible for the back button.
+363|Home card order
+364|Order of the four big cards on the home screen.
+365|5-band equalizer. Works for radio, TV and podcasts.
+366|Adjust
+367|Voice greeting
+368|Says \"Good morning, welcome to NewREX!\" when you connect to the car. No microphone needed.
+369|Greeting settings
+370|Name
+371|Enter name…
+372|Your name
+373|How often
+374|Every connection
+375|Once a day
+376|Park mode
+377|When on, video and web pictures are hidden while the car moves; sound continues. 
+378|If you turn it off, the picture stays on while driving too. Use with care!
+379|If the car doesn't provide speed, it's measured with the phone's GPS (needs location permission on the phone). 
+380|Speed limit alert and maintenance info are on the Car page.
+381|Open the NewREX app on the phone to add or delete lists.
+382|Download channels again
+383|Refreshing lists…
+384|{0} channels loaded
+385| ({0} lists failed)
+386|Automatic: the best quality of the stream. Choosing lower keeps the phone cooler and uses less data. 
+387|The change applies to the open channel right away.
+388|{0} shortcuts saved
+389|No shortcuts yet
+390|Edit shortcuts
+391|Add sites you visit often (up to 6). They appear on the home screen under \"All\" → Internet.
+392|Currently on ({0}). 
+393|Currently off. 
+394|Version {0}
+395|Original developer: {0}
+396|No ads  •  No tracking  •  No data collected
+397|Details and license
+398|Apply
+399|Phone media
+400|Loading…
+401|No media files found on the phone.\nMedia permission may be needed.
+402|No music files found.
+403|No video files found.
+404|Unknown
+405|Use the app on your phone; the car screen shows the picture.
+406|Mirroring stopped
+407|Tap the rotate button on the right so the picture fills the car screen.
+408|Turn on \"Modify system settings\" for NewREX on the phone, then tap again.
+409|Phone landscape
+410|Phone portrait
+411|Your phone will ask \"Share screen?\":\n
+412|Keep \"Share entire screen\" selected and tap \"Share screen\".\n
+413|If no question appears, unlock the phone or open the NewREX app → \"Mirror screen to car\".
+414|Ask again on the phone
+415|Loading apps…
+416|No apps that can be opened were found on the phone.
+418|Couldn't open {0}
+420|Fit to screen
+421|Fill screen
+422|Stretch
+423|Popular
+424|My subscriptions
+425|Recently played
+426|Search
+427|Search podcasts (e.g. history, technology, football)
+428|Search: {0}
+429|Loading popular podcasts…
+430|Searching \"{0}\"…
+431|You haven't listened to any podcasts yet.
+432|Couldn't load podcasts. Check your internet connection.
+433|You're not subscribed to any podcast yet.\nOpen a show and tap ☆ Subscribe.
+434|No results for \"{0}\".
+435|No podcasts found.
+436|Loading episodes…
+437|This show only publishes its episodes on Apple Podcasts.
+438|No episodes found for this show.
+439|Couldn't load episodes. Check your internet connection.
+440|Subscribed: {0}
+441|Unsubscribed
+442|  •  Resume at: {0} min
+443|Choose a station for this frequency
+444|Search radio (e.g. Kral, Power, news)
+445|Loading stations…
+446|Couldn't load stations. Check your internet connection.
+447|No favorite stations yet.\nTap ☆ at the bottom while playing.
+448|You haven't listened to the radio yet.
+449|Couldn't load the station list right now.\nTap Popular to try again.
+450|TV Channels
+451|Free Turkish channels
+452|My IPTV Lists
+453|{0} lists
+454|Add lists from the phone
+455|{0} servers
+456|Add an IPTV server
+457|With your Turkcell account
+458|With your Netflix account
+459|With your Disney+ account
+460|With your Amazon account
+461|Search channels
+462|Loading channels…
+463|⭐ Favorites
+464|All channels
+465|Some lists couldn't be opened:\n
+466|You have no IPTV lists yet.\nYou can add a link or file in the \"IPTV lists\" section of the NewREX app on your phone.
+467|No channels found. Check your internet connection and tap refresh.
+468|No channels found for \"{0}\".
+469|No favorite channels yet.\nTap ☆ while watching to add one.
+470|No channels in this group.
+475|Altitude / heading
+476|📍 Grant location permission on the phone
+480|Measured by GPS
+481|km • from car
+482|Enter km on the phone
+483|⚠ Low fuel!
+484|%.0f km range left
+485|tank • from car
+486|range • from car
+487|Fill in the fuel log
+488|Heading: {0}
+489|Heading: when moving
+490|North
+491|Northeast
+492|East
+493|Southeast
+494|South
+495|Southwest
+496|West
+497|Northwest
+498|Driving score (this trip)
+499|Eco driving
+500|Hard acceleration
+501|Hard braking
+502|Top km/h
+503|Average km/h
+504|Hard acceleration and hard braking lower the score; smooth driving saves fuel.
+508|Fuel log
+509|When you fill the tank, enter liters, amount and mileage in the \"Fuel and mileage\" section 
+510|of the NewREX app on your phone. Average consumption, cost per km and estimated range appear here.
+511|per km
+512|This month
+513|Estimated range
+514|At least two fill-ups and 50 km are needed for an average.
+520|{0} days overdue
+521|Today!
+522|{0} days left
+523|Trip history
+524|When the car turns off (Android Auto disconnects), the trip is saved here.
+525|avg {0} • max {1} km/h
+526|‹ Newer trips
+527|Page {0} / {1}  •  {2} trips
+528|Older trips ›
+529|You've been stopped for: {0}
+530|When the car turns off, your location is saved; open it on a map from \"Where's my car?\" on the phone.
+531| — open it on a map from the phone and set a parking time reminder.
+532|Listening… e.g. \"Open TRT 1\", \"weather\", \"search Tarkan on YouTube\", \"open Spotify\"
+533|It's {0}
+534|Use the car's knob to change the volume
+535|Searching: {0}
+536|Opening {0}
+537|Search podcasts: {0}
+538|Didn't understand: \"{0}\". Say \"help\" for examples.
+540|Refreshing weather…
+541|Loading weather…
+542|Hourly
+543|Now
+544|Next days
+545|Feels like
+546|Wind
+547|Humidity
+548|Search YouTube
+549|Search
+550|Search or type an address
+551|Password
+552|Text
+553|No shortcuts yet. Enter a name and address below to add one; it appears on the home screen.
+554|Add new shortcut
+555|Name: {0}
+556|Address: {0}
+557|Enter name
+558|Site name
+559|Enter address
+560|Enter a name and address first.
+561|You can add up to 6 shortcuts.
+562|Server {0}
+563|Add server
+564|URL, username, password
+565|Server: —
+566|User: —
+567|Password: —
+568|Name: —
+569|Server: {0}
+570|User: {0}
+571|Password: {0}
+572|Enter server address
+573|Enter username
+574|Username
+575|Enter password
+576|Enter name (optional)
+577|Server name
+578|Test connection and save
+579|Server, username and password are required.
+580|Connecting…
+581|Connected! Saved.
+582|Connection failed. Check the details.
+583|Live TV
+584|Live channels
+585|Movies
+586|Movie library
+587|Series
+588|Series library
+589|No categories found on this server.
+590|Couldn't load: {0}
+591|No content in this category.
+592|No episodes found for this series.
+593|Tap an item, then drag to move it.  ⤢ size  ✕ remove
+594|Editing is only possible while parked.
+595|Add to screen
+596|Choose on\nphone
+597|You can choose a photo while parked.
+598|The photo picker opened on your phone.
+599|Items you remove stay here; tap to bring them back.
+600|Photos are stored only on this phone and never sent anywhere.
+601|⚠️  {0} km/h  •  limit {1}   ✕
+602|📍 Give NewREX location permission on the phone for speed, trips and park mode.
+603|{0} {1} {2} days overdue!
+604|{0} {1} today!
+605|{0} {1}: {2} days left
+606|🛢️ Oil change overdue by {0} km!
+607|🛢️ {0} km until oil change
+608|🌧️ Rain expected in the coming hours ({0}%). Drive carefully!
+609|You can't type while driving. Please try again when parked.
+610|Driving
+611|Live TV • tap for picture
+612|You're driving
+613|For your safety the picture is hidden, sound continues.\nThe picture comes back automatically when the car stops.
+614|Thin
+615|Bold
+616|Vertical
+617|Card
+618|Neon
+619|In words
+620|Simple
+621|Roman
+622|Ring
+623|Tube
+624|Dial
+625|Needle
+626|FM  MHz
+627|Close
+628|📱 Phone
+629|space
+630|Examples: \"Open TRT 1\", \"Kral FM\", \"weather\", \"settings\", \"equalizer\", \"search Tarkan on YouTube\", \"open Spotify\", \"next\", \"stop\", \"what time is it\", \"home\".
+631|The app you tap opens directly on this screen.
+632|{0} opened on the car screen. Tap ⌂ to return to NewREX
+633|Asking for Shizuku permission on your phone; if you allow it, apps open without mirroring.
+636|Shizuku permission was not granted.
+637|{0} doesn't support opening on the car screen.
+638|Reset YouTube history
+639|YouTube cookies and watch history deleted. Recommendations will start fresh.
+640|Only YouTube in NewREX is cleared; your TV+, Netflix and other sign-ins stay.
+641|Photo selected
+642|No photo
+643|Background photo
+644|Best result: a landscape photo, at least 1920×720 (wide screen) or 1920×1080. The photo is cropped from the center to fill the screen, so keep the important part in the middle. Dark, simple photos keep text easier to read.
+645|Choose from phone
+646|Remove
+647|Voice wake-up
+648|In the car, say \"Hey\" and the word below; NewREX says \"I'm listening\" and waits for your command (e.g. hey newrex, hey maleren).
+649|Background photo set on the car screen
+650|I'm listening
+651|Listen, pick up where you left off
+652|Wake with \"Hey {0}\"
+653|Say \"Hey {0}\" and it answers \"I'm listening\" and waits for your command. You can also say the command in the same sentence: \"Hey {0}, weather\".
+654|Change word
+655|Word to say after \"Hey\"
+656|Now say \"Hey {0}\"
+657|What do you want to watch?
+658|Tap the search bar above or say it with 🎤.
+659|Background style
+660|✦ Wave is animated; the others are still and easier on the phone. Colours come from the theme colour.
+661|While on, the phone listens all the time, which uses some extra CPU.
+662|Wave
+663|Northern lights
+664|Night drive
+665|Bokeh
+666|Stars
+667|Silk
+668|Mountains
+669|Gradient
+670|When the phone screen turns off, apps pause on the car screen; returned to NewREX.
+671|Driving score
+674|Waiting for GPS
+675|RANGE
+676|KM TO OIL
+677|High risk
+678|Medium risk
+679|Low risk
+686|Warns above {0} km/h
+687|Alert off
+688|LIMIT
+689|ALERT SOUND
+690|When the limit is passed, the car speakers sound an alert and a red banner appears. GPS speed may differ by a few km/h.
+691|Enter inspection, insurance, service and tyre dates in the NewREX phone app. When they get close, a reminder shows here and when the car starts.
+692|Panic braking
+694|Moving
+695|Stopped
+696|Couldn't download the car image. Check your internet connection.
+698|Allow location
+700|Map
+701|DRIVE
+702|Score {0}
+703|Waiting for location…
+704|No location found in this share.
+705|Location sent to the car screen map: {0}
+706|Destination
+707|Trip tracking
+708|Counting distance driven. Location stays on the phone and is never sent anywhere.
+709|OBD-II adapter
+710|With a Bluetooth ELM327 adapter plugged into the car's OBD port (usually under the steering wheel), engine RPM, engine temperature, battery voltage, fuel and fault codes appear on the Vehicle page of the car screen. First pair the adapter in the phone's Bluetooth settings (PIN is usually 1234 or 0000), then select it here. Data stays on the phone.
+711|Select adapter
+712|Not selected
+713|No paired Bluetooth devices. Plug the adapter into the car, turn on the ignition, pair it in the phone's Bluetooth settings (PIN is usually 1234 or 0000) and try again.
+714|Bluetooth settings
+715|Select the OBD-II adapter
+716|Low
+717|Medium
+718|High
+719|Speed-based volume
+720|As you speed up, raises TV, radio and podcast volume a little against road and wind noise, and brings it back when you slow down. No change below 30 km/h.
+721|Engine · OBD-II
+722|No OBD-II adapter selected
+723|Plug a Bluetooth ELM327 adapter into the car's OBD port, pair it in the phone's Bluetooth settings, then open NewREX on the phone and select it under \"OBD-II adapter\". Engine RPM, engine temperature, battery voltage, fuel and fault codes appear here.
+724|Engine RPM
+725|Engine temperature
+726|Battery
+727|Fuel
+728|Engine load
+729|Fault codes
+730|Read
+731|Sure? Tap again
+732|Connected: {0}
+733|Connecting to adapter…
+734|Adapter connected but the car isn't responding. Is the ignition on?
+735|Couldn't connect to the adapter. Is it plugged in and paired with the phone? Retrying…
+736|Give NewREX Bluetooth permission on the phone.
+737|Tap \"Read\" to read them. Clearing turns off the check-engine light but doesn't fix the problem.
+738|No stored fault codes.
+739|You can search the meaning of the codes online (e.g. \"{0} meaning\").
+740|The adapter must be connected first
+741|Reading fault codes…
+742|Couldn't read, try again
+743|Fault codes cleared
+744|Couldn't clear. Try again with the ignition on and the engine off.
+745|Traffic on
+746|No key (no traffic)
+747|Paste your TomTom key here
+748|Map · Traffic
+749|Optional. If you enter your own free TomTom key, the map on the car screen shows live traffic colours, traffic-aware routes and real arrival times. Without it the map and routes still work, just without traffic. The key is stored only on this phone; for routing the start and destination are sent to TomTom.
+750|How to get one (3-5 minutes, free, no credit card):\n1. \"Get a free key\" — tap it and sign up with your email.\n2. Click the confirmation link in the email you receive.\n3. After logging in, copy the ready-made key under \"Keys\".\n4. Paste it below and tap \"Save and test\".
+751|Get a free key
+752|Save and test
+753|The key is too short, make sure you copied all of it.
+754|Testing…
+755|Works ✓ Reopen the map on the car screen to see traffic.
+756|Wrong key or not active yet. Did you confirm the email?
+757|Couldn't connect to the internet, try again.
+758|My car
+759|Downloading image…
+760|Swipe sideways to rotate
+761|traffic +{0} min
+762|Searching…
+763|No results found.
+764|Search for something else
+765|Search an address or place
+766|Gauges
+767|Car image placed on the car screen
+768|Upload image from phone
+769|Back to default car
+770|Your own car image. Best result: PNG with a transparent background.
+771|Put on car screen
+772|Car image
+773|This is how it will look on the gauges.
+774|Choose another image
+775|Opening image…
+776|Removing background…
+777|Downloading the background remover (first time only)…
+778|No car found in the image; you can use it as is.
+779|Couldn't remove the background. Use the image as is or pick a PNG with a transparent background.
+781|Image as is.
+782|Remove background
+783|As is
+784|Image picker opened on your phone. You can remove the background and preview it.
+785|Background removed. If the edges look rough, choose “As is”.
+786|Use the + button at the end to pick any color. The background can't be too light so text stays readable. Changes apply to the car screen right away.
+787|Setup
+788|Do the required permissions and settings step by step
+789|Open apps on the car screen
+790|Phone apps like Spotify or WhatsApp open directly on the car screen, even while the phone is locked. Pairing once is enough; after that NewREX prepares it by itself whenever the phone restarts and joins Wi-Fi. The connection stays inside the phone; nothing is sent anywhere.
+791|Pair (once)
+792|Start now
+793|Starting…
+794|Didn't start. Check that the phone is on Wi-Fi and pairing is done.
+795|Ready
+796|Ready with Shizuku
+797|Paired · starts by itself on Wi-Fi
+798|Setup needed
+799|Helper is running. It stays on until the phone turns off.
+800|Easiest is the Setup screen at the top. Or: tap “Pair”, on the page that opens tap “Pair device with pairing code”, then in the notification tap “Enter code” and type the 6-digit code.
+801|While the phone is on Wi-Fi tap “Start now” or wait a bit; it starts by itself.
+802|Wireless debugging → tap “Pair device with pairing code”, then tap “Enter code” in this notification and type the 6-digit code.
+803|NewREX pairing
+804|Enter code
+805|6-digit code
+806|Pairing…
+807|Paired. Phone apps can now open on the car screen.
+808|Paired. The helper will start by itself shortly.
+809|Code didn't match. Type the new code again while the pairing window is open.
+810|Notification permission
+811|The pairing code and trip tracking are shown as notifications.
+812|Allow
+813|Location permission
+814|For speed, trips, parking spot and the map.
+815|Media and microphone permission
+816|For music and videos on the phone and voice commands. Files never leave the phone.
+817|So the phone doesn't close NewREX in the background and trips and mileage keep counting.
+818|So Android Auto recognises NewREX and it opens while driving too.
+819|Do it
+820|Android Auto: unknown sources
+821|If NewREX doesn't appear in the car: Android Auto settings → tap Version at the bottom 10 times → ⋮ top right → Developer settings → turn on Unknown sources.
+822|Open Android Auto settings
+823|Developer options
+824|Needed to open phone apps in the car. Settings → About phone → Software information → tap Build number 7 times.
+825|Open About phone
+826|Pairing (once)
+827|The Wireless debugging page opens: you must be on Wi-Fi. Turn it on if it's off; if asked, tick “Always allow on this network” and allow. Then tap “Pair device with pairing code”, pull down the notification, tap “Enter code” and type the 6-digit code.
+828|Pair
+829|The helper starts and gives itself permission to start automatically. After that it gets ready by itself whenever the phone restarts and joins Wi-Fi; Shizuku isn't needed.
+830|Start
+831|Ready.
+832|Didn't start. Are you on Wi-Fi and is pairing done?
+833|{0} / {1} required steps done. Optional steps are for opening phone apps in the car.
+834|Optional
+835|The phone hasn't joined Wi-Fi since it restarted. Opening apps gets ready by itself once it's on Wi-Fi.
+836|To open phone apps in the car, do the Setup steps once in NewREX on your phone.

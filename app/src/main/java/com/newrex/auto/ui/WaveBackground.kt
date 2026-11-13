@@ -34,7 +34,7 @@ class WaveBackground(context: Context) : View(context) {
     private val path = android.graphics.Path()
 
     /** Kare aralığı (ms). Arka planda kalan sayfalarda daha seyrek çizilir. */
-    var frameMs = 33L
+    var frameMs = 66L
 
     // Her palet: [koyu taban, ışık rengi 1, ışık rengi 2]
     private val palettes = Array(2) { intArrayOf(0xFF0B0E1A.toInt(), Palette.accent, Palette.accent) }
@@ -50,7 +50,7 @@ class WaveBackground(context: Context) : View(context) {
 
     private val frame = Runnable { invalidate() }
     private val start = SystemClock.uptimeMillis()
-    private val particles = List(34) { i ->
+    private val particles = List(20) { i ->
         val r = java.util.Random(i * 7919L)
         floatArrayOf(r.nextFloat(), r.nextFloat(), 0.4f + r.nextFloat(), r.nextFloat() * 6.28f)
     }
@@ -135,7 +135,7 @@ class WaveBackground(context: Context) : View(context) {
                 if (s == 0) path.moveTo(0f, y) else path.lineTo(w * s / STEPS, y)
             }
             // Ortadaki çizgiler daha parlak, kenarlara doğru söner
-            val a = (0x46 * (1f - kotlin.math.abs(spread) * 1.6f).coerceAtLeast(0.15f) * intro).toInt()
+            val a = (0x54 * (1f - kotlin.math.abs(spread) * 1.6f).coerceAtLeast(0.15f) * intro).toInt()
             linePaint.color = Palette.withAlpha(color, a)
             // Tek parça çizgi: parçalı çizimde birleşim yerlerinde parlak noktalar oluşuyordu
             canvas.drawPath(path, linePaint)
@@ -143,8 +143,8 @@ class WaveBackground(context: Context) : View(context) {
     }
 
     private companion object {
-        const val STEPS = 40
-        const val LINES = 12
+        const val STEPS = 28
+        const val LINES = 8
 
         fun blend(a: Int, b: Int, t: Float): Int {
             val u = 1f - t

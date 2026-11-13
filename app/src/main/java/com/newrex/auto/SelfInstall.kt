@@ -57,8 +57,8 @@ object SelfInstall {
     /** Yardım ekranı için yükleyicilerin durumu. */
     fun report(context: Context): String = INSTALLERS.joinToString("\n") { pkg ->
         val s = when (state(context, pkg)) {
-            State.READY -> "hazır"
-            State.DISABLED -> "telefonda kapatılmış"
+            State.READY -> t("hazır")
+            State.DISABLED -> t("telefonda kapatılmış")
             State.MISSING -> "yok"
         }
         "• $pkg: $s"

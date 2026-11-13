@@ -89,6 +89,8 @@ object TripSaver {
             harshAccel = TripStats.harshAccel.value,
             harshBrake = TripStats.harshBrake.value,
             score = TripStats.score(km),
+            panicBrake = TripStats.panicBrake.value,
+            overLimitMinutes = (TripStats.overLimitMs / 60_000).toInt(),
         ))
     }
 }
@@ -122,15 +124,15 @@ object ParkTimer {
 
     internal fun notify(context: Context) {
         val nm = context.getSystemService(android.app.NotificationManager::class.java)
-        nm.createNotificationChannel(android.app.NotificationChannel(CHANNEL, "Otopark süresi",
+        nm.createNotificationChannel(android.app.NotificationChannel(CHANNEL, t("Otopark süresi"),
             android.app.NotificationManager.IMPORTANCE_HIGH))
         val left = ((endTime(context) - System.currentTimeMillis()) / 60_000).coerceAtLeast(0)
         val open = android.app.PendingIntent.getActivity(context, 0,
             android.content.Intent(context, MainActivity::class.java), android.app.PendingIntent.FLAG_IMMUTABLE)
         nm.notify(9, android.app.Notification.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_parking)
-            .setContentTitle(if (left > 0) "Otopark süren $left dakika sonra doluyor" else "Otopark süren doldu")
-            .setContentText("Arabanın yerini NewREX'te \"Arabam nerede?\" bölümünden görebilirsin.")
+            .setContentTitle(if (left > 0) t("Otopark süren {0} dakika sonra doluyor", left) else t("Otopark süren doldu"))
+            .setContentText(t("Arabanın yerini NewREX'te \"Arabam nerede?\" bölümünden görebilirsin."))
             .setContentIntent(open)
             .setAutoCancel(true)
             .build())
@@ -162,21 +164,21 @@ object WeatherHub {
         if (!force && current != null && System.currentTimeMillis() - current.time < MAX_AGE_MS) return
         val loc = DriveState.bestLocation(context)
         if (loc == null) {
-            error.value = "Konum bulunamadı. Telefonda NewREX'e konum izni ver."
+            error.value = t("Konum bulunamadı. Telefonda NewREX'e konum izni ver.")
             return
         }
         try {
             val place = withContext(Dispatchers.IO) {
                 runCatching {
                     @Suppress("DEPRECATION")
-                    Geocoder(context, Locale("tr", "TR")).getFromLocation(loc.latitude, loc.longitude, 1)?.firstOrNull()
+                    Geocoder(context, I18n.locale()).getFromLocation(loc.latitude, loc.longitude, 1)?.firstOrNull()
                         ?.let { it.subAdminArea ?: it.locality ?: it.adminArea }
                 }.getOrNull()
             }
             report.value = WeatherApi.fetch(loc.latitude, loc.longitude, place)
             error.value = null
         } catch (e: Exception) {
-            if (report.value == null) error.value = "Hava durumu alınamadı. İnternet bağlantını kontrol et."
+            if (report.value == null) error.value = t("Hava durumu alınamadı. İnternet bağlantını kontrol et.")
         }
     }
 }

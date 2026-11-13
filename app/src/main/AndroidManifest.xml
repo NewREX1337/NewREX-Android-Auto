@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -16,13 +17,37 @@
     <!-- Ekran yansıtma: Android, ekran paylaşımı sürerken bildirimli bir servis ister -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- OBD-II: eşleşmiş Bluetooth ELM327 adaptörüne bağlanmak için (tarama yapılmaz) -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Telefon uygulamalarını araçta açma (Shizuku'suz): telefon açılınca yardımcıyı Wi-Fi'de kendiliğinden başlatmak,
+         kablosuz hata ayıklamayı kısa süreliğine açıp kapatmak (bu izin yalnızca bilgisayardan bir kez verilebilir) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- "Arabada görünür yap": NewREX kendini Google'ın paket yükleyicisiyle yeniden kurar (King Installer gerekmez) -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Sesli komut: Türkçe ses tanıma ile kanal/radyo açma -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Yansıtırken telefonu yan çevirmek için (yalnızca dönme ayarı; bitince eski haline döner) -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <!-- Telefondaki müzik ve video dosyalarını listeleme (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
     <!-- Sorun giderme kartında Android Auto sürümünü gösterebilmek için -->
     <queries>
+        <!-- Telefon uygulamaları sayfası: yalnızca ana ekranda görünen uygulamalar listelenir, liste telefondan çıkmaz -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
         <package android:name="com.google.android.projection.gearhead" />
         <package android:name="com.google.android.packageinstaller" />
         <package android:name="com.android.packageinstaller" />
@@ -33,6 +58,8 @@
     </queries>
 
     <application
+        android:name=".NewRexApp"
+        android:allowBackup="false"
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
@@ -62,6 +89,39 @@
             android:excludeFromRecents="true"
             android:theme="@style/Theme.NewREX.Translucent" />
 
+        <!-- Shizuku: kullanıcı izin verirse telefon uygulamaları yansıtmasız araç ekranında açılır -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <!-- NewREX'in kendi yardımcı süreci buraya bağlanır; sadece shell/root çağırabilir (kodda denetlenir) -->
+        <provider
+            android:name=".ShellProvider"
+            android:authorities="${applicationId}.shell"
+            android:exported="true" />
+
+        <service
+            android:name=".SelfAdb$StartJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver
+            android:name=".SelfAdb$BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".SelfAdb$PairReplyReceiver"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"
@@ -90,11 +150,53 @@
             android:excludeFromRecents="true"
             android:windowSoftInputMode="stateAlwaysVisible|adjustResize" />
 
+        <!-- Google Maps'te "Paylaş" → NewREX: konum araç ekranındaki haritada hedef olarak işaretlenir -->
+        <activity
+            android:name=".ShareLocationActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="NewREX haritası"
+            android:theme="@style/Theme.NewREX.Translucent">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="geo" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".SetupActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NewREX.Phone" />
+
+        <activity
+            android:name=".CarImageActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.NewREX.Phone" />
+
+        <!-- Arka plan silme modeli uygulama kurulurken telefona insin (ilk kullanımda beklemesin) -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="subject_segment" />
+
         <activity
             android:name=".PhotoPickActivity"
             android:exported="false"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.NewREX.Translucent" />
+
+        <service
+            android:name=".DriveService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
 
         <service
             android:name=".MirrorService"

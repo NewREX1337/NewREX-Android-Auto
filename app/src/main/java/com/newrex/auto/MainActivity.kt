@@ -65,9 +65,12 @@ class MainActivity : Activity() {
     private lateinit var looksSummary: TextView
     private lateinit var locationCard: View
     private lateinit var locationStatus: TextView
+    private lateinit var mediaCard: View
     private lateinit var photosBox: LinearLayout
     private lateinit var photosSummary: TextView
     private lateinit var mirrorStatus: TextView
+    private lateinit var selfStatus: TextView
+    private lateinit var selfSummary: TextView
     private lateinit var mirrorButton: Button
     private lateinit var mirrorSummary: TextView
     private lateinit var parkStatus: TextView
@@ -79,12 +82,14 @@ class MainActivity : Activity() {
     private lateinit var carBox: LinearLayout
     private lateinit var carSummary: TextView
     private lateinit var playlistSummary: TextView
-    private val tr = java.util.Locale("tr", "TR")
+    private val tr = I18n.locale()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Prefs.init(this)
         Board.init(this)
+        // Uygulama yansıtma sırasında kapandıysa telefon yan kalmasın
+        com.newrex.auto.PhoneRotation.restoreIfStale(this)
         CarLog.init(this)
         Palette.load()
         CarEntry.apply(this)
@@ -98,76 +103,214 @@ class MainActivity : Activity() {
         logo = label("", 36f, bold = true)
         col.addView(logo)
         paintLogo()
-        col.addView(label("Android Auto için TV, YouTube, radyo ve daha fazlası", 14f, Palette.TEXT_DIM, lines = 2),
+        col.addView(label(t("Android Auto için TV, YouTube, radyo ve daha fazlası"), 14f, Palette.TEXT_DIM, lines = 2),
             lp(MATCH, WRAP).margins(t = dp(4), b = dp(20)))
 
+        // Kurulum: bütün izinler ve ayarlar sırayla, tek ekranda
+        col.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            background = rounded(Palette.withAlpha(Palette.accent, 0x40), dpf(18), dp(1), Palette.withAlpha(Palette.accent, 0xAA))
+            addView(LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(label(t("Kurulum"), 17f, bold = true))
+                addView(label(t("Gerekli izinleri ve ayarları adım adım yap"), 13f, Palette.TEXT_DIM, lines = 2), lp(MATCH, WRAP).margins(t = dp(3)))
+            }, lp(0, WRAP, 1f))
+            addView(icon(R.drawable.ic_chevron_right, 22, Palette.TEXT), lp(dp(22), dp(22)))
+            setOnClickListener { SetupActivity.start(this@MainActivity) }
+        }, lp(MATCH, WRAP).margins(b = dp(10)))
+
+        // Dil seçimi: başlık iki dilli kalır ki yanlış dil seçen kişi de geri bulabilsin
+        val langSummary = summary().apply { text = langLabel(I18n.choice(this@MainActivity)) }
+        col.addView(section(R.drawable.ic_language, 0xFF6366F1.toInt(), "🌐 " + t("Dil") + if (I18n.code != "en") " · Language" else "",
+            langSummary, button(t("Dili değiştir")) { pickLanguage() }))
+
         // Konum izni yoksa en üstte tek bir uyarı; izin verilince kaybolur
-        locationStatus = label("Araç hız bilgisi vermezse hareketi telefonun GPS'inden algılarız (park modu, park yeri, hava durumu).",
+        locationStatus = label(t("Araç hız bilgisi vermezse hareketi telefonun GPS'inden algılarız (park modu, park yeri, hava durumu)."),
             14f, Palette.TEXT_DIM, lines = 4)
         locationCard = panel().apply {
             setPadding(dp(16), dp(14), dp(16), dp(16))
-            background = rounded(Palette.withAlpha(Palette.ORANGE, 0x22), dpf(18), dp(1), Palette.withAlpha(Palette.ORANGE, 0x88))
-            addView(label("📍 Konum izni gerekli", 16f, bold = true))
+            background = rounded(0xF0241A12.toInt(), dpf(18), dp(1), Palette.withAlpha(Palette.ORANGE, 0x88))
+            addView(label(t("📍 Konum izni gerekli"), 16f, bold = true))
             addView(locationStatus, lp(MATCH, WRAP).margins(t = dp(6)))
-            addView(button("Konum iznini ver") {
+            addView(button(t("Konum iznini ver")) {
                 requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 1)
             }, lp(MATCH, WRAP).margins(t = dp(10)))
         }
         col.addView(locationCard, lp(MATCH, WRAP).margins(b = dp(12)))
 
+        // Araç ekranı izin penceresi gösteremiyor; müzik/video listesi ve sesli komut için izin telefondan verilir
+        mediaCard = panel().apply {
+            setPadding(dp(16), dp(14), dp(16), dp(16))
+            background = rounded(0xF0241A12.toInt(), dpf(18), dp(1), Palette.withAlpha(Palette.ORANGE, 0x88))
+            addView(label(t("🎵 Medya ve mikrofon izni"), 16f, bold = true))
+            addView(label(t("Araçta \"Medya\" sayfasında telefondaki müzik ve videoları görmek ve sesli komut kullanmak için gerekli. ") +
+                t("Dosyalar telefondan dışarı gönderilmez."), 14f, Palette.TEXT_DIM, lines = 4), lp(MATCH, WRAP).margins(t = dp(6)))
+            addView(button(t("İzinleri ver")) { requestPermissions(missingMediaPermissions(), 4) }, lp(MATCH, WRAP).margins(t = dp(10)))
+        }
+        col.addView(mediaCard, lp(MATCH, WRAP).margins(b = dp(12)))
+
         photosBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         photosSummary = summary()
-        col.addView(section(R.drawable.ic_photo, 0xFFE040FB.toInt(), "Araç ekranı fotoğrafları", photosSummary,
-            label("Araçta açılışta saatin yanında görünür. Araç ekranında ✎ ile taşıyabilir, büyütebilir veya kaldırabilirsin. " +
-                "Fotoğraflar sadece bu telefonda saklanır.", 14f, Palette.TEXT_DIM, lines = 5),
+        col.addView(section(R.drawable.ic_photo, 0xFFE040FB.toInt(), t("Araç ekranı fotoğrafları"), photosSummary,
+            label(t("Araçta açılışta saatin yanında görünür. Araç ekranında ✎ ile taşıyabilir, büyütebilir veya kaldırabilirsin. ") +
+                t("Fotoğraflar sadece bu telefonda saklanır."), 14f, Palette.TEXT_DIM, lines = 5),
             photosBox,
-            button("Fotoğraf ekle") { PhotoPickActivity.start(this) }))
+            button(t("Fotoğraf ekle")) { PhotoPickActivity.start(this) }))
 
         themeSummary = summary()
-        col.addView(section(R.drawable.ic_settings, 0xFF00BCD4.toInt(), "Tema", themeSummary, *themeBody()))
+        col.addView(section(R.drawable.ic_settings, 0xFF00BCD4.toInt(), t("Tema"), themeSummary, *themeBody()))
+
+        // Araç ekranının arka plan fotoğrafı
+        val bgSummary = summary().apply {
+            text = if (com.newrex.auto.data.Background.has(this@MainActivity)) t("Fotoğraf seçili") else t("Fotoğraf yok")
+        }
+        col.addView(section(R.drawable.ic_photo, 0xFF8B5CF6.toInt(), t("Arka plan fotoğrafı"), bgSummary,
+            label(t("En iyi sonuç: yatay, en az 1920×720 (geniş ekran) ya da 1920×1080 fotoğraf. Fotoğraf ekranı dolduracak şekilde ortadan kırpılır; önemli kısmı ortada olsun. Koyu ve sade fotoğraflarda yazılar daha iyi okunur."),
+                13f, Palette.TEXT_DIM, lines = 6),
+            button(t("Telefondan seç")) { PhotoPickActivity.startBackground(this) },
+            button(t("Kaldır")) { com.newrex.auto.data.Background.remove(this); bgSummary.text = t("Fotoğraf yok") }))
+
+        // "Hey <kelime>" uyandırma sözü
+        val wakeSummary = summary().apply { text = if (Prefs.wakeEnabled) "Hey ${com.newrex.auto.WakeWord.word}" else t("Kapalı") }
+        val wakeField = EditText(this).apply {
+            setSingleLine()
+            setText(Prefs.wakeWord)
+            hint = "newrex"
+            setTextColor(Palette.TEXT)
+        }
+        col.addView(section(R.drawable.ic_mic, 0xFF0891B2.toInt(), t("Sesli uyandırma"), wakeSummary,
+            label(t("Arabada \"Hey\" ve aşağıya yazdığın kelimeyi söyleyince NewREX \"Sizi dinliyorum\" der ve komutunu bekler (ör. hey newrex, hey maleren)."),
+                13f, Palette.TEXT_DIM, lines = 4),
+            wakeField,
+            button(t("Kaydet")) {
+                val w = wakeField.text.toString().trim().lowercase(I18n.locale())
+                if (w.isNotEmpty()) Prefs.wakeWord = w
+                Prefs.wakeEnabled = true
+                com.newrex.auto.WakeWord.settingsChanged()
+                wakeSummary.text = "Hey ${com.newrex.auto.WakeWord.word}"
+            },
+            button(t("Kapat")) { Prefs.wakeEnabled = false; com.newrex.auto.WakeWord.settingsChanged(); wakeSummary.text = t("Kapalı") }))
 
         val qualitySummary = summary()
-        col.addView(section(R.drawable.ic_live_tv, 0xFF06B6D4.toInt(), "TV görüntü kalitesi", qualitySummary,
+        col.addView(section(R.drawable.ic_live_tv, 0xFF06B6D4.toInt(), t("TV görüntü kalitesi"), qualitySummary,
             choiceButtons(PlayerHub.QUALITIES.map { it.first }, { Prefs.tvQuality }, { Prefs.tvQuality = it }, qualitySummary,
-                "Otomatik: yayının en iyi kalitesi. Düşük seçersen telefon daha az ısınır, daha az internet harcar.")))
+                t("Otomatik: yayının en iyi kalitesi. Düşük seçersen telefon daha az ısınır, daha az internet harcar."))))
 
         val saverSummary = summary()
-        col.addView(section(R.drawable.ic_speed, 0xFF16B98A.toInt(), "Tasarruf modu", saverSummary, saverBody(saverSummary)))
+        col.addView(section(R.drawable.ic_speed, 0xFF16B98A.toInt(), t("Tasarruf modu"), saverSummary, saverBody(saverSummary)))
 
         looksSummary = summary()
-        col.addView(section(R.drawable.ic_radio, 0xFFFFB238.toInt(), "Saat ve radyo görünümü", looksSummary, *looksBody()))
+        col.addView(section(R.drawable.ic_radio, 0xFFFFB238.toInt(), t("Saat ve radyo görünümü"), looksSummary, *looksBody()))
 
         mirrorStatus = label("", 14f, Palette.TEXT_DIM, lines = 6)
-        mirrorButton = button("Ekranı arabaya yansıt") {
+        mirrorButton = button(t("Ekranı arabaya yansıt")) {
             if (Mirror.active.value) { Mirror.stop(this); mirrorStatus.postDelayed({ refreshMirror() }, 600); return@button }
             if (Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2)
             Mirror.requestStart(this)
         }
         mirrorSummary = summary()
-        col.addView(section(R.drawable.ic_cast, 0xFF16B98A.toInt(), "Ekran yansıtma", mirrorSummary, mirrorStatus, mirrorButton))
+        col.addView(section(R.drawable.ic_cast, 0xFF16B98A.toInt(), t("Ekran yansıtma"), mirrorSummary, mirrorStatus, mirrorButton))
+
+        // Telefon uygulamalarını araç ekranında açma: NewREX'in kendi yardımcısı (Shizuku gerekmez)
+        selfStatus = label("", 14f, Palette.TEXT_DIM, lines = 8)
+        selfSummary = summary()
+        col.addView(section(R.drawable.ic_apps, 0xFF2F80ED.toInt(), t("Uygulamaları araçta açma"), selfSummary,
+            label(t("Spotify, WhatsApp gibi telefon uygulamaları araç ekranında doğrudan açılır, telefon kilitliyken de çalışır. Bir kez eşleştirme yeter; sonra telefon her açılıp Wi-Fi'ye bağlandığında NewREX bunu kendiliğinden hazırlar. Bağlantı telefonun içinde kalır, hiçbir yere bir şey gönderilmez."),
+                13f, Palette.TEXT_DIM, lines = 8),
+            selfStatus,
+            button(t("Eşleştir (bir kez)")) {
+                if (Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2)
+                SelfAdb.beginPairing(this)
+            },
+            button(t("Şimdi başlat")) {
+                selfStatus.text = t("Başlatılıyor…")
+                scope.launch {
+                    val ok = SelfAdb.start(this@MainActivity)
+                    refreshSelf()
+                    if (!ok) selfStatus.text = t("Başlamadı. Telefon Wi-Fi'ye bağlı mı ve eşleştirme yapıldı mı, kontrol et.")
+                }
+            }))
 
         parkStatus = label("", 14f, Palette.TEXT_DIM, lines = 4)
         parkButtons = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         parkSummary = summary()
-        col.addView(section(R.drawable.ic_parking, 0xFF2F80ED.toInt(), "Arabam nerede?", parkSummary, parkStatus, parkButtons))
+        col.addView(section(R.drawable.ic_parking, 0xFF2F80ED.toInt(), t("Arabam nerede?"), parkSummary, parkStatus, parkButtons))
+
+        // Harita · Trafik: kullanıcının kendi ücretsiz TomTom anahtarı
+        val ttSummary = summary().apply { text = if (com.newrex.auto.data.TomTom.has) t("Trafik açık") else t("Anahtar yok (trafiksiz)") }
+        val ttField = EditText(this).apply {
+            setSingleLine()
+            setText(Prefs.tomtomKey)
+            hint = t("TomTom anahtarını buraya yapıştır")
+            setTextColor(Palette.TEXT)
+        }
+        val ttStatus = label("", 14f, Palette.TEXT_DIM, lines = 3)
+        col.addView(section(R.drawable.ic_place, 0xFF0EA5E9.toInt(), t("Harita · Trafik"), ttSummary,
+            label(t("İsteğe bağlı. Kendi ücretsiz TomTom anahtarını girersen araç ekranındaki haritada canlı trafik renkleri, trafiğe göre rota ve gerçek varış süresi görünür. Girmezsen harita ve rota yine çalışır, sadece trafik yoktur. Anahtar sadece bu telefonda saklanır; rota için başlangıç ve hedef noktası TomTom'a gönderilir."),
+                13f, Palette.TEXT_DIM, lines = 6),
+            label(t("Nasıl alınır (3-5 dakika, ücretsiz, kredi kartı yok):\n1. \"Ücretsiz anahtar al\"a bas, e-postanla kayıt ol.\n2. Gelen e-postadaki onay linkine tıkla.\n3. Giriş yapınca \"Keys\" bölümündeki hazır anahtarı kopyala.\n4. Aşağıya yapıştırıp \"Kaydet ve dene\"ye bas."),
+                13f, Palette.TEXT, lines = 8),
+            button(t("Ücretsiz anahtar al")) {
+                runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(com.newrex.auto.data.TomTom.SIGNUP_URL))) }
+            },
+            ttField,
+            button(t("Kaydet ve dene")) {
+                val k = com.newrex.auto.data.TomTom.clean(ttField.text.toString())
+                ttField.setText(k)
+                if (k.length < 20) { ttStatus.text = t("Anahtar çok kısa, tamamını kopyaladığından emin ol."); return@button }
+                ttStatus.text = t("Deneniyor…")
+                Thread {
+                    val ok = com.newrex.auto.data.TomTom.test(k)
+                    runOnUiThread {
+                        when (ok) {
+                            true -> {
+                                Prefs.tomtomKey = k
+                                ttStatus.text = t("Çalışıyor ✓ Araç ekranında haritayı yeniden açınca trafik görünür.")
+                                ttSummary.text = t("Trafik açık")
+                            }
+                            false -> ttStatus.text = t("Anahtar hatalı ya da henüz etkin değil. E-postayı onayladın mı?")
+                            null -> ttStatus.text = t("İnternete bağlanılamadı, tekrar dene.")
+                        }
+                    }
+                }.start()
+            },
+            ttStatus,
+            button(t("Kaldır")) {
+                Prefs.tomtomKey = ""; ttField.setText("")
+                ttStatus.text = ""; ttSummary.text = t("Anahtar yok (trafiksiz)")
+            }))
+
+        // OBD-II adaptörü (ELM327 Bluetooth)
+        obdSummary = summary().apply { text = obdText() }
+        col.addView(section(R.drawable.ic_car, 0xFFEF4444.toInt(), t("OBD-II adaptör"), obdSummary,
+            label(t("Arabanın OBD soketine (genelde direksiyonun altında) takılan Bluetooth ELM327 adaptörüyle motor devri, motor sıcaklığı, akü voltajı, yakıt ve arıza kodları araç ekranındaki Araç sayfasında görünür. Önce adaptörü telefonun Bluetooth ayarlarından eşleştir (şifre genelde 1234 ya da 0000), sonra burada seç. Veriler telefonda kalır."),
+                13f, Palette.TEXT_DIM, lines = 8),
+            button(t("Adaptör seç")) { pickObd() },
+            button(t("Kaldır")) {
+                Prefs.obdMac = ""; Prefs.obdName = ""
+                com.newrex.auto.data.Obd.restart(this)
+                obdSummary.text = obdText()
+            }))
 
         maintenanceBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         maintenanceSummary = summary()
-        col.addView(section(R.drawable.ic_build, Palette.ORANGE, "Bakım hatırlatıcı", maintenanceSummary,
-            label("Tarihe dokunup seç. 15 gün kala araç ekranında uyarı çıkar.", 14f, Palette.TEXT_DIM, lines = 3),
+        col.addView(section(R.drawable.ic_build, Palette.ORANGE, t("Bakım hatırlatıcı"), maintenanceSummary,
+            label(t("Tarihe dokunup seç. 15 gün kala araç ekranında uyarı çıkar."), 14f, Palette.TEXT_DIM, lines = 3),
             maintenanceBox))
 
         carBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         carSummary = summary()
-        col.addView(section(R.drawable.ic_gas, 0xFF16B98A.toInt(), "Yakıt ve kilometre", carSummary, carBox))
+        col.addView(section(R.drawable.ic_gas, 0xFF16B98A.toInt(), t("Yakıt ve kilometre"), carSummary, carBox))
 
         playlistBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         playlistSummary = summary()
-        col.addView(section(R.drawable.ic_live_tv, 0xFF7C5CFF.toInt(), "IPTV listeleri", playlistSummary,
-            label("M3U / M3U8 bağlantısı ya da telefondaki bir liste dosyası ekleyebilirsin.", 14f, Palette.TEXT_DIM, lines = 3),
+        col.addView(section(R.drawable.ic_live_tv, 0xFF7C5CFF.toInt(), t("IPTV listeleri"), playlistSummary,
+            label(t("M3U / M3U8 bağlantısı ya da telefondaki bir liste dosyası ekleyebilirsin."), 14f, Palette.TEXT_DIM, lines = 3),
             playlistBox,
-            button("Bağlantı ile liste ekle") { addPlaylistDialog() },
-            button("Telefondan dosya seç") {
+            button(t("Bağlantı ile liste ekle")) { addPlaylistDialog() },
+            button(t("Telefondan dosya seç")) {
                 startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "*/*"
@@ -175,22 +318,22 @@ class MainActivity : Activity() {
             },
         ))
 
-        col.addView(section(R.drawable.ic_info, 0xFF8B93A7.toInt(), "Yardım", summary().apply { text = "Arabada görünmüyorsa buraya bak" },
-            label("1. Telefonu araca bağla, Android Auto açılsın.\n" +
-                "2. Araç ekranında uygulamalar menüsüne gir.\n" +
-                "3. \"NewREX Android Auto\" simgesine dokun.\n\n" +
-                "Görünmüyorsa: Android Auto ayarları → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı.",
+        col.addView(section(R.drawable.ic_info, 0xFF8B93A7.toInt(), t("Yardım"), summary().apply { text = t("Arabada görünmüyorsa buraya bak") },
+            label(t("1. Telefonu araca bağla, Android Auto açılsın.\n") +
+                t("2. Araç ekranında uygulamalar menüsüne gir.\n") +
+                t("3. \"NewREX Android Auto\" simgesine dokun.\n\n") +
+                t("Görünmüyorsa: Android Auto ayarları → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı."),
                 14f, Palette.TEXT_DIM, lines = 10),
-            label("Sorun giderme", 15f, bold = true),
+            label(t("Sorun giderme"), 15f, bold = true),
             label(verdict(), 14f, Palette.TEXT, lines = 8),
             fixRow(),
             entryRow(),
-            button("Pil kısıtlamasını kaldır") { askBatteryExemption() },
+            button(t("Pil kısıtlamasını kaldır")) { askBatteryExemption() },
             label(diagnostics(), 13f, Palette.TEXT_DIM, lines = 20)))
 
         col.addView(label(
-            "NewREX Android Auto ${BuildConfig.VERSION_NAME} • Orijinal geliştirici: ${Brand.ORIGINAL_DEVELOPER}\n" +
-                "Reklam yok, takip yok, hiçbir veri toplanmaz.\n\n${Brand.COPYRIGHT}\n${Brand.LICENSE_NOTICE}",
+            t("NewREX Android Auto {0} • Orijinal geliştirici: {1}\n", BuildConfig.VERSION_NAME, Brand.ORIGINAL_DEVELOPER) +
+                t("Reklam yok, takip yok, hiçbir veri toplanmaz.\n\n{0}\n{1}", Brand.COPYRIGHT, Brand.LICENSE_NOTICE),
             12f, Palette.TEXT_FAINT, lines = 10).apply { gravity = Gravity.CENTER }, lp(MATCH, WRAP).margins(t = dp(18)))
 
         wave = WaveBackground(this)
@@ -219,11 +362,13 @@ class MainActivity : Activity() {
         else if (untrusted && Prefs.installFailShown != BuildConfig.VERSION_CODE) showInstallFailed()
         else scope.launch { Updates.check(this@MainActivity)?.let { Updates.show(this@MainActivity, it) } }
         if (intent?.getBooleanExtra(EXTRA_ASK_LOCATION, false) == true) askLocationNow()
+        if (intent?.getBooleanExtra(EXTRA_FIX_INSTALL, false) == true) fixInstall()
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.getBooleanExtra(EXTRA_ASK_LOCATION, false)) askLocationNow()
+        if (intent.getBooleanExtra(EXTRA_FIX_INSTALL, false)) fixInstall()
     }
 
     private fun askLocationNow() {
@@ -237,6 +382,7 @@ class MainActivity : Activity() {
         refreshLocation()
         refreshPlaylists()
         refreshMirror()
+        refreshSelf()
         refreshPark()
         refreshMaintenance()
         // Yansıtma servisi onaydan hemen sonra başlıyor; durumu biraz sonra tekrar oku
@@ -254,6 +400,24 @@ class MainActivity : Activity() {
     }
 
     /** Başlığa dokununca açılıp kapanan bölüm. */
+    private fun langLabel(choice: String): String =
+        if (choice == I18n.AUTO) t("Otomatik (telefonun dili): {0}", I18n.LANGS.first { it.code == I18n.resolve(I18n.AUTO) }.name)
+        else I18n.LANGS.firstOrNull { it.code == choice }?.name ?: choice
+
+    private fun pickLanguage() {
+        val codes = listOf(I18n.AUTO) + I18n.LANGS.map { it.code }
+        val names = codes.map { langLabel(it) }.toTypedArray()
+        val current = codes.indexOf(I18n.choice(this)).coerceAtLeast(0)
+        AlertDialog.Builder(this).setTitle("🌐 " + t("Dil"))
+            .setSingleChoiceItems(names, current) { d, which ->
+                d.dismiss()
+                if (which == current) return@setSingleChoiceItems
+                AlertDialog.Builder(this).setMessage(t("Dil değişince NewREX yeniden başlar. Araçtaysan uygulamayı araç ekranından tekrar aç."))
+                    .setPositiveButton(t("Tamam")) { _, _ -> I18n.applyAndRestart(this, codes[which]) }
+                    .setNegativeButton(t("Vazgeç"), null).show()
+            }.show()
+    }
+
     private fun section(icon: Int, color: Int, title: String, summary: TextView, vararg body: View): View {
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -283,7 +447,8 @@ class MainActivity : Activity() {
         }
         return panel().apply {
             setPadding(dp(14), dp(12), dp(14), dp(14))
-            background = rounded(0x1FFFFFFF, dpf(18))
+            // Koyu cam kart: arkadaki dalga çizgileri yazıların içinden geçmesin
+            background = rounded(0xE6121419.toInt(), dpf(18), dp(1), 0x1FFFFFFF)
             layoutTransition = LayoutTransition()
             addView(head, lp(MATCH, WRAP))
             addView(content, lp(MATCH, WRAP))
@@ -302,31 +467,31 @@ class MainActivity : Activity() {
         carSummary.text = listOfNotNull(
             odo?.let { String.format(tr, "~%,.0f km", it) },
             stats.consumption?.let { "ort %.1f L/100 km".format(it) },
-        ).joinToString(" • ").ifEmpty { "Kilometre, yakıt alımları, yağ değişimi" }
+        ).joinToString(" • ").ifEmpty { t("Kilometre, yakıt alımları, yağ değişimi") }
 
-        carBox.addView(label("Araç kilometre ve yakıt bilgisini paylaşmıyorsa bu değerlerle tahmin yapılır: " +
-            "girdiğin kilometreye GPS ile gidilen yol eklenir.", 13f, Palette.TEXT_DIM, lines = 4))
+        carBox.addView(label(t("Araç kilometre ve yakıt bilgisini paylaşmıyorsa bu değerlerle tahmin yapılır: ") +
+            t("girdiğin kilometreye GPS ile gidilen yol eklenir."), 13f, Palette.TEXT_DIM, lines = 4))
 
-        carBox.addView(numberRow("Kilometre sayacı", odo?.let { "%.0f".format(it) } ?: "", "km") { CarLog.setOdometer(it) })
+        carBox.addView(numberRow(t("Kilometre sayacı"), odo?.let { "%.0f".format(it) } ?: "", "km") { CarLog.setOdometer(it) })
         carBox.addView(numberRow("Depo hacmi", "%.0f".format(CarLog.tankLiters), "L") { CarLog.tankLiters = it })
-        carBox.addView(numberRow("Son yağ değişimi", if (CarLog.oilChangeKm > 0) "%.0f".format(CarLog.oilChangeKm) else "", "km") {
+        carBox.addView(numberRow(t("Son yağ değişimi"), if (CarLog.oilChangeKm > 0) "%.0f".format(CarLog.oilChangeKm) else "", "km") {
             CarLog.oilChangeKm = it
         })
-        carBox.addView(numberRow("Yağ değişim aralığı", "%.0f".format(CarLog.oilIntervalKm), "km") { CarLog.oilIntervalKm = it })
+        carBox.addView(numberRow(t("Yağ değişim aralığı"), "%.0f".format(CarLog.oilIntervalKm), "km") { CarLog.oilIntervalKm = it })
         CarLog.oilKmLeft(odo)?.let { left ->
-            carBox.addView(label(if (left < 0) String.format(tr, "🛢️ Yağ değişimi %,.0f km gecikti!", -left)
-                else String.format(tr, "🛢️ Yağ değişimine %,.0f km kaldı", left), 14f,
+            carBox.addView(label(if (left < 0) String.format(tr, t("🛢️ Yağ değişimi %,.0f km gecikti!"), -left)
+                else String.format(tr, t("🛢️ Yağ değişimine %,.0f km kaldı"), left), 14f,
                 if (left < 1000) Palette.ORANGE else Palette.GREEN, bold = true), lp(MATCH, WRAP).margins(t = dp(6)))
         }
 
-        carBox.addView(label("⛽ Yakıt defteri", 15f, bold = true), lp(MATCH, WRAP).margins(t = dp(14)))
+        carBox.addView(label(t("⛽ Yakıt defteri"), 15f, bold = true), lp(MATCH, WRAP).margins(t = dp(14)))
         val fuel = CarLog.fuel()
         if (fuel.isNotEmpty()) {
             carBox.addView(label(listOf(
-                "Ortalama: " + (stats.consumption?.let { "%.1f L/100 km".format(it) } ?: "en az 2 dolum gerekli"),
-                "Km başı: " + (stats.costPerKm?.let { "%.2f ₺".format(it) } ?: "—"),
-                "Bu ay: " + String.format(tr, "%,.0f ₺", stats.thisMonth),
-                "Tahmini menzil: " + (stats.rangeKm?.let { "~%.0f km".format(it) } ?: "—"),
+                t("Ortalama: ") + (stats.consumption?.let { "%.1f L/100 km".format(it) } ?: t("en az 2 dolum gerekli")),
+                t("Km başı: ") + (stats.costPerKm?.let { "%.2f ₺".format(it) } ?: "—"),
+                t("Bu ay: ") + String.format(tr, "%,.0f ₺", stats.thisMonth),
+                t("Tahmini menzil: ") + (stats.rangeKm?.let { "~%.0f km".format(it) } ?: "—"),
             ).joinToString("\n"), 14f, Palette.TEXT_DIM, lines = 4), lp(MATCH, WRAP).margins(t = dp(4)))
         }
         val fmt = java.text.SimpleDateFormat("d MMM yyyy", tr)
@@ -339,12 +504,12 @@ class MainActivity : Activity() {
                 addView(label(fmt.format(java.util.Date(e.time)) + "\n" +
                     String.format(tr, "%.1f L • %,.0f ₺ • %,.0f km", e.liters, e.price, e.km), 13f, lines = 2), lp(0, WRAP, 1f))
                 addView(Button(this@MainActivity).apply {
-                    text = "Sil"
+                    text = t("Sil")
                     setOnClickListener { CarLog.removeFuel(e) }
                 })
             }, lp(MATCH, WRAP).margins(t = dp(6)))
         }
-        carBox.addView(button("Yakıt aldım (depoyu fulledim)") { addFuelDialog() }, lp(MATCH, WRAP).margins(t = dp(10)))
+        carBox.addView(button(t("Yakıt aldım (depoyu fulledim)")) { addFuelDialog() }, lp(MATCH, WRAP).margins(t = dp(10)))
     }
 
     /** Başlık + sayı kutusu + "Kaydet". */
@@ -363,7 +528,7 @@ class MainActivity : Activity() {
             addView(field, lp(dp(90), WRAP))
             addView(label(unit, 13f, Palette.TEXT_DIM), lp(dp(28), WRAP).margins(l = dp(4)))
             addView(Button(this@MainActivity).apply {
-                text = "Kaydet"
+                text = t("Kaydet")
                 isAllCaps = false
                 setOnClickListener {
                     field.text.toString().replace(',', '.').toFloatOrNull()?.takeIf { it > 0 }?.let(onSave)
@@ -380,24 +545,24 @@ class MainActivity : Activity() {
             setSingleLine()
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         }
-        val liters = field("Litre (ör. 38,5)")
-        val price = field("Tutar ₺ (ör. 1850)")
-        val km = field("Kilometre sayacı", CarLog.estimatedOdometer()?.let { "%.0f".format(it) } ?: "")
+        val liters = field(t("Litre (ör. 38,5)"))
+        val price = field(t("Tutar ₺ (ör. 1850)"))
+        val km = field(t("Kilometre sayacı"), CarLog.estimatedOdometer()?.let { "%.0f".format(it) } ?: "")
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(8), dp(20), 0)
             addView(liters); addView(price); addView(km)
-            addView(label("Depoyu fullediğin alımları gir; tüketim böyle doğru hesaplanır. Kilometreyi aracın göstergesinden yaz.",
+            addView(label(t("Depoyu fullediğin alımları gir; tüketim böyle doğru hesaplanır. Kilometreyi aracın göstergesinden yaz."),
                 12f, Palette.TEXT_DIM, lines = 3), lp(MATCH, WRAP).margins(t = dp(6)))
         }
         AlertDialog.Builder(this)
-            .setTitle("Yakıt aldım")
+            .setTitle(t("Yakıt aldım"))
             .setView(box)
-            .setPositiveButton("Kaydet") { _, _ ->
+            .setPositiveButton(t("Kaydet")) { _, _ ->
                 fun num(e: EditText) = e.text.toString().replace(',', '.').toFloatOrNull() ?: 0f
                 if (num(liters) > 0f) CarLog.addFuel(FuelEntry(System.currentTimeMillis(), num(liters), num(price), num(km)))
             }
-            .setNegativeButton("Vazgeç", null)
+            .setNegativeButton(t("Vazgeç"), null)
             .show()
     }
 
@@ -417,7 +582,7 @@ class MainActivity : Activity() {
 
     private fun themeSummaryText() {
         if (::themeSummary.isInitialized)
-            themeSummary.text = if (Prefs.bgColor == 0) "Tema rengi ve arka plan" else "Tema rengi ve özel arka plan"
+            themeSummary.text = if (Prefs.bgColor == 0) t("Tema rengi ve arka plan") else t("Tema rengi ve özel arka plan")
     }
 
     /** Tema değişti: araç ekranı kendini zaten yeniler; burada logo ve arka planı güncelliyoruz. */
@@ -431,30 +596,40 @@ class MainActivity : Activity() {
         val accentPicker = colorPicker(Palette.accent, 1f) { Prefs.customAccent = it; themeChanged() }
         val bgStart = Palette.safeBackground(Prefs.bgColor).takeIf { it != 0 } ?: Palette.BG_TOP
         val bgPicker = colorPicker(bgStart, Palette.MAX_BG_VALUE) { Prefs.bgColor = it; themeChanged() }
-        val accentRow = swatchRow((Palette.accents + Palette.extraAccents).toList(), accentPicker) { c ->
+        val accentRow = swatchRow((Palette.accents + Palette.extraAccents).toList(), accentPicker, { Palette.accent }) { c ->
             val i = Palette.accents.indexOf(c)
             if (i >= 0) Prefs.accentIndex = i else Prefs.customAccent = c
             themeChanged()
         }
-        val bgRow = swatchRow(Palette.backgrounds.toList(), bgPicker) { c -> Prefs.bgColor = c; themeChanged() }
+        val bgRow = swatchRow(Palette.backgrounds.toList(), bgPicker, { Prefs.bgColor }) { c -> Prefs.bgColor = c; themeChanged() }
         return arrayOf(
-            label("Tema rengi", 15f, bold = true), accentRow, accentPicker,
-            label("Arka plan", 15f, bold = true), bgRow, bgPicker,
-            label("🌈 ile istediğin rengi seç. Arka plan yazılar okunsun diye fazla açık olamaz. Değişiklik araç ekranına hemen yansır.",
+            label(t("Tema rengi"), 15f, bold = true), accentRow, accentPicker,
+            label(t("Arka plan"), 15f, bold = true), bgRow, bgPicker,
+            label(t("Sondaki + düğmesiyle istediğin rengi seçebilirsin. Arka plan yazılar okunsun diye fazla açık olamaz. Değişiklik araç ekranına hemen yansır."),
                 12f, Palette.TEXT_FAINT, lines = 3),
         )
     }
 
     /** Hazır renkler + sonda gökkuşağı düğmesi (altındaki renk seçiciyi açar/kapatır). */
-    private fun swatchRow(colors: List<Int>, picker: View, onPick: (Int) -> Unit): View {
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        colors.forEach { c ->
-            row.addView(TextView(this).apply {
-                if (c == 0) { text = "Oto"; gravity = Gravity.CENTER; setTextColor(Color.WHITE); textSize = 11f }
-                background = rounded(if (c == 0) Palette.BG_TOP else c, dpf(19), dp(1), 0x55FFFFFF)
-                setOnClickListener { picker.visibility = View.GONE; onPick(c) }
-            }, lp(dp(38), dp(38)).margins(r = dp(8)))
+    private fun swatchRow(colors: List<Int>, picker: View, current: () -> Int, onPick: (Int) -> Unit): View {
+        // Sığmayan renkler alt satıra geçer (yana kaydırınca sondaki + görünmüyordu); seçili renk beyaz halkalı
+        val row = com.newrex.auto.ui.WrapLayout(this, dp(10), dp(10))
+        val dots = ArrayList<Pair<TextView, Int>>()
+        fun mark() = dots.forEach { (v, c) ->
+            val sel = c == current()
+            v.background = rounded(if (c == 0) Palette.BG_TOP else c, dpf(20), if (sel) dp(3) else dp(1), if (sel) Color.WHITE else 0x55FFFFFF)
         }
+        colors.forEach { c ->
+            val v = TextView(this).apply {
+                if (c == 0) { text = t("Oto"); setTextColor(Color.WHITE); textSize = 11f }
+                gravity = Gravity.CENTER
+                includeFontPadding = false
+                setOnClickListener { picker.visibility = View.GONE; onPick(c); mark() }
+            }
+            dots += v to c
+            row.addView(v, android.view.ViewGroup.LayoutParams(dp(40), dp(40)))
+        }
+        mark()
         row.addView(TextView(this).apply {
             text = "+"
             gravity = Gravity.CENTER
@@ -463,11 +638,8 @@ class MainActivity : Activity() {
             setShadowLayer(dpf(4), 0f, 0f, 0xAA000000.toInt())
             background = ColorPickerView.rainbowDot()
             setOnClickListener { picker.visibility = if (picker.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
-        }, lp(dp(38), dp(38)))
-        return android.widget.HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            addView(row)
-        }
+        }, android.view.ViewGroup.LayoutParams(dp(40), dp(40)))
+        return row
     }
 
     /** Kare + renk çubuğu + HEX kutusu. Başta kapalıdır, gökkuşağı düğmesiyle açılır. */
@@ -519,15 +691,15 @@ class MainActivity : Activity() {
         val fmRow = choiceRow(fms, FmDisplayView.STYLES.map { it.name }, dp(210), dp(90), { Prefs.fmStyle }) { Prefs.fmStyle = it }
         refreshLooksSummary()
         return arrayOf(
-            label("Saat", 15f, bold = true), clockRow,
-            label("Radyo frekans göstergesi", 15f, bold = true), fmRow,
-            label("◷ olanlar yuvarlak (akrepli) saat. Seçtiğin tasarım araç ekranına hemen yansır.", 12f, Palette.TEXT_FAINT, lines = 2),
+            label(t("Saat"), 15f, bold = true), clockRow,
+            label(t("Radyo frekans göstergesi"), 15f, bold = true), fmRow,
+            label(t("◷ olanlar yuvarlak (akrepli) saat. Seçtiğin tasarım araç ekranına hemen yansır."), 12f, Palette.TEXT_FAINT, lines = 2),
         )
     }
 
     private fun refreshLooksSummary() {
-        looksSummary.text = "Saat: ${ClockView.STYLES[Prefs.clockStyle.coerceIn(0, ClockView.STYLES.lastIndex)].name} · " +
-            "Radyo: ${FmDisplayView.STYLES[Prefs.fmStyle.coerceIn(0, FmDisplayView.STYLES.lastIndex)].name}"
+        looksSummary.text = t("Saat: {0} · ", ClockView.STYLES[Prefs.clockStyle.coerceIn(0, ClockView.STYLES.lastIndex)].name) +
+            t("Radyo: {0}", FmDisplayView.STYLES[Prefs.fmStyle.coerceIn(0, FmDisplayView.STYLES.lastIndex)].name)
     }
 
     /** Yatay kaydırılan önizleme kartları; seçili olanın çerçevesi tema renginde. */
@@ -558,7 +730,7 @@ class MainActivity : Activity() {
 
     private fun refreshPhotos() {
         val photos = Board.photos.value
-        photosSummary.text = if (photos.isEmpty()) "Henüz fotoğraf yok" else "${photos.size} fotoğraf"
+        photosSummary.text = if (photos.isEmpty()) t("Henüz fotoğraf yok") else t("{0} fotoğraf", photos.size)
         photosBox.removeAllViews()
         val gap = dp(8)
         val cellSize = (resources.displayMetrics.widthPixels - dp(18 * 2 + 14 * 2) - gap * 2) / 3
@@ -578,9 +750,9 @@ class MainActivity : Activity() {
                     setTextColor(Color.WHITE)
                     background = rounded(0xCC000000.toInt(), dpf(14))
                     setOnClickListener {
-                        AlertDialog.Builder(this@MainActivity).setMessage("Bu fotoğraf silinsin mi?")
-                            .setPositiveButton("Sil") { _, _ -> Board.deletePhoto(p.file) }
-                            .setNegativeButton("Vazgeç", null).show()
+                        AlertDialog.Builder(this@MainActivity).setMessage(t("Bu fotoğraf silinsin mi?"))
+                            .setPositiveButton(t("Sil")) { _, _ -> Board.deletePhoto(p.file) }
+                            .setNegativeButton(t("Vazgeç"), null).show()
                     }
                 }, FrameLayout.LayoutParams(dp(28), dp(28), Gravity.TOP or Gravity.END).margins(t = dp(6), r = dp(6)))
                 row.addView(cell, lp(cellSize, cellSize).margins(r = if (i < 2) gap else 0))
@@ -602,22 +774,22 @@ class MainActivity : Activity() {
         val oem = listOf("xiaomi", "redmi", "poco", "oppo", "realme", "oneplus", "huawei", "honor", "vivo").any { brand.contains(it) }
         val head = when {
             installer != "com.android.vending" ->
-                "❌ Android Auto bu kurulumu tanımıyor. Aşağıdaki \"Arabada görünür yap\" düğmesine bas."
+                t("❌ Android Auto bu kurulumu tanımıyor. Aşağıdaki \"Arabada görünür yap\" düğmesine bas.")
             initiating != null && initiating !in SelfInstall.INSTALLERS ->
-                "❌ Telefonun kendi yükleyicisi kullanılmış ($initiating). Aşağıdaki \"Arabada görünür yap\" düğmesine bas."
+                t("❌ Telefonun kendi yükleyicisi kullanılmış ({0}). Aşağıdaki \"Arabada görünür yap\" düğmesine bas.", initiating)
             CarEntry.effective(this) == CarEntry.PARKED && Prefs.lastParkedSession == 0L ->
-                "⚠️ Park kapısı açık ama araçta henüz açılmadı. Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" " +
-                    "açık olmalı; sonra telefonu arabaya bağla, park halindeyken uygulamalar listesinde NewREX'e dokun."
-            CarEntry.effective(this) == CarEntry.PARKED -> "✅ Park kapısı çalışıyor."
+                t("⚠️ Park kapısı açık ama araçta henüz açılmadı. Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" ") +
+                    t("açık olmalı; sonra telefonu arabaya bağla, park halindeyken uygulamalar listesinde NewREX'e dokun.")
+            CarEntry.effective(this) == CarEntry.PARKED -> t("✅ Park kapısı çalışıyor.")
             Prefs.lastCarBind == 0L ->
-                "⚠️ Kurulum doğru ama Android Auto NewREX'i hiç açmayı denemedi. Android Auto → Geliştirici ayarları → " +
-                    "\"Bilinmeyen kaynaklar\" açık olmalı; açıksa kapatıp tekrar aç ve telefonu yeniden başlat." +
-                    if (oem) " Bu marka ($brand) Android Auto'da ek kısıtlama yapabiliyor." else ""
+                t("⚠️ Kurulum doğru ama Android Auto NewREX'i hiç açmayı denemedi. Android Auto → Geliştirici ayarları → ") +
+                    t("\"Bilinmeyen kaynaklar\" açık olmalı; açıksa kapatıp tekrar aç ve telefonu yeniden başlat.") +
+                    if (oem) t(" Bu marka ({0}) Android Auto'da ek kısıtlama yapabiliyor.", brand) else ""
             Prefs.lastCarSession == 0L ->
-                "⚠️ Android Auto NewREX'i gördü ama ekranda açmadı. Android Auto → \"Başlatıcıyı özelleştir\" listesinde NewREX'i işaretle."
-            else -> "✅ Kurulum ve bağlantı düzgün görünüyor."
+                t("⚠️ Android Auto NewREX'i gördü ama ekranda açmadı. Android Auto → \"Başlatıcıyı özelleştir\" listesinde NewREX'i işaretle.")
+            else -> t("✅ Kurulum ve bağlantı düzgün görünüyor.")
         }
-        return if (sleeping) "$head\n🔋 Pil tasarrufu NewREX'i uyutabiliyor; aşağıdaki düğmeyle kısıtlamayı kaldır." else head
+        return if (sleeping) t("{0}\n🔋 Pil tasarrufu NewREX'i uyutabiliyor; aşağıdaki düğmeyle kısıtlamayı kaldır.", head) else head
     }
 
     /** Basit seçim düğmeleri (ör. TV kalitesi). */
@@ -659,9 +831,9 @@ class MainActivity : Activity() {
                     dp(if (sel) 2 else 1), if (sel) Palette.accent else 0x33FFFFFF)
             }
             val why = Saver.reason()
-            summary.text = if (why != null) "Açık ($why)" else Saver.NAMES[Prefs.saverMode]
-            info.text = "Açıkken arka plan sabit durur, dokununca çıkan efektler kapanır. Görüntü ve ses kalitesi değişmez. " +
-                "Otomatik: telefon pil tasarrufundayken ya da ısındığında kendiliğinden açılır."
+            summary.text = if (why != null) t("Açık ({0})", why) else Saver.NAMES[Prefs.saverMode]
+            info.text = t("Açıkken arka plan sabit durur, dokununca çıkan efektler kapanır. Görüntü ve ses kalitesi değişmez. ") +
+                t("Otomatik: telefon pil tasarrufundayken ya da ısındığında kendiliğinden açılır.")
         }
         Saver.NAMES.forEachIndexed { i, n ->
             row.addView(TextView(this).apply {
@@ -684,16 +856,16 @@ class MainActivity : Activity() {
      */
     private fun showDrivingGuide() {
         AlertDialog.Builder(this)
-            .setTitle("Sürüşte de çalışması için son bir adım")
-            .setMessage("NewREX kuruldu 🎉 Şu an arabada sadece park halindeyken açılıyor. Sürüşte de kullanabilmek için " +
-                "bir kez şunları yapman yeterli:\n\n" +
-                "1. Play Store → sağ üstte profil resmin → Play Protect → ⚙️ → \"Uygulamaları Play Protect ile tara\"yı kısa süreliğine kapat.\n" +
-                "    Samsung'daysan: Ayarlar → Güvenlik ve gizlilik → Otomatik Engelleyici'yi de kapat.\n\n" +
-                "2. Buraya dön ve \"Şimdi yap\"a bas. Açılan ekranda \"Güncelle\"ye bas.\n\n" +
-                "3. Kapattığın ayarları geri aç. Bir şey sorarsa \"Gönderme\" de.\n\n" +
-                "4. Telefonu arabadan çıkarıp tekrar bağla. Hepsi bu!")
-            .setPositiveButton("Şimdi yap") { _, _ -> fixInstall() }
-            .setNegativeButton("Sonra", null)
+            .setTitle(t("Sürüşte de çalışması için son bir adım"))
+            .setMessage(t("NewREX kuruldu 🎉 Şu an arabada sadece park halindeyken açılıyor. Sürüşte de kullanabilmek için ") +
+                t("bir kez şunları yapman yeterli:\n\n") +
+                t("1. Play Store → sağ üstte profil resmin → Play Protect → ⚙️ → \"Uygulamaları Play Protect ile tara\"yı kısa süreliğine kapat.\n") +
+                t("    Samsung'daysan: Ayarlar → Güvenlik ve gizlilik → Otomatik Engelleyici'yi de kapat.\n\n") +
+                t("2. Buraya dön ve \"Şimdi yap\"a bas. Açılan ekranda \"Güncelle\"ye bas.\n\n") +
+                t("3. Kapattığın ayarları geri aç. Bir şey sorarsa \"Gönderme\" de.\n\n") +
+                t("4. Telefonu arabadan çıkarıp tekrar bağla. Hepsi bu!"))
+            .setPositiveButton(t("Şimdi yap")) { _, _ -> fixInstall() }
+            .setNegativeButton(t("Sonra"), null)
             .show()
     }
 
@@ -708,19 +880,19 @@ class MainActivity : Activity() {
         @Suppress("DEPRECATION")
         val installer = info?.installingPackageName ?: runCatching { packageManager.getInstallerPackageName(packageName) }.getOrNull()
         AlertDialog.Builder(this)
-            .setTitle("Kurulum bu telefonda tutmadı")
-            .setMessage("\"Güncelle\"ye bastın ama Android Auto NewREX'i hâlâ tanımıyor. Bu, bazı telefonlarda (özellikle " +
-                "Xiaomi, Redmi ve POCO) telefonun kendi yükleyicisi araya girdiğinde oluyor. Merak etme, NewREX arabada " +
-                "park halindeyken çalışmaya devam eder.\n\n" +
-                "Bir kez daha denemek istersen:\n" +
-                "• Play Protect'in kapalı olduğundan emin ol.\n" +
-                "• Açılan ekran telefonun kendi ekranıysa (güvenlik taraması vb.) \"Yine de yükle\" ya da \"Devam\" de.\n\n" +
-                "Yine olmazsa bu pencerenin ekran görüntüsünü geliştiriciye gönder:\n" +
+            .setTitle(t("Kurulum bu telefonda tutmadı"))
+            .setMessage(t("\"Güncelle\"ye bastın ama Android Auto NewREX'i hâlâ tanımıyor. Bu, bazı telefonlarda (özellikle ") +
+                t("Xiaomi, Redmi ve POCO) telefonun kendi yükleyicisi araya girdiğinde oluyor. Merak etme, NewREX arabada ") +
+                t("park halindeyken çalışmaya devam eder.\n\n") +
+                t("Bir kez daha denemek istersen:\n") +
+                t("• Play Protect'in kapalı olduğundan emin ol.\n") +
+                t("• Açılan ekran telefonun kendi ekranıysa (güvenlik taraması vb.) \"Yine de yükle\" ya da \"Devam\" de.\n\n") +
+                t("Yine olmazsa bu pencerenin ekran görüntüsünü geliştiriciye gönder:\n") +
                 "${Build.MANUFACTURER} ${Build.MODEL} • Android ${Build.VERSION.RELEASE}\n" +
                 "Kuran: ${installer ?: "-"} / ${info?.initiatingPackageName ?: "-"}\n" +
                 SelfInstall.report(this))
-            .setPositiveButton("Tekrar dene") { _, _ -> fixInstall() }
-            .setNegativeButton("Tamam", null)
+            .setPositiveButton(t("Tekrar dene")) { _, _ -> fixInstall() }
+            .setNegativeButton(t("Tamam"), null)
             .show()
     }
 
@@ -728,15 +900,15 @@ class MainActivity : Activity() {
     private fun fixRow(): View {
         if (BuildConfig.PARK_ONLY) return View(this)
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        box.addView(button("Arabada görünür yap") { fixInstall() }, lp(MATCH, WRAP).margins(t = dp(8)))
-        box.addView(label("Yükleyiciler:\n" + SelfInstall.report(this), 12f, Palette.TEXT_FAINT, lines = 4), lp(MATCH, WRAP).margins(t = dp(4)))
+        box.addView(button(t("Arabada görünür yap")) { fixInstall() }, lp(MATCH, WRAP).margins(t = dp(8)))
+        box.addView(label(t("Yükleyiciler:\n") + SelfInstall.report(this), 12f, Palette.TEXT_FAINT, lines = 4), lp(MATCH, WRAP).margins(t = dp(4)))
         return box
     }
 
     private fun fixInstall() {
         fun toast(t: String) = android.widget.Toast.makeText(this, t, android.widget.Toast.LENGTH_LONG).show()
         if (!SelfInstall.canRequestInstalls(this)) {
-            toast("Önce NewREX'e \"bilinmeyen uygulamaları yükleme\" izni ver, sonra tekrar bas.")
+            toast(t("Önce NewREX'e \"bilinmeyen uygulamaları yükleme\" izni ver, sonra tekrar bas."))
             runCatching { startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))) }
             return
         }
@@ -744,16 +916,16 @@ class MainActivity : Activity() {
         if (installer == null) {
             val disabled = SelfInstall.INSTALLERS.firstOrNull { SelfInstall.state(this, it) == SelfInstall.State.DISABLED }
             AlertDialog.Builder(this)
-                .setTitle("Google yükleyicisi kapalı")
+                .setTitle(t("Google yükleyicisi kapalı"))
                 .setMessage(if (disabled != null)
-                    "Bu telefonda Google'ın paket yükleyicisi kapatılmış. Bilgisayara bağlayıp şu komutu bir kez çalıştır, sonra tekrar bas:\n\nadb shell pm enable $disabled"
-                else "Bu telefonda Google'ın paket yükleyicisi bulunamadı. Bu Yardım bölümünün ekran görüntüsünü geliştiriciye gönder.")
-                .setPositiveButton("Tamam", null)
+                    t("Bu telefonda Google'ın paket yükleyicisi kapatılmış. Bilgisayara bağlayıp şu komutu bir kez çalıştır, sonra tekrar bas:\n\nadb shell pm enable {0}", disabled)
+                else t("Bu telefonda Google'ın paket yükleyicisi bulunamadı. Bu Yardım bölümünün ekran görüntüsünü geliştiriciye gönder."))
+                .setPositiveButton(t("Tamam"), null)
                 .show()
             return
         }
-        toast("Açılan ekranda \"Güncelle\" ya da \"Yükle\"ye bas. NewREX yeniden açılınca bu bölüme tekrar bak.")
-        if (!SelfInstall.start(this, installer)) toast("Yükleyici açılamadı. Bu bölümün ekran görüntüsünü geliştiriciye gönder.")
+        toast(t("Açılan ekranda \"Güncelle\" ya da \"Yükle\"ye bas. NewREX yeniden açılınca bu bölüme tekrar bak."))
+        if (!SelfInstall.start(this, installer)) toast(t("Yükleyici açılamadı. Bu bölümün ekran görüntüsünü geliştiriciye gönder."))
         else {
             // Tutmazsa bir sonraki açılışta "tekrar Güncelle'ye bas" yerine ne olduğunu anlatan bilgi çıksın
             Prefs.selfInstallTried = BuildConfig.VERSION_CODE
@@ -763,12 +935,12 @@ class MainActivity : Activity() {
 
     /** Arabaya giriş kapısı seçimi: Otomatik / Normal / Park. */
     private fun entryRow(): View {
-        if (BuildConfig.PARK_ONLY) return label("Bu NewREX'in Park sürümü: arabada park halindeyken açılır, King Installer gerekmez. " +
-            "Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı.", 13f, Palette.TEXT_DIM, lines = 4)
+        if (BuildConfig.PARK_ONLY) return label(t("Bu NewREX'in Park sürümü: arabada park halindeyken açılır, King Installer gerekmez. ") +
+            t("Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı."), 13f, Palette.TEXT_DIM, lines = 4)
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val info = label("", 13f, Palette.TEXT_DIM, lines = 4)
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val names = listOf("Otomatik", "Normal", "Park")
+        val names = listOf(t("Otomatik"), t("Normal"), t("Park"))
         fun paint() {
             for (i in 0 until row.childCount) {
                 val sel = i == Prefs.carEntry
@@ -776,9 +948,9 @@ class MainActivity : Activity() {
                     dp(if (sel) 2 else 1), if (sel) Palette.accent else 0x33FFFFFF)
             }
             info.text = (if (CarEntry.effective(this) == CarEntry.PARKED)
-                "Şu an: Park kapısı. Arabada her kurulumda görünür ama sadece park halindeyken açılır."
-            else "Şu an: Normal kapı. Sürüşte de açılır (video kapanır); arabada görünmesi için King Installer ile kurulmuş olmalı.") +
-                if (!CarEntry.parkedSupported()) "\nPark kapısı Android 15 ve üstünde var." else "\nDeğiştirdikten sonra telefonu arabadan çıkarıp tekrar bağla."
+                t("Şu an: Park kapısı. Arabada her kurulumda görünür ama sadece park halindeyken açılır.")
+            else t("Şu an: Normal kapı. Sürüşte de açılır (video kapanır); arabada görünmesi için King Installer ile kurulmuş olmalı.")) +
+                if (!CarEntry.parkedSupported()) t("\nPark kapısı Android 15 ve üstünde var.") else t("\nDeğiştirdikten sonra telefonu arabadan çıkarıp tekrar bağla.")
         }
         names.forEachIndexed { i, n ->
             row.addView(TextView(this).apply {
@@ -790,7 +962,7 @@ class MainActivity : Activity() {
             }, lp(0, dp(40), 1f).margins(r = dp(6)))
         }
         paint()
-        box.addView(label("Arabaya giriş kapısı", 14f, bold = true))
+        box.addView(label(t("Arabaya giriş kapısı"), 14f, bold = true))
         box.addView(row, lp(MATCH, WRAP).margins(t = dp(6)))
         box.addView(info, lp(MATCH, WRAP).margins(t = dp(6)))
         return box
@@ -799,7 +971,7 @@ class MainActivity : Activity() {
     @android.annotation.SuppressLint("BatteryLife")
     private fun askBatteryExemption() {
         val pm = getSystemService(POWER_SERVICE) as android.os.PowerManager
-        if (pm.isIgnoringBatteryOptimizations(packageName)) { android.widget.Toast.makeText(this, "Zaten kısıtlama yok.", android.widget.Toast.LENGTH_SHORT).show(); return }
+        if (pm.isIgnoringBatteryOptimizations(packageName)) { android.widget.Toast.makeText(this, t("Zaten kısıtlama yok."), android.widget.Toast.LENGTH_SHORT).show(); return }
         runCatching {
             startActivity(Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
         }.onFailure { startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
@@ -807,59 +979,74 @@ class MainActivity : Activity() {
 
     private fun diagnostics(): String {
         val fmt = java.text.SimpleDateFormat("d MMM HH:mm", tr)
-        fun time(t: Long) = if (t == 0L) "hiç olmadı" else fmt.format(java.util.Date(t))
+        fun time(t: Long) = if (t == 0L) t("hiç olmadı") else fmt.format(java.util.Date(t))
         val install = runCatching {
             if (Build.VERSION.SDK_INT >= 30) {
                 val i = packageManager.getInstallSourceInfo(packageName)
                 val source = if (Build.VERSION.SDK_INT >= 33) " • kaynak=${i.packageSource}" else ""
-                "yükleyen=${i.installingPackageName} • başlatan=${i.initiatingPackageName} • kaynak uygulama=${i.originatingPackageName}$source"
+                t("yükleyen={0} • başlatan={1} • kaynak uygulama={2}{3}", i.installingPackageName, i.initiatingPackageName, i.originatingPackageName, source)
             } else {
                 @Suppress("DEPRECATION")
-                "yükleyen=${packageManager.getInstallerPackageName(packageName)}"
+                t("yükleyen={0}", packageManager.getInstallerPackageName(packageName))
             }
-        }.getOrElse { "okunamadı" }
+        }.getOrElse { t("okunamadı") }
         val aa = runCatching {
             packageManager.getPackageInfo("com.google.android.projection.gearhead", 0).versionName
-        }.getOrElse { "bulunamadı" }
-        return "Telefon: ${Build.MANUFACTURER} ${Build.MODEL} • Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})\n" +
-            "NewREX ${BuildConfig.VERSION_NAME} • $install\n" +
-            "Android Auto: $aa\n" +
-            "Araç bağlanmayı denedi: ${time(Prefs.lastCarBind)}\n" +
-            "Araç ekranı açıldı: ${time(Prefs.lastCarSession)}\n\n" +
-            "Uygulama arabada görünmüyorsa bu bölümün ekran görüntüsünü geliştiriciye gönder."
+        }.getOrElse { t("bulunamadı") }
+        return t("Telefon: {0} {1} • Android {2} (API {3})\n", Build.MANUFACTURER, Build.MODEL, Build.VERSION.RELEASE, Build.VERSION.SDK_INT) +
+            t("NewREX {0} • {1}\n", BuildConfig.VERSION_NAME, install) +
+            t("Android Auto: {0}\n", aa) +
+            t("Araç bağlanmayı denedi: {0}\n", time(Prefs.lastCarBind)) +
+            t("Araç ekranı açıldı: {0}\n\n", time(Prefs.lastCarSession)) +
+            t("Uygulama arabada görünmüyorsa bu bölümün ekran görüntüsünü geliştiriciye gönder.")
+    }
+
+    private fun refreshSelf() {
+        val running = DirectApps.ownRunning()
+        selfSummary.text = when {
+            running -> t("Hazır")
+            DirectApps.granted() -> t("Shizuku ile hazır")
+            SelfAdb.paired(this) -> t("Eşleşti · Wi-Fi'de kendiliğinden başlar")
+            else -> t("Kurulum gerekli")
+        }
+        selfStatus.text = listOfNotNull(
+            if (running) t("Yardımcı çalışıyor. Telefon kapanana kadar açık kalır.") else null,
+            if (!SelfAdb.paired(this)) t("En kolayı en üstteki Kurulum ekranından yapmak. Ya da: “Eşleştir”e bas, açılan sayfada “Eşleme kodu ile cihaz eşle”ye bas, bildirimde “Kodu yaz”a basıp 6 haneli kodu yaz.") else null,
+            if (SelfAdb.paired(this) && !running) t("Telefon Wi-Fi'ye bağlıyken “Şimdi başlat”a bas ya da biraz bekle; kendiliğinden başlar.") else null,
+        ).joinToString("\n\n")
     }
 
     private fun refreshMirror() {
         val on = Mirror.active.value
-        mirrorStatus.text = if (on) "✅ Ekran araca yansıtılıyor. Araçta NewREX → Yansıt'a gir."
-        else "Telefonundaki her şeyi (oyun, sosyal medya, uygulamalar) araç ekranında göster. Her başlatmada telefonda bir kez \"Başlat\" onayı istenir. " +
-            "Netflix gibi korumalı uygulamalar siyah görünür. Yansıtma sırasında telefon ekranı açık kalır; uygulamaları telefonun kendi ekranından kullanırsın."
-        mirrorButton.text = if (on) "Yansıtmayı durdur" else "Ekranı arabaya yansıt"
-        mirrorSummary.text = if (on) "✅ Yansıtılıyor" else "Telefon ekranını araçta göster"
+        mirrorStatus.text = if (on) t("✅ Ekran araca yansıtılıyor. Araçta NewREX → Yansıt'a gir.")
+        else t("Telefonundaki her şeyi (oyun, sosyal medya, uygulamalar) araç ekranında göster. Her başlatmada telefonda bir kez \"Başlat\" onayı istenir. ") +
+            t("Netflix gibi korumalı uygulamalar siyah görünür. Yansıtma sırasında telefon ekranı açık kalır; uygulamaları telefonun kendi ekranından kullanırsın.")
+        mirrorButton.text = if (on) t("Yansıtmayı durdur") else t("Ekranı arabaya yansıt")
+        mirrorSummary.text = if (on) t("✅ Yansıtılıyor") else t("Telefon ekranını araçta göster")
     }
 
     private fun refreshPark() {
         parkButtons.removeAllViews()
         val spot = Prefs.parkedSpot
         if (spot == null) {
-            parkStatus.text = "Araç kapanınca (Android Auto bağlantısı kesilince) bulunduğun yer otomatik kaydedilir. " +
-                "Henüz kayıtlı park yeri yok."
-            parkSummary.text = "Henüz kayıtlı park yeri yok"
+            parkStatus.text = t("Araç kapanınca (Android Auto bağlantısı kesilince) bulunduğun yer otomatik kaydedilir. ") +
+                t("Henüz kayıtlı park yeri yok.")
+            parkSummary.text = t("Henüz kayıtlı park yeri yok")
         } else {
             val time = java.text.SimpleDateFormat("d MMMM yyyy, HH:mm", tr).format(java.util.Date(spot.time))
-            parkStatus.text = "🅿️ Son park: $time\nKonum hassasiyeti: ~${spot.accuracy.toInt()} m"
-            parkSummary.text = "Son park: $time"
-            parkButtons.addView(button("Haritada göster") { openMap(spot, walk = false) }, lp(MATCH, WRAP).margins(t = dp(8)))
-            parkButtons.addView(button("Yürüyerek yol tarifi") { openMap(spot, walk = true) }, lp(MATCH, WRAP).margins(t = dp(8)))
-            parkButtons.addView(button("Park yerini sil") { Prefs.parkedSpot = null; refreshPark() }, lp(MATCH, WRAP).margins(t = dp(8)))
+            parkStatus.text = t("🅿️ Son park: {0}\nKonum hassasiyeti: ~{1} m", time, spot.accuracy.toInt())
+            parkSummary.text = t("Son park: {0}", time)
+            parkButtons.addView(button(t("Haritada göster")) { openMap(spot, walk = false) }, lp(MATCH, WRAP).margins(t = dp(8)))
+            parkButtons.addView(button(t("Yürüyerek yol tarifi")) { openMap(spot, walk = true) }, lp(MATCH, WRAP).margins(t = dp(8)))
+            parkButtons.addView(button(t("Park yerini sil")) { Prefs.parkedSpot = null; refreshPark() }, lp(MATCH, WRAP).margins(t = dp(8)))
             val ago = (System.currentTimeMillis() - spot.time) / 60_000
-            parkStatus.append("\n⏱️ " + (if (ago >= 60) "${ago / 60} sa ${ago % 60} dk" else "$ago dk") + "dır park halinde")
+            parkStatus.append("\n⏱️ " + (if (ago >= 60) "${ago / 60} sa ${ago % 60} dk" else t("{0} dk", ago)) + t("dır park halinde"))
         }
         // Otopark süresi hatırlatıcısı
         val timerEnd = ParkTimer.endTime(this)
-        parkButtons.addView(label(if (timerEnd > 0) "⏰ Otopark süren " +
-            java.text.SimpleDateFormat("HH:mm", tr).format(java.util.Date(timerEnd)) + " itibarıyla doluyor (10 dk önce bildirim gelir)"
-            else "⏰ Otopark süresi hatırlatıcısı kur:", 14f, Palette.TEXT_DIM, lines = 3), lp(MATCH, WRAP).margins(t = dp(14)))
+        parkButtons.addView(label(if (timerEnd > 0) t("⏰ Otopark süren ") +
+            java.text.SimpleDateFormat("HH:mm", tr).format(java.util.Date(timerEnd)) + t(" itibarıyla doluyor (10 dk önce bildirim gelir)")
+            else t("⏰ Otopark süresi hatırlatıcısı kur:"), 14f, Palette.TEXT_DIM, lines = 3), lp(MATCH, WRAP).margins(t = dp(14)))
         val timers = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         listOf(30 to "30 dk", 60 to "1 sa", 120 to "2 sa", 180 to "3 sa").forEach { (m, t) ->
             timers.addView(button(t) {
@@ -868,13 +1055,13 @@ class MainActivity : Activity() {
                 refreshPark()
             }, lp(0, WRAP, 1f).margins(r = dp(6)))
         }
-        if (timerEnd > 0) timers.addView(button("İptal") { ParkTimer.cancel(this); refreshPark() }, lp(0, WRAP, 1f))
+        if (timerEnd > 0) timers.addView(button(t("İptal")) { ParkTimer.cancel(this); refreshPark() }, lp(0, WRAP, 1f))
         parkButtons.addView(timers, lp(MATCH, WRAP).margins(t = dp(8)))
-        if (timerEnd > 0) parkSummary.text = parkSummary.text.toString() + " • hatırlatıcı açık"
-        parkButtons.addView(button("Şu anki yerimi park yeri olarak kaydet") {
+        if (timerEnd > 0) parkSummary.text = parkSummary.text.toString() + t(" • hatırlatıcı açık")
+        parkButtons.addView(button(t("Şu anki yerimi park yeri olarak kaydet")) {
             val loc = DriveState.bestLocation(this)
             if (loc == null) {
-                AlertDialog.Builder(this).setMessage("Konum alınamadı. Konum iznini ver ve konumu aç.").setPositiveButton("Tamam", null).show()
+                AlertDialog.Builder(this).setMessage(t("Konum alınamadı. Konum iznini ver ve konumu aç.")).setPositiveButton(t("Tamam"), null).show()
             } else {
                 Prefs.parkedSpot = ParkedSpot(loc.latitude, loc.longitude, System.currentTimeMillis(), loc.accuracy)
                 refreshPark()
@@ -892,18 +1079,18 @@ class MainActivity : Activity() {
     private fun refreshMaintenance() {
         maintenanceBox.removeAllViews()
         maintenanceSummary.text = Prefs.maintenanceDue().firstOrNull()?.let { (m, d) ->
-            if (d < 0) "${m.emoji} ${m.title} ${-d} gün gecikti" else "${m.emoji} ${m.title}: $d gün kaldı"
-        } ?: "Muayene, sigorta, yağ değişimi…"
+            if (d < 0) t("{0} {1} {2} gün gecikti", m.emoji, m.title, -d) else t("{0} {1}: {2} gün kaldı", m.emoji, m.title, d)
+        } ?: t("Muayene, sigorta, yağ değişimi…")
         val today = java.time.LocalDate.now()
         val fmt = java.time.format.DateTimeFormatter.ofPattern("d MMMM yyyy", tr)
         Maintenance.values().forEach { m ->
             val day = Prefs.maintenanceDay(m)?.let { java.time.LocalDate.ofEpochDay(it) }
             val left = day?.let { it.toEpochDay() - today.toEpochDay() }
             val (status, color) = when {
-                left == null -> "Tarih girilmedi" to Palette.TEXT_FAINT
-                left < 0 -> "${fmt.format(day)} • ${-left} gün gecikti" to Palette.RED
-                left <= 15 -> "${fmt.format(day)} • $left gün kaldı" to Palette.ORANGE
-                else -> "${fmt.format(day)} • $left gün kaldı" to Palette.GREEN
+                left == null -> t("Tarih girilmedi") to Palette.TEXT_FAINT
+                left < 0 -> t("{0} • {1} gün gecikti", fmt.format(day), -left) to Palette.RED
+                left <= 15 -> t("{0} • {1} gün kaldı", fmt.format(day), left) to Palette.ORANGE
+                else -> t("{0} • {1} gün kaldı", fmt.format(day), left) to Palette.GREEN
             }
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -916,7 +1103,7 @@ class MainActivity : Activity() {
                     addView(label(status, 12f, color), lp(MATCH, WRAP).margins(t = dp(3)))
                 }, lp(0, WRAP, 1f))
                 if (day != null) addView(Button(this@MainActivity).apply {
-                    text = "Sil"
+                    text = t("Sil")
                     setOnClickListener { Prefs.setMaintenanceDay(m, null); refreshMaintenance() }
                 })
                 setOnClickListener {
@@ -931,7 +1118,40 @@ class MainActivity : Activity() {
         }
     }
 
+    private lateinit var obdSummary: TextView
+
+    private fun obdText() = if (Prefs.obdMac.isBlank()) t("Seçilmedi") else Prefs.obdName.ifBlank { Prefs.obdMac }
+
+    /** Eşleşmiş Bluetooth cihazlarından OBD adaptörünü seçtirir (önce Bluetooth izni). */
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun pickObd() {
+        if (!com.newrex.auto.data.Obd.hasPermission(this)) {
+            requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), REQ_BT)
+            return
+        }
+        val devices = com.newrex.auto.data.Obd.pairedDevices(this)
+        if (devices.isEmpty()) {
+            AlertDialog.Builder(this).setMessage(t("Eşleşmiş Bluetooth cihazı yok. Adaptörü arabaya tak, kontağı aç, telefonun Bluetooth ayarlarından eşleştir (şifre genelde 1234 ya da 0000) ve tekrar dene."))
+                .setPositiveButton(t("Bluetooth ayarları")) { _, _ -> runCatching { startActivity(Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)) } }
+                .setNegativeButton(t("Tamam"), null).show()
+            return
+        }
+        val names = devices.map { d -> runCatching { d.name }.getOrNull()?.takeIf { it.isNotBlank() } ?: d.address }
+        AlertDialog.Builder(this).setTitle(t("OBD-II adaptörünü seç"))
+            .setItems(names.toTypedArray()) { _, i ->
+                Prefs.obdMac = devices[i].address
+                Prefs.obdName = names[i]
+                com.newrex.auto.data.Obd.restart(this)
+                obdSummary.text = obdText()
+            }
+            .setNegativeButton(t("Vazgeç"), null).show()
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        if (requestCode == REQ_BT) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) pickObd()
+            return
+        }
         refreshLocation()
         // Araç bağlıysa hız ve yolculuk ölçümü hemen başlasın
         DriveState.ensureGps()
@@ -946,7 +1166,7 @@ class MainActivity : Activity() {
         runCatching { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
         val name = contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
             if (it.moveToFirst()) it.getString(0) else null
-        } ?: "Liste dosyası"
+        } ?: t("Liste dosyası")
         Prefs.playlists = Prefs.playlists + Playlist(name.substringBeforeLast('.'), uri.toString())
         refreshPlaylists()
     }
@@ -954,14 +1174,22 @@ class MainActivity : Activity() {
     private fun refreshLocation() {
         val granted = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         locationCard.visibility = if (granted) View.GONE else View.VISIBLE
+        mediaCard.visibility = if (missingMediaPermissions().isEmpty()) View.GONE else View.VISIBLE
+    }
+
+    private fun missingMediaPermissions(): Array<String> {
+        val wanted = if (Build.VERSION.SDK_INT >= 33)
+            listOf(Manifest.permission.READ_MEDIA_AUDIO, Manifest.permission.READ_MEDIA_VIDEO, Manifest.permission.RECORD_AUDIO)
+        else listOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO)
+        return wanted.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }.toTypedArray()
     }
 
     private fun refreshPlaylists() {
         playlistBox.removeAllViews()
         val lists = Prefs.playlists
-        playlistSummary.text = if (lists.isEmpty()) "Liste yok" else lists.joinToString(", ") { it.name }
+        playlistSummary.text = if (lists.isEmpty()) t("Liste yok") else lists.joinToString(", ") { it.name }
         if (lists.isEmpty()) {
-            playlistBox.addView(label("Henüz liste yok.", 14f, Palette.TEXT_FAINT), lp(MATCH, WRAP).margins(t = dp(10)))
+            playlistBox.addView(label(t("Henüz liste yok."), 14f, Palette.TEXT_FAINT), lp(MATCH, WRAP).margins(t = dp(10)))
         }
         lists.forEachIndexed { i, pl ->
             val row = LinearLayout(this).apply {
@@ -975,7 +1203,7 @@ class MainActivity : Activity() {
                     addView(label(pl.url, 11f, Palette.TEXT_FAINT), lp(MATCH, WRAP).margins(t = dp(2)))
                 }, lp(0, WRAP, 1f))
                 addView(Button(this@MainActivity).apply {
-                    text = "Sil"
+                    text = t("Sil")
                     setOnClickListener {
                         Prefs.playlists = Prefs.playlists.filterIndexed { j, _ -> j != i }
                         refreshPlaylists()
@@ -987,7 +1215,7 @@ class MainActivity : Activity() {
     }
 
     private fun addPlaylistDialog() {
-        val name = EditText(this).apply { hint = "Liste adı (ör. Evdeki liste)"; setSingleLine() }
+        val name = EditText(this).apply { hint = t("Liste adı (ör. Evdeki liste)"); setSingleLine() }
         val url = EditText(this).apply {
             hint = "https://…/liste.m3u"
             setSingleLine()
@@ -1000,17 +1228,17 @@ class MainActivity : Activity() {
             addView(url)
         }
         AlertDialog.Builder(this)
-            .setTitle("IPTV listesi ekle")
+            .setTitle(t("IPTV listesi ekle"))
             .setView(box)
-            .setPositiveButton("Ekle") { _, _ ->
+            .setPositiveButton(t("Ekle")) { _, _ ->
                 val u = url.text.toString().trim()
                 if (u.startsWith("http://") || u.startsWith("https://")) {
-                    val n = name.text.toString().trim().ifEmpty { "Liste ${Prefs.playlists.size + 1}" }
+                    val n = name.text.toString().trim().ifEmpty { t("Liste {0}", Prefs.playlists.size + 1) }
                     Prefs.playlists = Prefs.playlists + Playlist(n, u)
                     refreshPlaylists()
                 }
             }
-            .setNegativeButton("Vazgeç", null)
+            .setNegativeButton(t("Vazgeç"), null)
             .show()
     }
 
@@ -1024,7 +1252,9 @@ class MainActivity : Activity() {
 
     companion object {
         private const val PICK_FILE = 7
+        private const val REQ_BT = 11
         private const val EXTRA_ASK_LOCATION = "askLocation"
+        const val EXTRA_FIX_INSTALL = "fixInstall"
 
         /** Araç ekranından: telefonda NewREX'i açıp konum iznini sorar. */
         fun askLocation(context: android.content.Context) {

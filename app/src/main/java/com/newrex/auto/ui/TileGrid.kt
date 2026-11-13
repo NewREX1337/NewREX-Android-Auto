@@ -42,8 +42,14 @@ class TileAdapter(private val ctx: Context) : RecyclerView.Adapter<TileAdapter.V
     var items: List<Tile> = emptyList()
         set(v) { field = v; notifyDataSetChanged() }
 
+    // Çalan öğe değişince sadece eski ve yeni kutucuk yeniden çizilir (bütün liste değil)
     var highlightKey: String? = null
-        set(v) { field = v; notifyDataSetChanged() }
+        set(v) {
+            if (v == field) return
+            val old = field
+            field = v
+            items.forEachIndexed { i, t -> if (t.key == old || t.key == v) notifyItemChanged(i) }
+        }
 
     class VH(
         val root: LinearLayout,
@@ -138,6 +144,10 @@ fun Context.tileGrid(adapter: TileAdapter, minTileDp: Int = 150) = RecyclerView(
     val glm = GridLayoutManager(context, 3)
     layoutManager = glm
     this.adapter = adapter
+    setHasFixedSize(true)
+    setItemViewCacheSize(12)
+    // Değişen kutucukta yanıp sönme animasyonu gereksiz yük
+    itemAnimator = null
     clipToPadding = false
     setPadding(dp(4), dp(4), dp(4), dp(4))
     overScrollMode = RecyclerView.OVER_SCROLL_NEVER

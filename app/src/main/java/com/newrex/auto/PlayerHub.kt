@@ -2,6 +2,7 @@
 package com.newrex.auto
 
 import android.content.Context
+import android.media.audiofx.Equalizer
 import android.os.Handler
 import android.os.Looper
 import androidx.media3.common.AudioAttributes
@@ -62,6 +63,7 @@ object PlayerHub {
     private val stable = Runnable { retries = 0 }
 
     private var exo: ExoPlayer? = null
+    private var eq: Equalizer? = null
     private var session: MediaSession? = null
     private var sessionPlayer: Player? = null
     private var appContext: Context? = null
@@ -156,7 +158,7 @@ object PlayerHub {
                     e.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT
                 if (cur?.kind == Kind.RADIO && !offline && heal(cur)) return
                 buffering.value = false
-                error.value = "Yayın açılamadı. Başka bir kanal/istasyon deneyin."
+                error.value = t("Yayın açılamadı. Başka bir kanal/istasyon deneyin.")
             }
         })
 
@@ -180,6 +182,8 @@ object PlayerHub {
         }
         exo = p
         applyQuality()
+        applyEqualizer()
+        SpeedVolume.attach(p.audioSessionId)
         this.sessionPlayer = sessionPlayer
         appContext = context.applicationContext
         handler.post(ticker)
@@ -251,15 +255,39 @@ object PlayerHub {
         now.value?.takeIf { it.kind == Kind.PODCAST }?.let { e -> exo?.let { Prefs.savePosition(e.url, it.currentPosition) } }
         handler.removeCallbacks(ticker)
         session?.release()
+        eq?.release()
+        SpeedVolume.detach()
         exo?.release()
         session = null
+        eq = null
         exo = null
         now.value = null
         playing.value = false
     }
 
     /** TV görüntü kalitesi seçimi (Prefs.tvQuality): Otomatik en iyisini seçer, diğerleri üst sınırdır. */
-    val QUALITIES = listOf("Otomatik" to 0, "1080p" to 1080, "720p" to 720, "480p" to 480)
+    val QUALITIES = listOf(t("Otomatik") to 0, "1080p" to 1080, "720p" to 720, "480p" to 480)
+
+    fun applyEqualizer() {
+        val p = exo ?: return
+        try {
+            if (!Prefs.eqEnabled) {
+                eq?.enabled = false
+                return
+            }
+            val equalizer = eq ?: Equalizer(0, p.audioSessionId).also { eq = it }
+            equalizer.enabled = true
+            val bands = Prefs.eqBands
+            val numBands = equalizer.numberOfBands.toInt().coerceAtMost(bands.size)
+            val range = equalizer.bandLevelRange
+            val min = range[0]
+            val max = range[1]
+            for (i in 0 until numBands) {
+                val level = (bands[i] * 100).toShort().coerceIn(min, max)
+                equalizer.setBandLevel(i.toShort(), level)
+            }
+        } catch (_: Exception) { }
+    }
 
     fun applyQuality() {
         val p = exo ?: return
@@ -293,7 +321,7 @@ object PlayerHub {
             if (now.value?.key != e.key) return@launch
             if (alt == null) {
                 buffering.value = false
-                error.value = "Yayın açılamadı. Başka bir kanal/istasyon deneyin."
+                error.value = t("Yayın açılamadı. Başka bir kanal/istasyon deneyin.")
                 return@launch
             }
             val fixed = e.copy(url = alt.url, image = e.image ?: alt.image, home = e.home ?: alt.home)

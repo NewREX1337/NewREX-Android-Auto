@@ -1,0 +1,802 @@
+1|🚗  Sürüşte de kullanmak için küçük bir adım kaldı
+2|NewREX şu an \"park modunda\" açıldı: araç hareket edince Android Auto uygulamayı kapatır. 
+3|Bunu telefondan bir kez düzeltmen yeterli:
+4|1.  Telefonda Play Protect'i (Samsung'da Otomatik Engelleyici'yi de) kısa süreliğine kapat\n
+5|2.  NewREX'i aç → çıkan pencerede \"Şimdi yap\" → \"Güncelle\"\n
+6|3.  Kapattıklarını geri aç, telefonu arabadan çıkarıp tekrar bağla
+7|Anladım
+8|İyi geceler
+9|Günaydın
+10|İyi günler
+11|İyi akşamlar
+12|{0}{1}, NewREX'e hoş geldin! İyi yolculuklar!
+13|Android Auto için TV, YouTube, radyo ve daha fazlası
+14|Dil
+15|Dili değiştir
+16|Araç hız bilgisi vermezse hareketi telefonun GPS'inden algılarız (park modu, park yeri, hava durumu).
+17|📍 Konum izni gerekli
+18|Konum iznini ver
+19|🎵 Medya ve mikrofon izni
+20|Araçta \"Medya\" sayfasında telefondaki müzik ve videoları görmek ve sesli komut kullanmak için gerekli. 
+21|Dosyalar telefondan dışarı gönderilmez.
+22|İzinleri ver
+23|Araç ekranı fotoğrafları
+24|Araçta açılışta saatin yanında görünür. Araç ekranında ✎ ile taşıyabilir, büyütebilir veya kaldırabilirsin. 
+25|Fotoğraflar sadece bu telefonda saklanır.
+26|Fotoğraf ekle
+27|Tema
+28|TV görüntü kalitesi
+29|Otomatik: yayının en iyi kalitesi. Düşük seçersen telefon daha az ısınır, daha az internet harcar.
+30|Tasarruf modu
+31|Saat ve radyo görünümü
+32|Ekranı arabaya yansıt
+33|Ekran yansıtma
+34|Arabam nerede?
+35|Bakım hatırlatıcı
+36|Tarihe dokunup seç. 15 gün kala araç ekranında uyarı çıkar.
+37|Yakıt ve kilometre
+38|IPTV listeleri
+39|M3U / M3U8 bağlantısı ya da telefondaki bir liste dosyası ekleyebilirsin.
+40|Bağlantı ile liste ekle
+41|Telefondan dosya seç
+42|Yardım
+43|Arabada görünmüyorsa buraya bak
+44|1. Telefonu araca bağla, Android Auto açılsın.\n
+45|2. Araç ekranında uygulamalar menüsüne gir.\n
+46|3. \"NewREX Android Auto\" simgesine dokun.\n\n
+47|Görünmüyorsa: Android Auto ayarları → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı.
+48|Sorun giderme
+49|Pil kısıtlamasını kaldır
+50|NewREX Android Auto {0} • Orijinal geliştirici: {1}\n
+51|Reklam yok, takip yok, hiçbir veri toplanmaz.\n\n{0}\n{1}
+52|Otomatik (telefonun dili): {0}
+53|Dil değişince NewREX yeniden başlar. Araçtaysan uygulamayı araç ekranından tekrar aç.
+54|Tamam
+55|Vazgeç
+56|Kilometre, yakıt alımları, yağ değişimi
+57|Araç kilometre ve yakıt bilgisini paylaşmıyorsa bu değerlerle tahmin yapılır: 
+58|girdiğin kilometreye GPS ile gidilen yol eklenir.
+59|Kilometre sayacı
+60|Son yağ değişimi
+61|Yağ değişim aralığı
+62|🛢️ Yağ değişimi %,.0f km gecikti!
+63|🛢️ Yağ değişimine %,.0f km kaldı
+64|⛽ Yakıt defteri
+65|Ortalama: 
+66|en az 2 dolum gerekli
+67|Km başı: 
+68|Bu ay: 
+69|Tahmini menzil: 
+70|Sil
+71|Yakıt aldım (depoyu fulledim)
+72|Kaydet
+73|Litre (ör. 38,5)
+74|Tutar ₺ (ör. 1850)
+75|Depoyu fullediğin alımları gir; tüketim böyle doğru hesaplanır. Kilometreyi aracın göstergesinden yaz.
+76|Yakıt aldım
+77|Tema rengi ve arka plan
+78|Tema rengi ve özel arka plan
+79|Tema rengi
+80|Arka plan
+82|Oto
+83|Saat
+84|Radyo frekans göstergesi
+85|◷ olanlar yuvarlak (akrepli) saat. Seçtiğin tasarım araç ekranına hemen yansır.
+86|Saat: {0} · 
+87|Radyo: {0}
+88|Henüz fotoğraf yok
+89|{0} fotoğraf
+90|Bu fotoğraf silinsin mi?
+91|❌ Android Auto bu kurulumu tanımıyor. Aşağıdaki \"Arabada görünür yap\" düğmesine bas.
+92|❌ Telefonun kendi yükleyicisi kullanılmış ({0}). Aşağıdaki \"Arabada görünür yap\" düğmesine bas.
+93|⚠️ Park kapısı açık ama araçta henüz açılmadı. Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" 
+94|açık olmalı; sonra telefonu arabaya bağla, park halindeyken uygulamalar listesinde NewREX'e dokun.
+95|✅ Park kapısı çalışıyor.
+96|⚠️ Kurulum doğru ama Android Auto NewREX'i hiç açmayı denemedi. Android Auto → Geliştirici ayarları → 
+97|\"Bilinmeyen kaynaklar\" açık olmalı; açıksa kapatıp tekrar aç ve telefonu yeniden başlat.
+98| Bu marka ({0}) Android Auto'da ek kısıtlama yapabiliyor.
+99|⚠️ Android Auto NewREX'i gördü ama ekranda açmadı. Android Auto → \"Başlatıcıyı özelleştir\" listesinde NewREX'i işaretle.
+100|✅ Kurulum ve bağlantı düzgün görünüyor.
+101|{0}\n🔋 Pil tasarrufu NewREX'i uyutabiliyor; aşağıdaki düğmeyle kısıtlamayı kaldır.
+102|Açık ({0})
+103|Açıkken arka plan sabit durur, dokununca çıkan efektler kapanır. Görüntü ve ses kalitesi değişmez. 
+104|Otomatik: telefon pil tasarrufundayken ya da ısındığında kendiliğinden açılır.
+105|Sürüşte de çalışması için son bir adım
+106|NewREX kuruldu 🎉 Şu an arabada sadece park halindeyken açılıyor. Sürüşte de kullanabilmek için 
+107|bir kez şunları yapman yeterli:\n\n
+108|1. Play Store → sağ üstte profil resmin → Play Protect → ⚙️ → \"Uygulamaları Play Protect ile tara\"yı kısa süreliğine kapat.\n
+109|    Samsung'daysan: Ayarlar → Güvenlik ve gizlilik → Otomatik Engelleyici'yi de kapat.\n\n
+110|2. Buraya dön ve \"Şimdi yap\"a bas. Açılan ekranda \"Güncelle\"ye bas.\n\n
+111|3. Kapattığın ayarları geri aç. Bir şey sorarsa \"Gönderme\" de.\n\n
+112|4. Telefonu arabadan çıkarıp tekrar bağla. Hepsi bu!
+113|Şimdi yap
+114|Sonra
+115|Kurulum bu telefonda tutmadı
+116|\"Güncelle\"ye bastın ama Android Auto NewREX'i hâlâ tanımıyor. Bu, bazı telefonlarda (özellikle 
+117|Xiaomi, Redmi ve POCO) telefonun kendi yükleyicisi araya girdiğinde oluyor. Merak etme, NewREX arabada 
+118|park halindeyken çalışmaya devam eder.\n\n
+119|Bir kez daha denemek istersen:\n
+120|• Play Protect'in kapalı olduğundan emin ol.\n
+121|• Açılan ekran telefonun kendi ekranıysa (güvenlik taraması vb.) \"Yine de yükle\" ya da \"Devam\" de.\n\n
+122|Yine olmazsa bu pencerenin ekran görüntüsünü geliştiriciye gönder:\n
+123|Tekrar dene
+124|Arabada görünür yap
+125|Yükleyiciler:\n
+126|Önce NewREX'e \"bilinmeyen uygulamaları yükleme\" izni ver, sonra tekrar bas.
+127|Google yükleyicisi kapalı
+128|Bu telefonda Google'ın paket yükleyicisi kapatılmış. Bilgisayara bağlayıp şu komutu bir kez çalıştır, sonra tekrar bas:\n\nadb shell pm enable {0}
+129|Bu telefonda Google'ın paket yükleyicisi bulunamadı. Bu Yardım bölümünün ekran görüntüsünü geliştiriciye gönder.
+130|Açılan ekranda \"Güncelle\" ya da \"Yükle\"ye bas. NewREX yeniden açılınca bu bölüme tekrar bak.
+131|Yükleyici açılamadı. Bu bölümün ekran görüntüsünü geliştiriciye gönder.
+132|Bu NewREX'in Park sürümü: arabada park halindeyken açılır, King Installer gerekmez. 
+133|Android Auto → Geliştirici ayarları → \"Bilinmeyen kaynaklar\" açık olmalı.
+134|Otomatik
+135|Normal
+136|Park
+137|Şu an: Park kapısı. Arabada her kurulumda görünür ama sadece park halindeyken açılır.
+138|Şu an: Normal kapı. Sürüşte de açılır (video kapanır); arabada görünmesi için King Installer ile kurulmuş olmalı.
+139|\nPark kapısı Android 15 ve üstünde var.
+140|\nDeğiştirdikten sonra telefonu arabadan çıkarıp tekrar bağla.
+141|Arabaya giriş kapısı
+142|Zaten kısıtlama yok.
+143|hiç olmadı
+144|yükleyen={0} • başlatan={1} • kaynak uygulama={2}{3}
+145|yükleyen={0}
+146|okunamadı
+147|bulunamadı
+148|Telefon: {0} {1} • Android {2} (API {3})\n
+149|NewREX {0} • {1}\n
+150|Android Auto: {0}\n
+151|Araç bağlanmayı denedi: {0}\n
+152|Araç ekranı açıldı: {0}\n\n
+153|Uygulama arabada görünmüyorsa bu bölümün ekran görüntüsünü geliştiriciye gönder.
+154|✅ Ekran araca yansıtılıyor. Araçta NewREX → Yansıt'a gir.
+155|Telefonundaki her şeyi (oyun, sosyal medya, uygulamalar) araç ekranında göster. Her başlatmada telefonda bir kez \"Başlat\" onayı istenir. 
+156|Netflix gibi korumalı uygulamalar siyah görünür. Yansıtma sırasında telefon ekranı açık kalır; uygulamaları telefonun kendi ekranından kullanırsın.
+157|Yansıtmayı durdur
+158|✅ Yansıtılıyor
+159|Telefon ekranını araçta göster
+160|Araç kapanınca (Android Auto bağlantısı kesilince) bulunduğun yer otomatik kaydedilir. 
+161|Henüz kayıtlı park yeri yok.
+162|Henüz kayıtlı park yeri yok
+163|🅿️ Son park: {0}\nKonum hassasiyeti: ~{1} m
+164|Son park: {0}
+165|Haritada göster
+166|Yürüyerek yol tarifi
+167|Park yerini sil
+168|{0} dk
+169|dır park halinde
+170|⏰ Otopark süren 
+171| itibarıyla doluyor (10 dk önce bildirim gelir)
+172|⏰ Otopark süresi hatırlatıcısı kur:
+173|İptal
+174| • hatırlatıcı açık
+175|Şu anki yerimi park yeri olarak kaydet
+176|Konum alınamadı. Konum iznini ver ve konumu aç.
+177|{0} {1} {2} gün gecikti
+178|{0} {1}: {2} gün kaldı
+179|Muayene, sigorta, yağ değişimi…
+180|Tarih girilmedi
+181|{0} • {1} gün gecikti
+182|{0} • {1} gün kaldı
+183|Liste dosyası
+184|Liste yok
+185|Henüz liste yok.
+186|Liste adı (ör. Evdeki liste)
+187|IPTV listesi ekle
+188|Ekle
+189|Liste {0}
+190|Ekran araca yansıtılıyor
+191|Görüntü sadece araç ekranında gösterilir, kaydedilmez.
+192|Durdur
+193|Araç ekranına yaz
+194|Yazdığın, araç ekranındaki kutuya aktarılır.
+195|Araca gönder
+196|{0} fotoğraf araç ekranına eklendi
+197|Fotoğraf eklenemedi
+198|Yayın açılamadı. Başka bir kanal/istasyon deneyin.
+199|Kapalı
+200|Açık
+201|elle açıldı
+202|telefon pil tasarrufunda
+203|telefon ısındı
+204|hazır
+205|telefonda kapatılmış
+206|Nazik
+207|Ding dong
+208|Üçlü
+209|Çan
+210|Uyarı
+211|Yeni sürüm: {0}
+212|Yenilikler:\n{0}\n\n
+213|Şu an kullandığın: {0}
+214|İndir
+215|Otopark süresi
+216|Otopark süren {0} dakika sonra doluyor
+217|Otopark süren doldu
+218|Arabanın yerini NewREX'te \"Arabam nerede?\" bölümünden görebilirsin.
+219|Konum bulunamadı. Telefonda NewREX'e konum izni ver.
+220|Hava durumu alınamadı. İnternet bağlantını kontrol et.
+221|Sesli komut için mikrofon izni gerekli. Telefonda NewREX'i açıp mikrofon izni ver.
+222|Ses tanıma bu cihazda kullanılamıyor
+223|Ses algılanamadı, tekrar dene
+224|Mikrofon hatası
+225|Sesli komut için mikrofon izni gerekli
+226|İnternet bağlantısı gerekli
+227|Ses tanıma hatası ({0})
+228|Araç muayenesi
+229|Trafik sigortası
+230|Periyodik bakım / yağ
+231|Lastik değişimi
+232|MTV ödemesi
+233|Animasyon
+234|Otomobil
+235|Ekonomi
+236|Klasik
+237|Komedi
+238|Yemek
+239|Kültür
+240|Belgesel
+241|Eğitim
+242|Eğlence
+243|Aile
+244|Genel
+245|Çocuk
+246|Meclis
+247|Yaşam
+248|Film
+249|Müzik
+250|Haber
+251|Doğa
+252|Rahatlama
+253|Dini
+254|Dizi
+255|Bilim
+256|Alışveriş
+257|Spor
+258|Gezi
+259|Hava durumu
+260|Diğer
+261|dosya okunamadı
+262|Bölüm
+263|Pzt
+264|Sal
+265|Çar
+266|Per
+267|Cum
+268|Cmt
+269|Paz
+270|Bugün
+271|Az bulutlu
+272|Parçalı bulutlu
+273|Sisli
+274|Çiseleme
+275|Yağmurlu
+276|Dondurucu yağmur
+277|Karlı
+278|Sağanak yağış
+279|Kar sağanağı
+280|Gök gürültülü fırtına
+281|Uygulamalar
+282|İnternet tarayıcı
+283|Kısayol ekle
+284|Sık girdiğin siteler
+285|Telefon
+286|Telefon uygulamaları
+287|Telefondaki tüm uygulamalar
+288|İzle
+289|Kanallar, IPTV, TV+
+290|Video izle
+291|Medya
+292|Telefondaki video ve müzik
+293|Yansıt
+294|Telefon ekranını göster
+295|Dinle
+296|Radyo
+297|Türk radyoları
+298|FM radyo
+299|Frekansla ara
+300|Kaldığın yerden dinle
+301|Favoriler
+302|Kanal ve radyoların
+303|Araç ve yol
+304|Araç
+305|Hız, yolculuk, bakım
+306|Saatlik ve günlük
+307|Sesli komut
+308|\"TRT 1 aç\", \"hava durumu\", \"ayarlar\"
+309|İnternet
+310|Ayarlar
+311|Tema, ses, sürüş
+312|Ekolayzır
+313|Sesi ayarla
+314|Hakkında
+315|Sürüm ve lisans
+316|Düz
+317|Bas
+318|Tiz
+319|Vokal
+320|Ön ayarlar
+321|Sıfırla
+322|{0} şu an bulunamadı.
+323|— Boş frekans —
+324|{0} frekansı • ☆ ile bu frekansa başka istasyon kaydedebilirsin
+325|Kaydettiğin istasyon • ☆ ile kaldırabilirsin
+326|☆ ile \"{0}\" istasyonunu bu frekansa kaydet
+327|Kaydırarak ya da ◀◀ ▶▶ ile istasyon ara. Listeden bir radyo açıp ☆ ile buraya kaydedebilirsin.
+328|{0} boşaltıldı
+329|{0} → {1} MHz kaydedildi
+330|Tümü
+331|Hız
+332|Yolculuk
+333|Bakım
+334|km geçti
+335|Gecikti
+336|gün
+337|Hava
+338|Devam et
+339|Şimdi çalıyor
+340|TV veya radyo aç
+341|Kanal ve radyolar
+343|Telefondaki dosyalar
+344|{0} gecikti!
+345|{0}: {1} gün
+346|Tüm uygulamalar
+347|Tüm favoriler
+348|Son çalınanlar
+349|Henüz bir şey çalmadın.
+350|Henüz favori yok.\nÇalarken ☆ simgesine dokunarak ekleyebilirsin.
+351|Görünüm
+352|Ses
+353|Sürüş
+354|TV ve listeler
+355|Web kısayolları
+356|Pil ve ısınma
+357|Özel tema rengi
+358|Özel arka plan
+359|Dil değişti. NewREX yeniden başlıyor, araç ekranından tekrar aç.
+360|Gökkuşağı düğmesiyle istediğin her rengi seçebilirsin.
+361|Tam ekran ana sayfa
+362|Ana ekranda üst bar ve mini oynatıcı gizlenir, kartlar büyür. Diğer sayfalarda geri tuşu için üst bar görünür kalır.
+363|Ana ekran kart sırası
+364|Ana ekrandaki dört büyük kartın sırası.
+365|5 bantlı ekolayzır. Radyo, TV ve podcast'te çalışır.
+366|Ayarla
+367|Sesli karşılama
+368|Araca bağlanınca \"Günaydın, NewREX'e hoş geldin!\" der. Mikrofon gerekmez.
+369|Karşılama ayarları
+370|İsim
+371|İsim gir…
+372|İsmin
+373|Ne sıklıkla
+374|Her bağlantıda
+375|Günde bir kez
+376|Park modu
+377|Açıkken araç hareket edince video ve web görüntüsü gizlenir, ses devam eder. 
+378|Kapatırsan sürüşte de görüntü açık kalır. Dikkatli kullan!
+379|Hız araçtan alınamazsa telefonun GPS'inden ölçülür (telefonda konum izni gerekir). 
+380|Hız sınırı uyarısı ve bakım bilgileri Araç sayfasında.
+381|Liste eklemek veya silmek için telefonda NewREX uygulamasını aç.
+382|Kanalları yeniden indir
+383|Listeler yenileniyor…
+384|{0} kanal yüklendi
+385| ({0} liste hatalı)
+386|Otomatik: yayının en iyi kalitesi. Düşük seçersen telefon daha az ısınır, daha az internet harcar. 
+387|Değişiklik açık kanala hemen uygulanır.
+388|{0} kısayol kayıtlı
+389|Henüz kısayol yok
+390|Kısayolları düzenle
+391|Sık girdiğin siteleri ekle (en fazla 6). Ana ekranda \"Tümü\" → İnternet bölümünde görünürler.
+392|Şu an açık ({0}). 
+393|Şu an kapalı. 
+394|Sürüm {0}
+395|Orijinal geliştirici: {0}
+396|Reklam yok  •  Takip yok  •  Veri toplanmaz
+397|Ayrıntılar ve lisans
+398|Uygula
+399|Telefon medya
+400|Yükleniyor…
+401|Telefonda medya dosyası bulunamadı.\nMedya izni gerekebilir.
+402|Müzik dosyası bulunamadı.
+403|Video dosyası bulunamadı.
+404|Bilinmeyen
+405|Uygulamayı telefondan kullan, araç ekranı görüntüyü gösterir.
+406|Yansıtma durduruldu
+407|Görüntünün araç ekranını kaplaması için sağdaki döndür düğmesine dokun.
+408|Telefonda NewREX için \"Sistem ayarlarını değiştirme\" iznini aç, sonra tekrar dokun.
+409|Telefon yatay
+410|Telefon dikey
+411|Telefonunda \"Ekran paylaşılsın mı?\" sorusu çıkacak:\n
+412|\"Tüm ekranı paylaş\" seçili kalsın, \"Ekranı paylaş\"a dokun.\n
+413|Soru çıkmazsa telefonun kilidini aç ya da NewREX uygulamasını aç → \"Ekranı arabaya yansıt\".
+414|Telefonda onayı tekrar iste
+415|Uygulamalar yükleniyor…
+416|Telefonda açılabilir uygulama bulunamadı.
+418|{0} açılamadı
+420|Ekrana sığdır
+421|Ekranı doldur
+422|Uzat
+423|Popüler
+424|Aboneliklerim
+425|Son dinlenen
+426|Arama
+427|Podcast ara (ör. tarih, teknoloji, futbol)
+428|Arama: {0}
+429|Popüler podcast'ler yükleniyor…
+430|\"{0}\" aranıyor…
+431|Henüz podcast dinlemedin.
+432|Podcast listesi alınamadı. İnternet bağlantını kontrol et.
+433|Henüz abone olduğun podcast yok.\nBir programı açıp ☆ Abone ol'a dokun.
+434|\"{0}\" için sonuç bulunamadı.
+435|Podcast bulunamadı.
+436|Bölümler yükleniyor…
+437|Bu program bölümlerini yalnızca Apple Podcasts'te yayınlıyor.
+438|Bu programda bölüm bulunamadı.
+439|Bölümler alınamadı. İnternet bağlantını kontrol et.
+440|Abone olundu: {0}
+441|Abonelikten çıkıldı
+442|  •  Kaldığın yer: {0} dk
+443|Bu frekansa istasyon seç
+444|Radyo ara (ör. Kral, Power, haber)
+445|Radyolar yükleniyor…
+446|Radyo listesi alınamadı. İnternet bağlantını kontrol et.
+447|Henüz favori radyo yok.\nÇalarken alttaki ☆ simgesine dokun.
+448|Henüz radyo dinlemedin.
+449|Radyo listesi şu an alınamadı.\nTekrar denemek için Popüler'e dokun.
+450|TV Kanalları
+451|Ücretsiz Türk kanalları
+452|IPTV Listelerim
+453|{0} liste
+454|Telefondan liste ekle
+455|{0} sunucu
+456|IPTV sunucusu ekle
+457|Turkcell hesabınla
+458|Netflix hesabınla
+459|Disney+ hesabınla
+460|Amazon hesabınla
+461|Kanal ara
+462|Kanallar yükleniyor…
+463|⭐ Favoriler
+464|Tüm kanallar
+465|Bazı listeler açılamadı:\n
+466|Henüz IPTV listen yok.\nTelefondaki NewREX uygulamasında \"IPTV listeleri\" bölümünden bağlantı ya da dosya ekleyebilirsin.
+467|Kanal bulunamadı. İnternet bağlantını kontrol edip yenile butonuna bas.
+468|\"{0}\" için kanal bulunamadı.
+469|Henüz favori kanal yok.\nİzlerken ☆ simgesine dokunarak ekleyebilirsin.
+470|Bu grupta kanal yok.
+475|Rakım / yön
+476|📍 Telefonda konum izni ver
+480|GPS ile ölçülür
+481|km • araçtan
+482|Telefonda km gir
+483|⚠ Yakıt az!
+484|%.0f km gidebilirsin
+485|depo • araçtan
+486|menzil • araçtan
+487|Yakıt defterini doldur
+488|Yön: {0}
+489|Yön: hareket edince
+490|Kuzey
+491|Kuzeydoğu
+492|Doğu
+493|Güneydoğu
+494|Güney
+495|Güneybatı
+496|Batı
+497|Kuzeybatı
+498|Sürüş puanı (bu yolculuk)
+499|Ekonomik sürüş
+500|Ani hızlanma
+501|Sert fren
+502|En yüksek km/s
+503|Ortalama km/s
+504|Ani hızlanma ve sert frenler puanı düşürür; yumuşak sürüş yakıt tasarrufu sağlar.
+508|Yakıt defteri
+509|Depoyu fullediğinde telefondaki NewREX uygulamasında \"Yakıt ve kilometre\" bölümüne 
+510|litre, tutar ve kilometreyi gir. Ortalama tüketim, km başı maliyet ve tahmini menzil burada çıkar.
+511|km başı
+512|Bu ay
+513|Tahmini menzil
+514|Ortalama için en az iki dolum ve 50 km yol gerekiyor.
+520|{0} gün gecikti
+521|Bugün!
+522|{0} gün kaldı
+523|Yolculuk geçmişi
+524|Araç kapanınca (Android Auto bağlantısı kesilince) yolculuk buraya kaydedilir.
+525|ort {0} • en çok {1} km/s
+526|‹ Yeni yolculuklar
+527|Sayfa {0} / {1}  •  {2} yolculuk
+528|Eski yolculuklar ›
+529|Şu an duruyorsun: {0}
+530|Araç kapanınca bulunduğun yer kaydedilir; telefondaki \"Arabam nerede?\" bölümünden haritada açarsın.
+531| — telefondan haritada açabilir, otopark süresi için hatırlatıcı kurabilirsin.
+532|Dinliyorum… Ör: \"TRT 1 aç\", \"hava durumu\", \"YouTube'da Tarkan ara\", \"Spotify'ı aç\"
+533|Saat {0}
+534|Sesi aracın düğmesinden ayarla
+535|Aranıyor: {0}
+536|{0} açılıyor
+537|Podcast'te ara: {0}
+538|Anlaşılamadı: \"{0}\". \"Yardım\" de, örnekleri göstereyim.
+540|Hava durumu yenileniyor…
+541|Hava durumu yükleniyor…
+542|Saatlik
+543|Şimdi
+544|Önümüzdeki günler
+545|Hissedilen
+546|Rüzgâr
+547|Nem
+548|YouTube'da ara
+549|Ara
+550|Ara veya adres yaz
+551|Şifre
+552|Yazı
+553|Henüz kısayol yok. Aşağıdan isim ve adres girip ekleyebilirsin; ana ekranda görünür.
+554|Yeni kısayol ekle
+555|İsim: {0}
+556|Adres: {0}
+557|İsim gir
+558|Site ismi
+559|Adres gir
+560|Önce isim ve adres gir.
+561|En fazla 6 kısayol eklenebilir.
+562|Sunucu {0}
+563|Sunucu ekle
+564|URL, kullanıcı adı, şifre
+565|Sunucu: —
+566|Kullanıcı: —
+567|Şifre: —
+568|İsim: —
+569|Sunucu: {0}
+570|Kullanıcı: {0}
+571|Şifre: {0}
+572|Sunucu adresi gir
+573|Kullanıcı adı gir
+574|Kullanıcı adı
+575|Şifre gir
+576|İsim gir (isteğe bağlı)
+577|Sunucu ismi
+578|Bağlantıyı test et ve kaydet
+579|Sunucu, kullanıcı adı ve şifre zorunlu.
+580|Bağlanıyor…
+581|Bağlantı başarılı! Kaydedildi.
+582|Bağlantı başarısız. Bilgileri kontrol et.
+583|Canlı TV
+584|Canlı kanallar
+585|Filmler
+586|Film arşivi
+587|Diziler
+588|Dizi arşivi
+589|Bu sunucuda kategori bulunamadı.
+590|Yüklenemedi: {0}
+591|Bu kategoride içerik yok.
+592|Bu dizide bölüm bulunamadı.
+593|Bir öğeye dokun, sonra sürükleyerek taşı.  ⤢ boyut  ✕ kaldır
+594|Düzenleme park halindeyken yapılabilir.
+595|Ekrana ekle
+596|Telefondan\nseç
+597|Fotoğrafı park halindeyken seçebilirsin.
+598|Telefonunda fotoğraf seçme ekranı açıldı.
+599|Kaldırdığın öğeler burada durur, dokununca geri gelir.
+600|Fotoğraflar sadece bu telefonda saklanır, hiçbir yere gönderilmez.
+601|⚠️  {0} km/s  •  sınır {1}   ✕
+602|📍 Hız, yolculuk ve park modu için telefonda NewREX'e konum izni ver.
+603|{0} {1} {2} gün gecikti!
+604|{0} {1} bugün!
+605|{0} {1} için {2} gün kaldı
+606|🛢️ Yağ değişimi {0} km gecikti!
+607|🛢️ Yağ değişimine {0} km kaldı
+608|🌧️ Önümüzdeki saatlerde yağmur bekleniyor (%{0}). Dikkatli sür!
+609|Sürüş sırasında yazı yazılamaz. Lütfen park halindeyken deneyin.
+610|Sürüşte
+611|Canlı TV • görüntü için dokun
+612|Sürüş halindesin
+613|Güvenliğin için görüntü gizlendi, ses devam ediyor.\nAraç durunca görüntü otomatik geri gelir.
+614|İnce
+615|Kalın
+616|Dikey
+617|Kart
+618|Neon
+619|Yazıyla
+620|Sade
+621|Roma
+622|Halka
+623|Lambalı
+624|Kadran
+625|İbreli
+626|FM  MHz
+627|Kapat
+628|📱 Telefon
+629|boşluk
+630|Örnekler: \"Show TV aç\", \"Kral FM\", \"hava durumu\", \"ayarlar\", \"ekolayzır\", \"YouTube'da Tarkan ara\", \"Spotify'ı aç\", \"sonraki\", \"durdur\", \"saat kaç\", \"ana sayfa\".
+631|Dokunduğun uygulama doğrudan bu ekranda açılır.
+632|{0} araç ekranında açıldı. NewREX'e dönmek için ⌂
+633|Telefonunda Shizuku izni soruluyor; izin verirsen uygulamalar yansıtmasız açılır.
+636|Shizuku izni verilmedi.
+637|{0} araç ekranında açılmayı desteklemiyor.
+638|YouTube geçmişini sıfırla
+639|YouTube çerezleri ve izleme geçmişi silindi. Öneriler sıfırdan başlayacak.
+640|Sadece NewREX'teki YouTube silinir; TV+, Netflix gibi girişlerin kalır.
+641|Fotoğraf seçili
+642|Fotoğraf yok
+643|Arka plan fotoğrafı
+644|En iyi sonuç: yatay, en az 1920×720 (geniş ekran) ya da 1920×1080 fotoğraf. Fotoğraf ekranı dolduracak şekilde ortadan kırpılır; önemli kısmı ortada olsun. Koyu ve sade fotoğraflarda yazılar daha iyi okunur.
+645|Telefondan seç
+646|Kaldır
+647|Sesli uyandırma
+648|Arabada \"Hey\" ve aşağıya yazdığın kelimeyi söyleyince NewREX \"Sizi dinliyorum\" der ve komutunu bekler (ör. hey newrex, hey maleren).
+649|Arka plan fotoğrafı araç ekranına kondu
+650|Sizi dinliyorum
+651|Dinle, kaldığın yerden
+652|\"Hey {0}\" ile uyandır
+653|\"Hey {0}\" deyince \"Sizi dinliyorum\" der ve komutunu bekler. Aynı cümlede komutu da söyleyebilirsin: \"Hey {0}, hava durumu\".
+654|Kelimeyi değiştir
+655|\"Hey\"den sonra söylenecek kelime
+656|Artık \"Hey {0}\" de
+657|Ne izlemek istersin?
+658|Yukarıdaki arama çubuğuna dokun ya da 🎤 ile söyle.
+659|Arka plan stili
+660|✦ Dalga hareketlidir; diğerleri sabittir ve telefonu daha az yorar. Renkler tema renginden gelir.
+661|Açıkken telefon sürekli dinlediği için işlemciyi biraz yorar.
+662|Dalga
+663|Kuzey ışıkları
+664|Gece yolu
+665|Bokeh
+666|Yıldızlar
+667|İpek
+668|Dağlar
+669|Degrade
+670|Telefon ekranı kapanınca uygulamalar araç ekranında duraklıyor; NewREX'e dönüldü.
+671|Sürüş puanı
+674|GPS bekleniyor
+675|MENZİL
+676|YAĞA KM
+677|Yüksek risk
+678|Orta risk
+679|Düşük risk
+686|{0} km/s üstünde uyarır
+687|Uyarı kapalı
+688|SINIR
+689|UYARI SESİ
+690|Sınır geçilince arabanın hoparlöründen sesli uyarı ve ekranda kırmızı şerit çıkar. GPS ile ölçülen hız birkaç km/s sapabilir.
+691|Muayene, sigorta, bakım ve lastik tarihlerini telefondaki NewREX uygulamasından gir. Zamanı yaklaşınca burada ve araç açılınca uyarı çıkar.
+692|Panik fren
+694|Hareket
+695|Bekleme
+696|Araç görseli indirilemedi. İnternet bağlantısını kontrol et.
+698|Konum izni ver
+700|Harita
+701|SÜRÜŞ
+702|Puan {0}
+703|Konum bekleniyor…
+704|Bu paylaşımda konum bulunamadı.
+705|Konum araç ekranındaki haritaya gönderildi: {0}
+706|Hedef
+707|Yolculuk takibi
+708|Gidilen yol sayılıyor. Konum telefonda kalır, hiçbir yere gönderilmez.
+709|OBD-II adaptör
+710|Arabanın OBD soketine (genelde direksiyonun altında) takılan Bluetooth ELM327 adaptörüyle motor devri, motor sıcaklığı, akü voltajı, yakıt ve arıza kodları araç ekranındaki Araç sayfasında görünür. Önce adaptörü telefonun Bluetooth ayarlarından eşleştir (şifre genelde 1234 ya da 0000), sonra burada seç. Veriler telefonda kalır.
+711|Adaptör seç
+712|Seçilmedi
+713|Eşleşmiş Bluetooth cihazı yok. Adaptörü arabaya tak, kontağı aç, telefonun Bluetooth ayarlarından eşleştir (şifre genelde 1234 ya da 0000) ve tekrar dene.
+714|Bluetooth ayarları
+715|OBD-II adaptörünü seç
+716|Az
+717|Orta
+718|Çok
+719|Hıza göre ses
+720|Hızlandıkça yol ve rüzgâr gürültüsüne karşı TV, radyo ve podcast sesini biraz açar, yavaşlayınca eski haline getirir. 30 km/s altında değişmez.
+721|Motor · OBD-II
+722|OBD-II adaptörü seçilmedi
+723|Arabanın OBD soketine bir Bluetooth ELM327 adaptörü tak, telefonun Bluetooth ayarlarından eşleştir, sonra telefonda NewREX'i açıp \"OBD-II adaptör\" bölümünden seç. Motor devri, motor sıcaklığı, akü voltajı, yakıt ve arıza kodları burada görünür.
+724|Motor devri
+725|Motor sıcaklığı
+726|Akü
+727|Yakıt
+728|Motor yükü
+729|Arıza kodları
+730|Oku
+731|Emin misin? Tekrar bas
+732|Bağlı: {0}
+733|Adaptöre bağlanıyor…
+734|Adaptör bağlı ama araç cevap vermiyor. Kontak açık mı?
+735|Adaptöre bağlanılamadı. Takılı ve telefonla eşleşmiş mi? Tekrar deneniyor…
+736|Telefonda NewREX'e Bluetooth izni ver.
+737|Okumak için \"Oku\"ya bas. Silmek arıza lambasını söndürür ama sorunu çözmez.
+738|Kayıtlı arıza kodu yok.
+739|Kodların anlamını internette aratabilirsin (ör. \"{0} anlamı\").
+740|Önce adaptör bağlanmalı
+741|Arıza kodları okunuyor…
+742|Okunamadı, tekrar dene
+743|Arıza kodları silindi
+744|Silinemedi. Kontak açık, motor kapalıyken tekrar dene.
+745|Trafik açık
+746|Anahtar yok (trafiksiz)
+747|TomTom anahtarını buraya yapıştır
+748|Harita · Trafik
+749|İsteğe bağlı. Kendi ücretsiz TomTom anahtarını girersen araç ekranındaki haritada canlı trafik renkleri, trafiğe göre rota ve gerçek varış süresi görünür. Girmezsen harita ve rota yine çalışır, sadece trafik yoktur. Anahtar sadece bu telefonda saklanır; rota için başlangıç ve hedef noktası TomTom'a gönderilir.
+750|Nasıl alınır (3-5 dakika, ücretsiz, kredi kartı yok):\n1. \"Ücretsiz anahtar al\"a bas, e-postanla kayıt ol.\n2. Gelen e-postadaki onay linkine tıkla.\n3. Giriş yapınca \"Keys\" bölümündeki hazır anahtarı kopyala.\n4. Aşağıya yapıştırıp \"Kaydet ve dene\"ye bas.
+751|Ücretsiz anahtar al
+752|Kaydet ve dene
+753|Anahtar çok kısa, tamamını kopyaladığından emin ol.
+754|Deneniyor…
+755|Çalışıyor ✓ Araç ekranında haritayı yeniden açınca trafik görünür.
+756|Anahtar hatalı ya da henüz etkin değil. E-postayı onayladın mı?
+757|İnternete bağlanılamadı, tekrar dene.
+758|Aracım
+759|Görsel indiriliyor…
+760|Çevirmek için yana kaydır
+761|trafik +{0} dk
+762|Aranıyor…
+763|Sonuç bulunamadı.
+764|Başka bir şey ara
+765|Adres ya da yer ara
+766|Gösterge
+767|Araç görseli araç ekranına kondu
+768|Telefondan görsel yükle
+769|Hazır araca dön
+770|Kendi araç görselin. En güzel sonuç: arka planı şeffaf PNG.
+771|Araç ekranına koy
+772|Araç görseli
+773|Göstergede böyle görünecek.
+774|Başka görsel seç
+775|Görsel açılıyor…
+776|Arka plan siliniyor…
+777|Arka plan silme aracı indiriliyor (sadece ilk sefer)…
+778|Görselde araç bulunamadı, olduğu gibi kullanılabilir.
+779|Arka plan silinemedi. Görseli olduğu gibi kullanabilir ya da arka planı şeffaf bir PNG seçebilirsin.
+781|Görsel olduğu gibi.
+782|Arka planı sil
+783|Olduğu gibi
+784|Telefonunda görsel seçme ekranı açıldı. Arka planı silip önizleyebilirsin.
+785|Arka plan silindi. Kenarlar düzgün değilse “Olduğu gibi”yi seç.
+786|Sondaki + düğmesiyle istediğin rengi seçebilirsin. Arka plan yazılar okunsun diye fazla açık olamaz. Değişiklik araç ekranına hemen yansır.
+787|Kurulum
+788|Gerekli izinleri ve ayarları adım adım yap
+789|Uygulamaları araçta açma
+790|Spotify, WhatsApp gibi telefon uygulamaları araç ekranında doğrudan açılır, telefon kilitliyken de çalışır. Bir kez eşleştirme yeter; sonra telefon her açılıp Wi-Fi'ye bağlandığında NewREX bunu kendiliğinden hazırlar. Bağlantı telefonun içinde kalır, hiçbir yere bir şey gönderilmez.
+791|Eşleştir (bir kez)
+792|Şimdi başlat
+793|Başlatılıyor…
+794|Başlamadı. Telefon Wi-Fi'ye bağlı mı ve eşleştirme yapıldı mı, kontrol et.
+795|Hazır
+796|Shizuku ile hazır
+797|Eşleşti · Wi-Fi'de kendiliğinden başlar
+798|Kurulum gerekli
+799|Yardımcı çalışıyor. Telefon kapanana kadar açık kalır.
+800|En kolayı en üstteki Kurulum ekranından yapmak. Ya da: “Eşleştir”e bas, açılan sayfada “Eşleme kodu ile cihaz eşle”ye bas, bildirimde “Kodu yaz”a basıp 6 haneli kodu yaz.
+801|Telefon Wi-Fi'ye bağlıyken “Şimdi başlat”a bas ya da biraz bekle; kendiliğinden başlar.
+802|Kablosuz hata ayıklama → “Eşleme kodu ile cihaz eşle”ye bas, sonra bu bildirimde “Kodu yaz”a basıp 6 haneli kodu yaz.
+803|NewREX eşleştirme
+804|Kodu yaz
+805|6 haneli kod
+806|Eşleştiriliyor…
+807|Eşleşti. Telefon uygulamaları artık araç ekranında açılabilir.
+808|Eşleşti. Yardımcı birazdan kendiliğinden başlayacak.
+809|Kod tutmadı. Eşleştirme penceresi açıkken yeni kodu tekrar yaz.
+810|Bildirim izni
+811|Eşleştirme kodu ve yolculuk takibi bildirimle gösterilir.
+812|İzin ver
+813|Konum izni
+814|Hız, yolculuk, park yeri ve harita için.
+815|Medya ve mikrofon izni
+816|Telefondaki müzik ve videolar ile sesli komut için. Dosyalar telefondan çıkmaz.
+817|Telefon NewREX'i arka planda kapatmasın; yolculuk ve km sayımı kesilmesin.
+818|Android Auto NewREX'i tanısın ve sürüşte de açılsın.
+819|Yap
+820|Android Auto: bilinmeyen kaynaklar
+821|Arabada NewREX görünmüyorsa: Android Auto ayarları → en alttaki Sürüm'e 10 kez dokun → sağ üstteki ⋮ → Geliştirici ayarları → Bilinmeyen kaynaklar'ı aç.
+822|Android Auto ayarlarını aç
+823|Geliştirici seçenekleri
+824|Telefon uygulamalarını araçta açmak için gerekli. Ayarlar → Telefon hakkında → Yazılım bilgileri → Yapım numarası'na 7 kez dokun.
+825|Telefon hakkında'yı aç
+826|Eşleştirme (bir kez)
+827|Kablosuz hata ayıklama sayfası açılır: Wi-Fi'de olmalısın. Açık değilse aç, sorarsa “Bu ağda her zaman izin ver”i işaretleyip izin ver. Sonra “Eşleme kodu ile cihaz eşle”ye bas, bildirimi aşağı çek, “Kodu yaz”a basıp 6 haneli kodu yaz.
+828|Eşleştir
+829|Yardımcı başlar ve kendine otomatik başlama iznini verir. Sonra telefon her açılıp Wi-Fi'ye bağlandığında kendiliğinden hazırlanır; Shizuku gerekmez.
+830|Başlat
+831|Hazır.
+832|Başlamadı. Wi-Fi'de misin ve eşleştirme yapıldı mı?
+833|{0} / {1} zorunlu adım tamam. İsteğe bağlı adımlar telefon uygulamalarını araçta açmak içindir.
+834|İsteğe bağlı
+835|Telefon yeniden başladıktan sonra henüz Wi-Fi'ye bağlanmadı. Wi-Fi'ye bağlanınca uygulama açma kendiliğinden hazırlanır.
+836|Telefon uygulamalarını araçta açmak için telefonda NewREX → Kurulum adımlarını bir kez yap.

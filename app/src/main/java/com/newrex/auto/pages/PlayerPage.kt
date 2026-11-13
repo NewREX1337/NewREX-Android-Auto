@@ -1,6 +1,7 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.pages
 
+import com.newrex.auto.t
 import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
@@ -66,8 +67,8 @@ class PlayerPage(ui: CarUi) : Page(ui) {
             background = rounded(0xCC000000.toInt(), dpf(14))
         }
 
-        titleView = label("", 22f, bold = true)
-        subView = label("", 13f, Palette.TEXT_DIM)
+        titleView = label("", 22f, bold = true, shadow = true)
+        subView = label("", 13f, Palette.TEXT_DIM, shadow = true)
         favButton = circleButton(R.drawable.ic_star_border, 52) {
             PlayerHub.now.value?.let { Prefs.toggleFavorite(it) }
             bumpControls()
@@ -171,7 +172,7 @@ class PlayerPage(ui: CarUi) : Page(ui) {
             2 -> AspectRatioFrameLayout.RESIZE_MODE_FILL
             else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
         }
-        fitLabel.text = "⛶  " + arrayOf("Ekrana sığdır", "Ekranı doldur", "Uzat")[fit]
+        fitLabel.text = "⛶  " + arrayOf(t("Ekrana sığdır"), t("Ekranı doldur"), t("Uzat"))[fit]
     }
 
     override fun onDestroy() {

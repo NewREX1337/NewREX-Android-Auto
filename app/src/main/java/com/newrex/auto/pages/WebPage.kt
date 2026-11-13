@@ -1,15 +1,19 @@
 // NewREX Android Auto — Copyright (C) 2026 NewREX — GPL-3.0-or-later (bkz. NOTICE.md)
 package com.newrex.auto.pages
 
+import com.newrex.auto.t
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.view.MotionEvent
 import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import com.newrex.auto.PlayerHub
@@ -27,25 +31,57 @@ import com.newrex.auto.ui.circleButton
 import com.newrex.auto.ui.dp
 import com.newrex.auto.ui.flp
 import com.newrex.auto.ui.parkGuard
+import com.newrex.auto.ui.onTap
+import com.newrex.auto.ui.icon
+import com.newrex.auto.ui.label
 import org.json.JSONObject
 import org.json.JSONTokener
 import java.net.URLEncoder
 
 /** YouTube ve genel web tarayıcısı. Sürüş sırasında görüntü gizlenir. */
-class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
+class WebPage(ui: CarUi, private val mode: Mode, private val overrideUrl: String? = null) : Page(ui) {
     enum class Mode(val title: String, val home: String) {
         YOUTUBE("YouTube", "https://m.youtube.com"),
         WEB("Web", "https://www.google.com"),
         // Turkcell TV+: kullanıcı kendi hesabıyla girer; giriş bilgileri sadece sayfa ile TV+ arasında kalır
         TVPLUS("TV+", "https://tvplus.com.tr/canli-tv"),
         NETFLIX("Netflix", "https://www.netflix.com/browse"),
+        DISNEY("Disney+", "https://www.disneyplus.com"),
+        PRIME("Prime Video", "https://www.primevideo.com"),
     }
 
     override val title = mode.title
     // Video tam ekrana geçince üst bar ve mini oynatıcı da gizlenir
-    override val fullscreen: Boolean get() = customView != null
+    // YouTube'da üst bar da gizlenir, ekranın tamamı videoya kalır; geri/ara/sesli komut soldaki ince şeritte
+    override val fullscreen: Boolean get() = customView != null || mode == Mode.YOUTUBE
 
     private companion object {
+
+        // TV+ masaüstü oynatıcısı Widevine'ı video için "SW_SECURE_DECODE" seviyesiyle istiyor; telefondaki
+        // tarayıcı (WebView) yalnızca "" ve "SW_SECURE_CRYPTO" kabul ediyor. Cevap "desteklenmiyor" olunca
+        // oynatıcı hiçbir şey göstermeden takılıp kalıyordu. İstek, telefonun desteklediği seviyeye çevrilir.
+        private const val WIDEVINE_FIX_JS = """(function(){
+            var ok = function(x){ return x === '' || x === 'SW_SECURE_CRYPTO' };
+            var fix = function(c){ if (c && c.robustness && !ok(c.robustness)) c.robustness = 'SW_SECURE_CRYPTO'; return c };
+            var mc = navigator.mediaCapabilities;
+            if (mc && mc.decodingInfo) {
+                var di = mc.decodingInfo.bind(mc);
+                mc.decodingInfo = function(c){
+                    var k = c && c.keySystemConfiguration;
+                    if (k && /widevine/.test(k.keySystem)) { fix(k.video); fix(k.audio); }
+                    return di(c);
+                };
+            }
+            if (navigator.requestMediaKeySystemAccess) {
+                var rk = navigator.requestMediaKeySystemAccess.bind(navigator);
+                navigator.requestMediaKeySystemAccess = function(ks, cfgs){
+                    if (/widevine/.test(ks)) (cfgs || []).forEach(function(g){
+                        (g.videoCapabilities || []).forEach(fix); (g.audioCapabilities || []).forEach(fix);
+                    });
+                    return rk(ks, cfgs);
+                };
+            }
+        })();"""
 
         private const val FOCUSED_FIELD_JS = """(function(){
             var e = document.activeElement; if (!e) return null;
@@ -100,8 +136,8 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun build(): View = with(ctx) {
-        // YouTube açılınca radyo/TV sesi ile çakışmasın
-        if (mode == Mode.YOUTUBE) PlayerHub.stop()
+        // Video içerik açılınca radyo/TV sesi ile çakışmasın
+        if (mode != Mode.WEB) PlayerHub.stop()
 
         progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100
@@ -130,13 +166,37 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
             settings.allowFileAccess = false
             settings.allowContentAccess = false
             settings.safeBrowsingEnabled = true
+            // Şifreli yayın servisleri: video CDN'leri HTTP kullanabilir, IndexedDB DRM lisansı için
+            if (mode in arrayOf(Mode.TVPLUS, Mode.NETFLIX, Mode.DISNEY, Mode.PRIME)) {
+                settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                settings.databaseEnabled = true
+            }
             // Hesaba bir kez girilince oturum kalsın (TV+, Netflix, YouTube): çerezler telefonda saklanır, silinmez
             val view = this
             android.webkit.CookieManager.getInstance().apply {
                 setAcceptCookie(true)
                 setAcceptThirdPartyCookies(view, true)
             }
+            // TV+ telefon tarayıcısına oynatıcı açmıyor ("TV+ mobil uygulamalarını kullanın" uyarısı), Chrome'un
+            // "Masaüstü sitesi" seçeneği gibi açılır. Telefon kimliği çerezde de kaldığı için o da düzeltilir.
+            // TV+, Disney+ ve Prime Video mobilde "uygulamayı indir" diyor; Chrome OS gibi açılır
+            if (mode in arrayOf(Mode.TVPLUS, Mode.DISNEY, Mode.PRIME)) {
+                val chrome = Regex("Chrome/[\\d.]+").find(settings.userAgentString)?.value ?: "Chrome/141.0.0.0"
+                // TV+ oynatıcısı yalnızca masaüstü platformunu kabul ediyor; Chrome OS'u masaüstü saymadığı için
+                // "Hemen izle" sayfası açılır açılmaz içerik sayfasına geri dönüyordu. TV+'ya Linux masaüstü denir.
+                val os = if (mode == Mode.TVPLUS) "X11; Linux x86_64" else "X11; CrOS x86_64 14541.0.0"
+                settings.userAgentString = "Mozilla/5.0 ($os) AppleWebKit/537.36 (KHTML, like Gecko) $chrome Safari/537.36"
+            }
+            if (mode == Mode.TVPLUS) {
+                android.webkit.CookieManager.getInstance().setCookie("https://tvplus.com.tr", "deviceType=desktop; path=/; max-age=31536000")
+            }
+            val earlyScript = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
+            if (mode == Mode.YOUTUBE && earlyScript) WebViewCompat.addDocumentStartJavaScript(this, YouTubeAds.SCRIPT, YouTubeAds.ORIGINS)
+            if (mode == Mode.TVPLUS && earlyScript) WebViewCompat.addDocumentStartJavaScript(this, WIDEVINE_FIX_JS, setOf("https://tvplus.com.tr"))
             webViewClient = object : WebViewClient() {
+                override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                    if (mode == Mode.YOUTUBE) YouTubeAds.block(request.url) else null
+
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     // Uygulama açma bağlantılarını (intent://, vnd.youtube:) engelle, sayfada kal
                     val scheme = request.url.scheme ?: return true
@@ -145,6 +205,7 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
 
                 override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
                     progressBar.visibility = View.VISIBLE
+                    if (mode == Mode.YOUTUBE && !earlyScript) view.evaluateJavascript(YouTubeAds.SCRIPT, null)
                 }
 
                 override fun onPageFinished(view: WebView, url: String?) {
@@ -172,10 +233,10 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
 
                 // Şifreli (DRM) yayınlar için oynatıcı izni: sadece TV+ sayfasına verilir
                 override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
-                    val host = request.origin?.host.orEmpty()
                     val drm = android.webkit.PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID
-                    val site = when (mode) { Mode.TVPLUS -> "tvplus.com.tr"; Mode.NETFLIX -> "netflix.com"; else -> null }
-                    if (site != null && (host == site || host.endsWith(".$site")) && drm in request.resources) request.grant(arrayOf(drm))
+                    val isDrmMode = mode in arrayOf(Mode.TVPLUS, Mode.NETFLIX, Mode.DISNEY, Mode.PRIME)
+                    // DRM modunda video CDN kaynağı farklı alan adından gelebilir; hepsine izin ver
+                    if (isDrmMode && drm in request.resources) request.grant(arrayOf(drm))
                     else request.deny()
                 }
             }
@@ -184,7 +245,19 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
                 if (ev.action == MotionEvent.ACTION_UP) postDelayed({ checkFocusedField() }, 350)
                 false
             }
-            loadUrl(startUrl())
+            // YouTube verileri bir kez sıfırlanır (eski izleme geçmişi önerileri bozuyordu)
+            if (mode == Mode.YOUTUBE && !Prefs.ytResetDone) {
+                com.newrex.auto.data.YouTubeReset.run()
+                clearCache(true)
+                clearHistory()
+                Prefs.ytResetDone = true
+            }
+            if (mode == Mode.YOUTUBE) YouTubeAds.clearRestrictedMode()
+            // YouTube öneri sayfasıyla değil arama ekranıyla açılır: önce ne izleneceği aranır, öneriler
+            // zamanla izlenenlere göre şekillenir. Sesli komutla gelen arama doğrudan sonuçları açar.
+            if (mode == Mode.YOUTUBE && overrideUrl == null) {
+                loadDataWithBaseURL(null, searchHomeHtml(), "text/html", "utf-8", null)
+            } else loadUrl(startUrl())
         }
 
         val webBox = FrameLayout(this).apply {
@@ -193,12 +266,13 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
         }
         val column = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            if (mode == Mode.YOUTUBE) addView(searchStrip(), lp(MATCH, dp(56)))
             addView(webBox, lp(MATCH, 0, 1f))
         }
         fullscreenBox.addView(fitButton, flp(WRAP, dp(44), android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL)
             .margins(t = dp(14)))
         pageRoot = FrameLayout(this).apply {
-            setPadding(dp(8), dp(4), dp(8), dp(4))
+            if (mode != Mode.YOUTUBE) setPadding(dp(8), dp(4), dp(8), dp(4))
             addView(column, flp(MATCH, MATCH))
             addView(fullscreenBox, flp(MATCH, MATCH))
             addView(parkGuard(), flp(MATCH, MATCH))
@@ -206,9 +280,53 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
         pageRoot
     }
 
+    /** YouTube'da üst barın yerine ince bir şerit: geri, uzun arama çubuğu, sesli komut, YouTube ana sayfa. */
+    private fun searchStrip(): View = with(ctx) {
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setBackgroundColor(0xFF0F0F0F.toInt())
+            // Sağ üstte Android Auto'nun kendi ev tuşu var; onun altında kalmasın
+            setPadding(dp(10), dp(4), maxOf(dp(10), ui.topRightReserve), dp(4))
+            addView(circleButton(R.drawable.ic_back, 46) { ui.back() }, lp(dp(46), dp(46)))
+            val r = dpf(23)
+            addView(LinearLayout(this@with).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(dp(18), 0, dp(18), 0)
+                background = com.newrex.auto.ui.pressable(com.newrex.auto.ui.rounded(0xFF272727.toInt(), r, dp(1), 0x33FFFFFF), r)
+                addView(icon(R.drawable.ic_search, 24), lp(dp(24), dp(24)))
+                addView(label(t("YouTube'da ara"), 18f, Palette.TEXT_DIM), lp(0, WRAP, 1f).margins(l = dp(14)))
+                onTap { search() }
+            }, lp(0, dp(46), 1f).margins(l = dp(12), r = dp(12)))
+            addView(com.newrex.auto.ui.micButton(ui, 46), lp(dp(46), dp(46)))
+            addView(circleButton(R.drawable.ic_home, 46) { web.loadUrl(startUrl()) }, lp(dp(46), dp(46)).margins(l = dp(10)))
+        }
+    }
+
+    /** YouTube açılış ekranı: koyu zemin, "Ne izlemek istersin?" yazısı (arama çubuğu üstte). */
+    private fun searchHomeHtml(): String {
+        fun esc(s: String) = s.replace("&", "&amp;").replace("<", "&lt;")
+        return """<html><head><meta name="viewport" content="width=device-width"></head>
+            <body style="margin:0;background:#0f0f0f;color:#fff;font-family:sans-serif;display:flex;height:100vh;
+            align-items:center;justify-content:center;flex-direction:column">
+            <div style="font-size:30px;font-weight:600">${esc(t("Ne izlemek istersin?"))}</div>
+            <div style="font-size:17px;color:#aaa;margin-top:12px">${esc(t("Yukarıdaki arama çubuğuna dokun ya da 🎤 ile söyle."))}</div>
+            </body></html>"""
+    }
+
+    private fun search() {
+        val hint = when (mode) {
+            Mode.YOUTUBE -> t("YouTube'da ara")
+            Mode.TVPLUS, Mode.NETFLIX, Mode.DISNEY, Mode.PRIME -> t("Ara")
+            else -> t("Ara veya adres yaz")
+        }
+        ui.showKeyboard(hint) { open(it) }
+    }
+
     /** Videonun ekrana yerleşimini değiştiren düğme: Sığdır → Doldur → Uzat. */
     private fun fitPill(): View = with(ctx) {
-        val names = arrayOf("Ekrana sığdır", "Ekranı doldur", "Uzat")
+        val names = arrayOf(t("Ekrana sığdır"), t("Ekranı doldur"), t("Uzat"))
         android.widget.TextView(this).apply {
             text = "⛶  " + names[Prefs.videoFit]
             setTextColor(Palette.TEXT)
@@ -268,21 +386,22 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
     }
 
     override fun actions(): List<View> = listOf(
-        ctx.circleButton(R.drawable.ic_search) {
-            val hint = if (mode == Mode.YOUTUBE) "YouTube'da ara" else "Ara veya adres yaz"
-            ui.showKeyboard(hint) { open(it) }
-        },
+        ctx.circleButton(R.drawable.ic_search) { search() },
         ctx.circleButton(R.drawable.ic_home) { web.loadUrl(startUrl()) },
         ctx.circleButton(R.drawable.ic_refresh) { web.reload() },
     )
 
     // YouTube her açılışta kendi ana sayfasıyla gelir (kategoriler YouTube'un kendi satırında)
-    private fun startUrl() = mode.home
+    private fun startUrl() = overrideUrl ?: mode.home
 
     private fun open(input: String) {
         val q = URLEncoder.encode(input, "UTF-8")
         val url = when {
             mode == Mode.YOUTUBE -> "https://m.youtube.com/results?search_query=$q"
+            mode == Mode.TVPLUS -> "https://tvplus.com.tr/arama?q=$q"
+            mode == Mode.NETFLIX -> "https://www.netflix.com/search?q=$q"
+            mode == Mode.DISNEY -> "https://www.disneyplus.com/search/$q"
+            mode == Mode.PRIME -> "https://www.primevideo.com/search/ref=atv_sr_sug?phrase=$q"
             input.startsWith("http://") || input.startsWith("https://") -> input
             !input.contains(' ') && input.contains('.') -> "https://$input"
             else -> "https://www.google.com/search?q=$q"
@@ -300,12 +419,12 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
             val info = runCatching { JSONObject(JSONTokener(result).nextValue() as String) }.getOrNull()
                 ?: return@evaluateJavascript
             val secret = info.optString("type") == "password"
-            val hint = info.optString("hint").ifBlank { if (secret) "Şifre" else "Yazı" }
+            val hint = info.optString("hint").ifBlank { if (secret) t("Şifre") else t("Yazı") }
             ui.showKeyboard(
                 hint,
                 initial = if (secret) "" else info.optString("value"),
                 secret = secret,
-                doneLabel = "Tamam",
+                doneLabel = t("Tamam"),
                 allowEmpty = true,
             ) { text -> web.evaluateJavascript("($FILL_FIELD_JS)(${JSONObject.quote(text)})", null) }
         }
@@ -321,7 +440,7 @@ class WebPage(ui: CarUi, private val mode: Mode) : Page(ui) {
         customView = null
         customCallback = null
         if (wasFull && refresh && ::pageRoot.isInitialized) {
-            pageRoot.setPadding(ctx.dp(8), ctx.dp(4), ctx.dp(8), ctx.dp(4))
+            if (mode != Mode.YOUTUBE) pageRoot.setPadding(ctx.dp(8), ctx.dp(4), ctx.dp(8), ctx.dp(4))
             ui.refreshChrome()
         }
     }

@@ -34,6 +34,8 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.newrex.auto.data.Prefs
 import com.newrex.auto.ui.CarUi
+import com.newrex.auto.ui.circleButton
+import kotlinx.coroutines.launch
 
 class NewRexCarAppService : CarAppService() {
     // Araç tarafını sadece Google'ın imzaladığı gerçek Android Auto açabilsin; başka bir uygulama
@@ -67,15 +69,20 @@ class NewRexSession : Session() {
         com.newrex.auto.ui.SessionAlerts.reset()
         if (BuildConfig.DEBUG) registerDebugReceiver()
 
+        // Sesli karşılama: "Günaydın X, NewREX'e hoş geldin!"
+        Greeting.speak(carContext)
+
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onDestroy(owner: LifecycleOwner) {
                 // Araç kapandı: yolculuğu ve son konumu park yeri olarak kaydet, yansıtmayı bitir
                 TripSaver.save()
                 ParkSaver.save(carContext)
                 Mirror.stop(carContext)
+                VoiceCommand.stop()
                 VehicleData.stop()
                 DriveState.stop()
                 PlayerHub.release()
+                Greeting.release()
                 debugReceiver?.let { carContext.unregisterReceiver(it) }
             }
         })
@@ -116,10 +123,87 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
     private var dragY = 0f
     private val endDrag = Runnable { finishDrag() }
 
+    // Araç ekranında telefon uygulaması açıkken dokunmalar ona gider (NewREX'in küçük düğmeleri hariç)
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main)
+    private var gestureToApp = false
+    private var gestureToBar = false
+
+    /**
+     * Uygulama açıkken sol altta NewREX'in geri/ev düğmeleri: ayrı, küçük bir pencere. Sadece kendi alanını
+     * kapladığı için uygulamaya giden dokunuşları engellemez.
+     */
+    private var appBar: Presentation? = null
+
+    private fun showAppBar(on: Boolean) {
+        appBar?.let { runCatching { it.dismiss() } }
+        appBar = null
+        if (!on) return
+        val display = carDisplay ?: return
+        val p = Presentation(carContext, display, R.style.Theme_NewREX_Car)
+        val c = p.context
+        val d = c.resources.displayMetrics.density
+        fun px(v: Int) = (v * d).toInt()
+        val bar = android.widget.LinearLayout(c).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            setPadding(px(6), px(6), px(6), px(6))
+            background = com.newrex.auto.ui.rounded(0xE6101218.toInt(), px(28).toFloat(), 1, 0x33FFFFFF)
+            addView(c.circleBtn(R.drawable.ic_back) { DirectApps.back() },
+                android.widget.LinearLayout.LayoutParams(px(48), px(48)))
+            addView(c.circleBtn(R.drawable.ic_home, accent = true) { ui?.home() },
+                android.widget.LinearLayout.LayoutParams(px(48), px(48)).apply { leftMargin = px(10) })
+            addView(c.circleBtn(R.drawable.ic_mic) { ui?.let { com.newrex.auto.pages.startVoice(it) } },
+                android.widget.LinearLayout.LayoutParams(px(48), px(48)).apply { leftMargin = px(10) })
+        }
+        p.setContentView(bar)
+        p.window?.apply {
+            setFormat(android.graphics.PixelFormat.TRANSLUCENT)
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+            setLayout(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            setGravity(android.view.Gravity.BOTTOM or android.view.Gravity.START)
+            attributes = attributes.apply { x = px(12); y = px(12) }
+            addFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
+            // Klavye odağını almasın: yoksa araç ekranındaki uygulamanın yazı kutusuna dokununca klavye açılmıyordu
+            addFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        }
+        runCatching { p.show() }
+        appBar = p
+    }
+
+    private fun Context.circleBtn(res: Int, accent: Boolean = false, onClick: () -> Unit) =
+        circleButton(res, 48, bg = if (accent) com.newrex.auto.ui.Palette.accent else com.newrex.auto.ui.Palette.SURFACE_STRONG, onClick = onClick)
+
+    /** Dokunulan nokta (araç ekranı koordinatı) küçük düğme penceresinin içinde mi? */
+    private fun hitsAppBar(x: Float, y: Float): Boolean {
+        val v = appBar?.window?.decorView ?: return false
+        val loc = IntArray(2)
+        v.getLocationOnScreen(loc)
+        return x >= loc[0] && x < loc[0] + v.width && y >= loc[1] && y < loc[1] + v.height
+    }
+
+    /**
+     * Telefon ekranı kapanınca Android, araç ekranındaki telefon uygulamasını da duraklatıyor ve ekran siyah
+     * kalıyordu. O an uygulama telefona bırakılır, araç ekranına NewREX geri gelir.
+     */
+    private val screenOff = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            // Sanal cihaz ekranı telefon uyuyunca uyumaz: uygulama araçta kalır
+            if (DirectApps.active.value != null && !DirectApps.displayAwake) {
+                scope.launch {
+                    DirectApps.close()
+                    ui?.toast(t("Telefon ekranı kapanınca uygulamalar araç ekranında duraklıyor; NewREX'e dönüldü."), long = true)
+                }
+            }
+        }
+    }
+
     init {
+        ContextCompat.registerReceiver(carContext, screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF), ContextCompat.RECEIVER_NOT_EXPORTED)
         carContext.getCarService(AppManager::class.java).setSurfaceCallback(this)
         lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onDestroy(owner: LifecycleOwner) = teardown()
+            override fun onDestroy(owner: LifecycleOwner) {
+                runCatching { carContext.unregisterReceiver(screenOff) }
+                teardown()
+            }
         })
     }
 
@@ -128,24 +212,39 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
             .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_home)).build())
             .setOnClickListener { ui?.home() }
             .build()
+        val strip = ActionStrip.Builder()
+        if (DirectApps.active.value != null) {
+            strip.addAction(Action.Builder()
+                .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_back)).build())
+                .setOnClickListener { DirectApps.back() }
+                .build())
+        }
+        strip.addAction(home)
         return NavigationTemplate.Builder()
-            .setActionStrip(ActionStrip.Builder().addAction(home).build())
+            .setActionStrip(strip.build())
             .build()
     }
 
+    /** NewREX'in araç ekranı: Shizuku açıksa kilitliyken de açık kalan shell ekranı, değilse kendi sanal ekranımız. */
+    private var carDisplay: android.view.Display? = null
+    private var setupJob: kotlinx.coroutines.Job? = null
+
     override fun onSurfaceAvailable(container: SurfaceContainer) {
         val surface = container.surface ?: return
-        val existing = virtualDisplay
-        if (existing != null && presentation != null) {
+        if (carDisplay != null && presentation != null) {
             // Geri görüş kamerası, telefon görüşmesi ya da başka bir uygulamadan dönüldü: arayüz silinmedi,
             // yeni yüzeye bağlayıp kalınan yerden (açık video, sayfa) devam ediyoruz
-            if (container.width != width || container.height != height || container.dpi != dpi) {
-                width = container.width
-                height = container.height
-                dpi = container.dpi
-                existing.resize(width, height, dpi)
+            val resized = container.width != width || container.height != height || container.dpi != dpi
+            width = container.width
+            height = container.height
+            dpi = container.dpi
+            if (DirectApps.shellDisplay) {
+                if (resized) DirectApps.resizeDisplay(width, height, dpi)
+                DirectApps.setDisplaySurface(surface)
+            } else virtualDisplay?.let { vd ->
+                if (resized) vd.resize(width, height, dpi)
+                vd.surface = surface
             }
-            existing.surface = surface
             ui?.setSurfaceVisible(true)
             applyInsets()
             Log.i(TAG, "Yüzey geri geldi ${width}x$height")
@@ -155,21 +254,59 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
         dpi = container.dpi
         width = container.width
         height = container.height
-        val dm = carContext.getSystemService(DisplayManager::class.java)
-        val vd = dm.createVirtualDisplay(
-            "NewREX", width, height, container.dpi, surface,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY,
-        )
-        virtualDisplay = vd
-        val p = Presentation(carContext, vd.display, R.style.Theme_NewREX_Car)
+        setupJob = scope.launch {
+            // Telefon kilitliyken de telefon uygulamaları araç ekranında görünsün diye ekran Shizuku ile kurulur
+            var display: android.view.Display? = null
+            val id = kotlinx.coroutines.withTimeoutOrNull(4000) { DirectApps.createDisplay(carContext, "NewREX", width, height, dpi, surface) }
+            Log.i(TAG, "Yardımcı ekranı: $id (kendi yardımcı: ${DirectApps.ownRunning()})")
+            if (id != null) {
+                val dm = carContext.getSystemService(DisplayManager::class.java)
+                for (i in 0 until 20) {
+                    display = dm.getDisplay(id)
+                    if (display != null) break
+                    kotlinx.coroutines.delay(50)
+                }
+                if (display == null) DirectApps.releaseDisplay()
+            }
+            if (display == null) {
+                val vd = carContext.getSystemService(DisplayManager::class.java).createVirtualDisplay(
+                    "NewREX", width, height, dpi, surface, DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY)
+                virtualDisplay = vd
+                display = vd.display
+            }
+            Log.i(TAG, "Araç ekranı ${display.displayId} (Shizuku: ${DirectApps.shellDisplay})")
+            showOn(display)
+        }
+    }
+
+    private fun showOn(display: android.view.Display) {
+        carDisplay = display
+        DirectApps.displayId = display.displayId
+        val p = Presentation(carContext, display, R.style.Theme_NewREX_Car)
+        // Saydam olabilsin: telefon uygulaması açıkken NewREX'in arkasındaki uygulama görünür
+        p.window?.setFormat(android.graphics.PixelFormat.TRANSLUCENT)
         presentation = p
+        scope.launch {
+            DirectApps.active.collect { app ->
+                // Android, başka uygulamanın penceresinin üstünden geçen dokunuşu engelliyor: uygulama açıkken
+                // NewREX penceresi gizlenir; geri ve ev düğmeleri sol alttaki küçük pencerede durur
+                val pr = presentation ?: return@collect
+                runCatching {
+                    // Uygulama açıkken NewREX penceresi odak almasın (klavye uygulamaya açılsın)
+                    val nf = android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                    if (app != null) { pr.window?.addFlags(nf); pr.hide() } else { pr.window?.clearFlags(nf); pr.show() }
+                }
+                showAppBar(app != null)
+                invalidate()
+            }
+        }
         buildUi()
         try {
             p.show()
         } catch (e: Exception) {
             Log.e(TAG, "Araç ekranı açılamadı", e)
         }
-        Log.i(TAG, "Yüzey ${width}x$height dpi=${container.dpi}")
+        Log.i(TAG, "Yüzey ${width}x$height dpi=$dpi")
     }
 
     private fun buildUi(startOnApps: Boolean = false) {
@@ -196,7 +333,7 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
     /** Yüzey geçici olarak gitti (kamera, başka uygulama): arayüzü silme, sadece çizimi durdur. */
     override fun onSurfaceDestroyed(container: SurfaceContainer) {
         finishDrag()
-        virtualDisplay?.surface = null
+        if (DirectApps.shellDisplay) DirectApps.setDisplaySurface(null) else virtualDisplay?.surface = null
         ui?.setSurfaceVisible(false)
     }
 
@@ -212,12 +349,19 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
 
     private fun teardown() {
         handler.removeCallbacksAndMessages(null)
+        showAppBar(false)
+        // Araç bağlantısı bitti: araç ekranındaki telefon uygulaması telefona geri dönsün
+        if (DirectApps.active.value != null) kotlinx.coroutines.runBlocking { kotlinx.coroutines.withTimeoutOrNull(1500) { DirectApps.close() } }
+        DirectApps.displayId = -1
+        scope.coroutineContext[kotlinx.coroutines.Job]?.children?.forEach { it.cancel() }
         ui?.destroy()
         ui = null
         presentation?.dismiss()
         presentation = null
         virtualDisplay?.release()
         virtualDisplay = null
+        DirectApps.releaseDisplay()
+        carDisplay = null
     }
 
     // ---- Dokunma aktarımı ----
@@ -227,7 +371,11 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
      * ölçek olayı gönderir. Klavyede hızlı yazarken harfler kaybolmasın diye bunu dokunmaya çeviriyoruz.
      */
     override fun onScale(focusX: Float, focusY: Float, scaleFactor: Float) {
-        if (scaleFactor != DOUBLE_TAP_ZOOM) return
+        if (scaleFactor != DOUBLE_TAP_ZOOM) {
+            // İki parmakla büyütme/küçültme: haritadaysak haritaya
+            com.newrex.auto.ui.MapGestures.onScale?.invoke(scaleFactor)
+            return
+        }
         // Android Auto sadece ilk dokunmanın yerini bildiriyor; ikinci dokunmanın nereye yapıldığını bilemeyiz.
         // Yanlış harf yazmaktansa sadece ilk dokunmayı uyguluyoruz.
         tap(focusX, focusY)
@@ -238,6 +386,9 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
     private var pendingUp: Runnable? = null
 
     private fun tap(x: Float, y: Float) {
+        // Android Auto'nun ev tuşuna basılınca aynı dokunuş yüzeye de geliyor; bu dokunuş başlayan sayfa geçişini
+        // yarıda kesip geri döndürüyordu. Ev tuşundan hemen sonraki dokunuş yok sayılır.
+        if (SystemClock.uptimeMillis() - (ui?.lastHomeAt ?: 0L) < 600) return
         if (dragStart != 0L) finishDrag()
         // Önceki dokunmanın bırakılması beklerken yenisi gelirse önce onu bitir; yoksa hızlı yazarken harf kaybolur
         pendingUp?.let { handler.removeCallbacks(it); it.run() }
@@ -285,6 +436,20 @@ class SurfaceScreen(carContext: CarContext) : Screen(carContext), SurfaceCallbac
     }
 
     private fun inject(action: Int, x: Float, y: Float, downTime: Long, eventTime: Long) {
+        if (action == MotionEvent.ACTION_DOWN) {
+            gestureToBar = DirectApps.active.value != null && hitsAppBar(x, y)
+            gestureToApp = DirectApps.active.value != null && !gestureToBar
+        }
+        if (gestureToApp) { DirectApps.touch(action, x, y, downTime, eventTime); return }
+        if (gestureToBar) {
+            val v = appBar?.window?.decorView ?: return
+            val loc = IntArray(2)
+            v.getLocationOnScreen(loc)
+            val ev = MotionEvent.obtain(downTime, eventTime, action, x - loc[0], y - loc[1], 0).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
+            v.dispatchTouchEvent(ev)
+            ev.recycle()
+            return
+        }
         val root = presentation?.window?.decorView ?: return
         val ev = MotionEvent.obtain(downTime, eventTime, action, x, y, 0).apply {
             source = InputDevice.SOURCE_TOUCHSCREEN
